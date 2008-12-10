@@ -330,6 +330,13 @@ traffic entering and leaving the local network, not just the gateway
 server (which is running \fIdarkstat\fR):
 .IP
 darkstat \-i fxp0 \-l 192.168.1.0/255.255.255.0
+.PP
+.\"
+We want to specify the local IP of the gateway manually because it
+cannot be automatically detected, e.g. \fB\-\-pppoe\fR is in use.
+Note the /32 netmask:
+.IP
+darkstat \-i fxp0 \-\-pppoe \-l 192.168.1.1/255.255.255.255
 .\"
 .SH SIGNALS
 To shut
