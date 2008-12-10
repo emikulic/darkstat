@@ -201,8 +201,6 @@ cap_stats_update(void)
 {
    struct pcap_stat ps;
 
-   if (!want_verbose) return;
-
    if (pcap_stats(pcap, &ps) != 0) {
       warnx("pcap_stats(): %s", pcap_geterr(pcap));
       return;
