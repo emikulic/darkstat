@@ -101,19 +101,6 @@ acct_for(const pktsummary *sm)
    total_packets++;
    total_bytes += sm->len;
 
-   /* Hosts. */
-   hs = host_get(sm->src_ip);
-   hs->out   += sm->len;
-   hs->total += sm->len;
-   memcpy(hs->u.host.mac_addr, sm->src_mac, sizeof(sm->src_mac));
-   hs->u.host.last_seen = now;
-
-   hd = host_get(sm->dest_ip); /* this can invalidate hs! */
-   hd->in    += sm->len;
-   hd->total += sm->len;
-   memcpy(hd->u.host.mac_addr, sm->dst_mac, sizeof(sm->dst_mac));
-   hd->u.host.last_seen = now;
-
    /* Graphs. */
    dir_in = dir_out = 0;
 
@@ -140,6 +127,21 @@ acct_for(const pktsummary *sm)
       daylog_acct((uint64_t)sm->len, GRAPH_IN);
       graph_acct((uint64_t)sm->len, GRAPH_IN);
    }
+
+   if (hosts_max == 0) return; /* skip per-host accounting */
+
+   /* Hosts. */
+   hs = host_get(sm->src_ip);
+   hs->out   += sm->len;
+   hs->total += sm->len;
+   memcpy(hs->u.host.mac_addr, sm->src_mac, sizeof(sm->src_mac));
+   hs->u.host.last_seen = now;
+
+   hd = host_get(sm->dest_ip); /* this can invalidate hs! */
+   hd->in    += sm->len;
+   hd->total += sm->len;
+   memcpy(hd->u.host.mac_addr, sm->dst_mac, sizeof(sm->dst_mac));
+   hd->u.host.last_seen = now;
 
    /* Protocols. */
    hs = host_find(sm->src_ip);
