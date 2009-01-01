@@ -155,6 +155,8 @@ acct_for(const pktsummary *sm)
    pd->in    += sm->len;
    pd->total += sm->len;
 
+   if (ports_max == 0) return; /* skip ports accounting */
+
    /* Ports. */
    switch (sm->proto)
    {
