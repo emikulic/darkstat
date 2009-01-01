@@ -295,13 +295,19 @@ parse_cmdline(const int argc, char * const *argv)
    if ((interface != NULL) && (capfile != NULL))
       errx(1, "can't specify both interface (-i) and capture file (-r)");
 
-   if ((hosts_max != 0) && (hosts_keep >= hosts_max))
-      errx(1, "must keep fewer hosts than --hosts-max (%u)", hosts_max);
+   if ((hosts_max != 0) && (hosts_keep >= hosts_max)) {
+      hosts_keep = hosts_max / 2;
+      warnx("reducing --hosts-keep to %u, to be under --hosts-max (%u)",
+         hosts_keep, hosts_max);
+   }
    verbosef("max %u hosts, cutting down to %u when exceeded",
       hosts_max, hosts_keep);
 
-   if ((ports_max != 0) && (ports_keep >= ports_max))
-      errx(1, "must keep fewer ports than --ports-max (%u)", ports_max);
+   if ((ports_max != 0) && (ports_keep >= ports_max)) {
+      ports_keep = ports_max / 2;
+      warnx("reducing --ports-keep to %u, to be under --ports-max (%u)",
+         ports_keep, ports_max);
+   }
    verbosef("max %u ports per host, cutting down to %u when exceeded",
       ports_max, ports_keep);
 }
