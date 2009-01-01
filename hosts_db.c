@@ -771,9 +771,10 @@ struct bucket *
 host_get_ip_proto(struct bucket *host, const uint8_t proto)
 {
    struct host *h = &host->u.host;
+   static const unsigned int PROTOS_MAX = 512, PROTOS_KEEP = 256;
    assert(h != NULL);
    if (h->ip_protos == NULL)
-      h->ip_protos = hashtable_make(PROTO_BITS, ports_max, ports_keep,
+      h->ip_protos = hashtable_make(PROTO_BITS, PROTOS_MAX, PROTOS_KEEP,
          hash_func_byte, free_func_simple, key_func_ip_proto,
          find_func_ip_proto, make_func_ip_proto,
          format_cols_ip_proto, format_row_ip_proto);
