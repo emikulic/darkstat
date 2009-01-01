@@ -18,6 +18,7 @@
 #define NULL_HDR_LEN    4
 #define PPPOE_HDR_LEN   8
 #define SLL_HDR_LEN     16
+#define RAW_HDR_LEN     0
 
 #ifndef ETHER_ADDR_LEN
 #define ETHER_ADDR_LEN 6

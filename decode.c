@@ -67,6 +67,8 @@ static void decode_pppoe_real(const u_char *pdata, const uint32_t len,
    pktsummary *sm);
 static void decode_linux_sll(u_char *, const struct pcap_pkthdr *,
    const u_char *);
+static void decode_raw(u_char *, const struct pcap_pkthdr *,
+   const u_char *);
 static void decode_ip(const u_char *pdata, const uint32_t len,
    pktsummary *sm);
 
@@ -85,6 +87,7 @@ static const linkhdr_t linkhdrs[] = {
 #ifdef DLT_LINUX_SLL
    { DLT_LINUX_SLL, SLL_HDR_LEN,   decode_linux_sll },
 #endif
+   { DLT_RAW,       RAW_HDR_LEN,   decode_raw },
    { -1, -1, NULL }
 };
 
@@ -297,6 +300,19 @@ decode_linux_sll(u_char *user _unused_,
    default:
       verbosef("linux_sll: unknown protocol (%04x)", type);
    }
+}
+
+static void
+decode_raw(u_char *user _unused_,
+      const struct pcap_pkthdr *pheader,
+      const u_char *pdata)
+{
+   pktsummary sm;
+   memset(&sm, 0, sizeof(sm));
+
+   decode_ip(pdata, pheader->caplen, &sm);
+   sm.time = pheader->ts.tv_sec;
+   acct_for(&sm);
 }
 
 static void
