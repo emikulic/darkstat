@@ -254,6 +254,10 @@ will send SIGTERM, which will cause \fIdarkstat\fR to shut down cleanly.
 .BI \-\-hosts\-max " count"
 The maximum number of hosts that will be kept in the hosts table.
 This is used to limit how much accounting data will be kept in memory.
+The number of
+.BI \-\-hosts\-max
+must be greater than
+.BI \-\-hosts\-keep
 .\"
 .TP
 .BI \-\-hosts\-keep " count"
@@ -268,6 +272,10 @@ number of hosts, sorted by total traffic.
 .BI \-\-ports\-max " count"
 The maximum number of ports that will be tracked for each host.
 This is used to limit how much accounting data will be kept in memory.
+The number of
+.BI \-\-ports\-max
+must be greater than
+.BI \-\-ports\-keep
 .\"
 .TP
 .BI \-\-ports\-keep " count"
