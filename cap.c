@@ -244,8 +244,10 @@ cap_poll(fd_set *read_set
             linkhdr->handler, /* callback func from decode.c */
             NULL);            /* user */
 
-      if (ret < 0)
-         errx(1, "pcap_dispatch(): %s", pcap_geterr(pcap));
+      if (ret < 0) {
+         warnx("pcap_dispatch(): %s", pcap_geterr(pcap));
+         return;
+      }
 
       /* Despite count = -1, Linux will only dispatch one packet at a time. */
       total += ret;
