@@ -1,0 +1,67 @@
++--------------------+
+| Darkstat for MacOS |
++--------------------+
+
+Darkstat run smoothly on MacOS, as a service using the Apple standard manager, launchd, or as a simple process. In any cases, the usual requirements are used for accessing network interfaces and ports than for other UNIX platforms.
+
+In order to use darkstat as a system service, we have to tell launchd the necessary informations about the new service we want it to manage.
+
+A configuration file (cx.ath.darkstat) has already been prepared, you just have to put it into the appropriate directory and to activate it. The configuration has been set-up for listening on the "en0" (ethernet) network interface, and to run darkstat with a nice of 1.
+
+
+
++------------+
+| Activation |
++------------+
+
+Procedure for installing the service's configuration:
+
+	1)	Edit the file "cx.ath.darkstat" for specifying the full access path to darkstat:
+		if you are using the macports distribution, use "/opt/local/sbin/darkstat"
+		if you are using the fink distribution, use "/sw/sbin/darkstat"
+		if you are using a manual installation, it is up to you.
+
+	2)	Copy the configuration file:
+		sudo cp cx.ath.darkstat /Library/LaunchDaemons/
+		sudo chown root:wheel /Library/LaunchDaemons/cx.ath.darkstat
+		sudo chmod 644 /Library/LaunchDaemons/cx.ath.darkstat
+
+	3)	Activate darkstat:
+		sudo launchctl load /Library/LaunchDaemons/cx.ath.darkstat
+
+From now, darkstat is under the control of launchd and will be started at boot time.
+
+
+
++------------------------+
+| Desactivating darkstat |
++------------------------+
+
+For deactivating darkstat until the next boot, you can use the command: sudo launchctl unload /Library/LaunchDaemons/cx.ath.darkstat
+
+For permanently deactivating darkstat, you can use one of the two following solutions:
+
+	1)	using the command: sudo launchctl unload -w /Library/LaunchDaemons/cx.ath.darkstat
+		The "-w" option will modify the configuration file, adding a key forbidding the activation of the service.
+
+		In order to reactivate the service, you will have to use the command: sudo launchctl load -w /Library/LaunchDaemons/cx.ath.darkstat
+		The "-w" option will modify the configuration file, removing a key forbidding the activation of the service.
+
+	2)	simply remove the file /Library/LaunchDaemons/cx.ath.darkstat
+
+
+
++------------------+
+| More information |
++------------------+
+
+Suggested further readings:
+	- darkstat: man 1 darkstat
+	- launchctl, the control tool for launchd: man 1 launchctl
+	- launchd service configuration: man 5 launchd.plist
+	- using nice: man 1 nice
+
+
+--
+Damien Clauzel, Damien@Clauzel.nom.fr
+1/07/2008

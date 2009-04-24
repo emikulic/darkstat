@@ -1,0 +1,16 @@
+Thanks to everyone who contributed code, ideas, and helped with testing
+or general moral support.
+
+Cyro W. Corte Real Filho for some early help with building on Linux.
+Jean-Edouard Babin for testing on NetBSD and OS X.
+Leif Terrens for initial OpenBSD testing.
+Moritz Grimm for chasing a weird crash.
+Andreas Reimann for building darkstat on AIX.
+Colin Phipps for his help in fixing darkstat's use of BPF.
+Cheng-Lung Sung and Martin Wilke for committing updates to the FreeBSD port.
+Cristian Rodriguez for SUSE packages and helpful suggestions.
+Piotr Kalina for bugspotting.
+Carlo Florendo for testing and portability on Trustix Secure Linux.
+Damian Lozinski for initial implementation of average KB/s on graphs.
+Rene Mayorga for Debian packages and testing.
+Damien Clauzel for contributing launchd config and Mac OS X instructions.

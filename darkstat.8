@@ -1,0 +1,382 @@
+.\"
+.\" darkstat 3
+.\" Copyright 2001-2008, Emil Mikulic.
+.\"
+.\" You may use, modify and redistribute this file under the terms of the
+.\" GNU General Public License version 2. (see COPYING.GPL)
+.\"
+.TH darkstat 8 "September 2008" "darkstat 3"
+.SH NAME
+darkstat \- network statistics gatherer
+.\"
+.SH SYNOPSIS
+.B darkstat
+[
+.BI \-i " interface"
+] [
+.BI \-r " file"
+] [
+.BI \-\-pppoe
+] [
+.BI \-\-verbose
+] [
+.BI \-\-no\-daemon
+] [
+.BI \-\-no\-promisc
+] [
+.BI \-\-no\-dns
+] [
+.BI \-\-no\-macs
+] [
+.BI \-p " port"
+] [
+.BI \-b " bindaddr"
+] [
+.BI \-f " filter"
+] [
+.BI \-l " network/netmask"
+] [
+.BI \-\-chroot " dir"
+] [
+.BI \-\-user " username"
+] [
+.BI \-\-daylog " filename"
+] [
+.BI \-\-import " filename"
+] [
+.BI \-\-export " filename"
+] [
+.BI \-\-pidfile " filename"
+] [
+.BI \-\-hosts\-max " count"
+] [
+.BI \-\-hosts\-keep " count"
+] [
+.BI \-\-ports\-max " count"
+] [
+.BI \-\-ports\-keep " count"
+] [
+.BI \-\-highest\-port " port"
+]
+.\"
+.SH DESCRIPTION
+.I darkstat
+is a packet sniffer that runs as a background process on
+a cable/DSL router, gathers all sorts of statistics about network usage,
+and serves them over HTTP.
+
+All settings are passed on the commandline.
+.\"
+.SH OPTIONS
+.\"
+.TP
+.BI \-i " interface"
+Capture traffic on the specified network interface.
+This is the only mandatory commandline argument.
+.\"
+.TP
+.BI \-r " file"
+Instead of capturing live traffic, read it from a
+.BR pcap (3)
+capture file.
+This is only useful for development and benchmarking.
+The
+.BI \-r
+and
+.BI \-i
+arguments are mutually exclusive.
+.\"
+.TP
+.BI \-\-pppoe
+Don't use this.
+.RS
+
+Instead, capture on the tunnel interface that your PPPoE software
+provides, for example \fBtun0\fR on \fIFreeBSD\fR, \fBpppoe0\fR on
+\fIOpenBSD\fR or \fINetBSD\fR.
+
+If you really must, you can capture on an Ethernet interface and pass
+this argument to have \fIdarkstat\fR decode PPPoE frames and ignore
+everything else.
+Make sure you also specify your local address with the \fB\-l\fR
+argument.
+.RE
+.\"
+.TP
+.BI \-\-verbose
+Print debugging messages to the terminal.
+.\"
+.TP
+.BI \-\-no\-daemon
+Do not detach from the controlling terminal;
+stay in the foreground.
+.\"
+.TP
+.BI \-\-no\-promisc
+Do not use promiscuous mode to capture.
+Note that an interface may already be in promiscuous mode.
+If this is a problem, use an appropriate
+.BR bpf (4)
+filter.
+.\"
+.TP
+.BI \-\-no\-dns
+Do not resolve IPs to host names.
+This can significantly reduce memory footprint on small systems
+as an extra process is created for DNS resolving.
+.\"
+.TP
+.BI \-\-no\-macs
+Do not display MAC addresses in hosts table.
+.\"
+.TP
+.BI \-p " port"
+Bind the web interface to the specified port.
+The default is 667.
+.\"
+.TP
+.BI \-b " bindaddr"
+Bind the web interface to the specified address.
+The default is to listen on all interfaces.
+.\"
+.TP
+.BI \-f " filter"
+Use the specified filter expression when capturing traffic.
+The filter syntax is beyond the scope of this manual page;
+please refer to the
+.BR tcpdump (1)
+documentation.
+.\"
+.TP
+.BI \-l " network/netmask"
+Define a "local network" according to the network and netmask addresses.
+All traffic entering or leaving this network will be graphed, as opposed
+to the default behaviour of only graphing traffic to and from the local
+host.
+.RS
+
+The rule is that if \fBip_addr & netmask == network\fR,
+then that address is considered local.
+See the usage example below.
+.RE
+.\"
+.TP
+.BI \-\-chroot " dir"
+Force \fIdarkstat\fR to \fBchroot()\fR into the specified directory.
+Without this argument, a default directory will be used, which is
+determined at build time.
+Usually \fI/var/empty\fR or \fI/var/lib/empty\fR.
+.RS
+
+For security reasons, this directory should be empty, and the user that
+\fIdarkstat\fR is running as should not have write access to it.
+
+However, if you wish to use \fB\-\-daylog\fR or \fB\-\-export\fR,
+\fIdarkstat\fR will need write access to the chroot.
+If you are uncomfortable with the security implications, don't
+use any functionality that requires write access.
+.RE
+.\"
+.TP
+.BI \-\-user " username"
+Force \fIdarkstat\fR to drop privileges to the \fBuid\fR and \fBgid\fR of
+the specified user.
+Without this argument, a default value will be used, which is set at
+build time.
+Usually \fBnobody\fR.
+.RS
+
+For security reasons, this should not be \fBroot\fR.
+.RE
+.\"
+.TP
+.BI \-\-daylog " filename"
+.RS
+Log daily traffic statistics into the named file, relative to the
+chroot directory.
+If you wish to use \fB\-\-daylog\fR, you must first specify a
+\fB\-\-chroot\fR directory, and it must be writeable by the
+\fIdarkstat\fR user.
+A writeable chroot has security implications; if you are uncomfortable
+with this, do not use the \fB\-\-daylog\fR functionality.
+
+If the daylog argument is not specified, no logging is performed.
+
+The daylog format is:
+
+localtime|time_t|bytes_in|bytes_out|pkts_in|pkts_outs
+
+Lines starting with a # are comments stating when logging started and
+stopped.
+.RE
+.\"
+.TP
+.BI \-\-import " filename"
+Upon starting, import a \fIdarkstat\fR database from the named file,
+relative to the chroot directory.
+If you wish to use \fB\-\-import\fR, you must first specify a
+\fB\-\-chroot\fR directory.
+If the import is unsuccessful, \fIdarkstat\fR will start with an empty
+database.
+.\"
+.TP
+.BI \-\-export " filename"
+On shutdown, and upon receiving SIGUSR1, export the in-memory database
+to the named file, relative to the chroot directory.
+If you wish to use \fB\-\-export\fR, you must first specify a
+\fB\-\-chroot\fR directory, and it must be writeable by the
+\fIdarkstat\fR user.
+A writeable chroot has security implications - if you are uncomfortable
+with this, do not use the \fB\-\-export\fR functionality.
+.\"
+.TP
+.BI \-\-pidfile " filename"
+.RS
+Creates a file containing the process ID of \fIdarkstat\fR.
+This file will be unlinked upon clean shutdown.
+As with all pidfiles, if \fIdarkstat\fR dies uncleanly, a stale pidfile
+can be left over.
+
+For example, start \fIdarkstat\fR with:
+.IP
+darkstat \-i fxp0 \-\-chroot /var/run/darkstat \-\-pidfile darkstat.pid
+.PP
+And stop with:
+.IP
+kill `cat /var/run/darkstat/darkstat.pid`
+.PP
+By default,
+.BR kill (1)
+will send SIGTERM, which will cause \fIdarkstat\fR to shut down cleanly.
+.RE
+.\"
+.TP
+.BI \-\-hosts\-max " count"
+The maximum number of hosts that will be kept in the hosts table.
+This is used to limit how much accounting data will be kept in memory.
+.\"
+.TP
+.BI \-\-hosts\-keep " count"
+When the hosts table hits
+.BI \-\-hosts\-max
+and traffic is seen from a new host, we clean out the hosts table,
+keeping only the top
+.BI \-\-hosts\-keep
+number of hosts, sorted by total traffic.
+.\"
+.TP
+.BI \-\-ports\-max " count"
+The maximum number of ports that will be tracked for each host.
+This is used to limit how much accounting data will be kept in memory.
+.\"
+.TP
+.BI \-\-ports\-keep " count"
+When a ports table fills up, this many ports are kept and the rest are
+discarded.
+.\"
+.TP
+.BI \-\-highest\-port " port"
+Ports that are numerically higher than this will not appear in the
+per-host ports tables, although their traffic will still be accounted
+for.
+This can be used to hide ephemeral ports.
+By default, all ports are tracked.
+.\"
+.\" --------------------------------------------------------------------
+.SH USAGE EXAMPLES
+To gather statistics on the
+.I fxp0
+interface:
+.IP
+darkstat \-i fxp0
+.PP
+.\"
+We want to account for traffic on the Internet-facing interface,
+but only serve web pages to our private local network where we have the
+IP address 192.168.0.1:
+.IP
+darkstat \-i fxp0 \-b 192.168.0.1
+.PP
+.\"
+We want to serve web pages on the standard HTTP port:
+.IP
+darkstat \-i fxp0 \-p 80
+.PP
+.\"
+We are on Optus (cable) and don't want to account for the constant ARP
+traffic we are receiving:
+.IP
+darkstat \-i fxp0 \-f "not arp"
+.PP
+.\"
+We only want to account for SSH traffic:
+.IP
+darkstat \-i fxp0 \-f "port 22"
+.PP
+.\"
+We don't want to account for network internal traffic:
+.IP
+darkstat \-i fxp0 \-f "not (src net 192.168.0 and dst net 192.168.0)"
+.PP
+.\"
+(For a full reference on filter syntax, refer to the
+.BR tcpdump (1)
+manpage)
+.PP
+.\"
+We have a network consisting of a gateway server (192.168.1.1) and a few
+workstations (192.168.1.2, 192.168.1.3, etc.) and we want to graph all
+traffic entering and leaving the local network, not just the gateway
+server (which is running \fIdarkstat\fR):
+.IP
+darkstat \-i fxp0 \-l 192.168.1.0/255.255.255.0
+.\"
+.SH SIGNALS
+To shut
+.I darkstat
+down cleanly, send a SIGTERM or SIGINT signal to the
+.I darkstat
+parent process.
+.PP
+Sending the SIGUSR1 signal will cause \fIdarkstat\fR to empty out its
+in-memory database.
+If an \fB\-\-export\fR file was set, it will first save the database to
+file.
+.PP
+.\"
+.SH FREQUENTLY ASKED QUESTIONS
+.SS How many bytes does each bar on the graph represent?
+Hover your mouse cursor over a bar and you should get a tooltip
+saying exactly how many bytes in and out the bar represents.
+.\"
+.SS Why aren't there labels / tics / a scale on the graphs?
+Because implementing them is hard.
+And doing so \fIcorrectly\fR, and in a way that works across all
+browsers, looks pretty much impossible.
+
+I might attempt it some day.
+In the meantime, patches would be gladly accepted.
+.\"
+.SS Why are the graphs blank?  All the bars are zero.
+The graphs only show traffic in/out of the local host, which is
+determined by getting the IP address of the interface you're sniffing
+on.
+
+You can use the \fB\-l\fR argument to override the local address for
+accounting purposes.
+You can also use it to do accounting for a whole subnet by specifying
+an appropriate netmask.
+.\"
+.SH SEE ALSO
+.BR tcpdump (1)
+.\"
+.SH HISTORY
+.I darkstat
+was written in 2001, largely as a result of a certain Australian
+cable Internet provider introducing a 3GB monthly traffic limit.
+.\"
+.SH AUTHORS
+Emil Mikulic and others. (see the AUTHORS and THANKS files)
+.\"
+.SH WEBSITE
+http://dmr.ath.cx/net/darkstat/

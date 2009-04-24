@@ -1,0 +1,47 @@
+Installation instructions
+-------------------------
+
+$ ./configure
+$ make
+$ make install
+
+
+Quickstart
+----------
+
+$ darkstat -i eth0
+
+
+Slightly slower start
+---------------------
+
+$ man darkstat
+
+
+Packaging
+---------
+
+The install target respects DESTDIR.  If you are packaging darkstat or
+installing into a chroot, you can:
+
+$ make install DESTDIR=/chroot/whatever
+
+
+Portability
+-----------
+
+Builds out of the box on:
+
+ - FreeBSD 7.0
+
+Reported to also work on:
+
+ - Solaris (with Sun C 5.8, and libpcap installed)
+ - Fedora Core (with libpcap-devel installed)
+ - OpenBSD
+ - NetBSD
+ - Mac OS X
+ - AIX
+ - Ubuntu (you need build-essentials, zlib1g-dev, libpcap-dev)
+ - Mandrake
+ - OpenSUSE

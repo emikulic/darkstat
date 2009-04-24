@@ -1,0 +1,13 @@
+Parts of the darkstat source code are covered by a BSD license (actually
+closer to the ISC license template favored by the OpenBSD project).
+These are usually the more generalized, reusable parts of the code.
+
+Other parts of the darkstat code are covered by the GPL.  These other
+parts are usually not generic code, but are specific to darkstat and its
+purpose.
+
+All of the source code is clearly annotated to show which license covers
+which parts.
+
+Due to the viral nature of the GPL, once linked, the entire darkstat
+binary is infected with the GPL.

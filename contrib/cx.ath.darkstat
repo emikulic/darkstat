@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>UserName</key>
+	<string>root</string>
+	<key>GroupName</key>
+	<string>wheel</string>
+	<key>KeepAlive</key>
+	<true/>
+	<key>Label</key>
+	<string>cx.ath.darkstat</string>
+	<key>Nice</key>
+	<integer>1</integer>
+	<key>ProgramArguments</key>
+	<array>
+<!--
+Indiquez le chemin d'accès complet à darkstat; par exemple :
+Specify the full path to darkstat; for example :
+		<string>/opt/local/sbin/darkstat</string>
+		<string>/sw/sbin/darkstat</string>
+-->
+		<string>--no-daemon</string>
+		<string>-i</string>
+		<string>en0</string>
+		<string>-b</string>
+		<string>127.0.0.1</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+</dict>
+</plist>

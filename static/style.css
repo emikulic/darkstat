@@ -1,0 +1,66 @@
+/* darkstat 3
+ *
+ * stylecss.h: CSS stylesheet for web interface.
+ * copyright (c) 2006 Ben Stewart.
+ * colors broken in 2007 by Emil Mikulic.
+ *
+ * You may use, modify and redistribute this file under the terms of the
+ * GNU General Public License version 2. (see COPYING.GPL)
+ */
+
+body           { background-color: #fff; z-index: 0; }
+.content       { z-index: 1;
+                 position: absolute; top:15px; left:10px; }
+div.menu       { z-index: 2;
+                 position: absolute; top:0; left:0;
+                 width: 100%; background-color: #789;
+                 border-bottom: 1px solid black;
+                 font-size:11px; }
+ul.menu        { list-style: none; margin:0; padding:2px 0 3px 0; }
+ul.menu li     { list-style: none; display: inline; margin:0;
+                 padding:2px 0 3px 0;
+                 border-right:1px solid white; }
+ul.menu li.label
+               { padding-left:10px; padding-right:10px; color:#000; }
+ul.menu li a   { color: white; text-decoration: none;
+                 border-bottom: none; padding:2px 15px 3px 15px; }
+ul.menu li a:hover
+               { background-color: #9ab; }
+h1, h2, h3, h4, h5, h6
+               { margin-top:10px; margin-bottom:5px; color: #000000;
+                 font-family: Arial, sans-serif; font-weight:bold; }
+.pageheader    { border-bottom: 2px dotted black; }
+table          { border-collapse: collapse; }
+td, th { border:1px solid #C0C0C0; padding:1px 5px 1px 5px; }
+td.num { text-align:right; }
+th { background-color:#EFEFEF; font-weight: bold;
+     padding-top:2px; padding-bottom:2px; }
+th a { color:black; border-bottom:1px dotted; }
+tr.alt1 { background:#FFFFFF; }
+tr.alt2 { background:#FAFAFA; }
+tr.alt1:hover, tr.alt2:hover { background:#EFEFEF; }
+body, td, th, p, input, textarea
+               { font-family: Tahoma, Verdana, sans-serif;
+                 font-size: small; }
+tt             { font-family: Courier New, monospace;
+                 font-size: small; }
+a:hover        { border-bottom: 1px dotted #666; }
+a              { text-decoration: none; color: #666; }
+div.outergraph { float:left; margin-right:10px; margin-bottom:20px; }
+div.graph      { border: 1px solid black; }
+div.graphtitle { text-align:center; font-weight:bold; }
+div.bar_in     { background: #678; }
+div.bar_out    { background: #abc; }
+
+#graph_reload,#graph_autoreload { border:1px solid black;
+ padding:2px 10px 2px 10px; margin-left:5px; color:black; }
+
+#graph_reload:hover,#graph_autoreload:hover { background:#9ab; color:black; }
+
+div.legend table { margin-left:auto; margin-right:auto; /* center */
+                   border:0; }
+div.legend td { border:0; padding:0 0.2em 0 0.2em; font-size:11px;
+                color:#444; }
+div.legend td.dir { text-align:right; }
+div.legend td.rate { text-align:right; }
+

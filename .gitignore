@@ -1,0 +1,14 @@
+*.o
+Makefile
+a.out
+autom4te.cache
+c-ify
+config.h
+config.h.in
+config.log
+config.status
+configure
+configure.lineno
+darkstat
+graphjs.h
+stylecss.h

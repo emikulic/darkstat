@@ -1,0 +1,46 @@
+The darkstat export format was designed by Ben Stewart.
+Note that all integers are stored in network order (big-endian).
+
+FILE HEADER 0xDA314159                              darkstat export format
+    SECTION HEADER 0xDA 'H' 'S' 0x01                hosts_db ver1
+        HOST COUNT 0x00000001                       1 host follows
+        For each host:
+            HOST HEADER 'H' 'S' 'T' 0x02            host ver2
+            IP ADDR 0x0A010101                      IPv4 10.1.1.1
+            MACADDR 0x001122334455                  00:11:22:33:44:55
+            LAST_SEEN 0x0000000048000123 (time_t)   2008-04-12 00:24:03 UTC
+            HOSTNAME 0x09 "localhost"               9 is the string length
+            IN 0x0000000000123456                   Bytes in: 1193046
+            OUT 0x0000000000789ABC                  Bytes out: 7903932
+            PROTOS DATA 'P'                         start ip proto data
+                IP PROTO COUNT 0x03                 3 ip_proto entries
+                IP PROTO 0x06                       tcp
+                    IN 0x0000000000123456           Bytes in: 1193046
+                    OUT 0x0000000000789ABC          Bytes out: 7903932
+                IP PROTO 0x11                       udp
+                    IN 0x0000000000000444           Bytes in: 1092
+                    OUT 0x0000000000000555          Bytes out: 1365
+                IP PROTO 0x01                       icmp
+                    IN 0x0000000000000001           Bytes in: 1
+                    OUT 0x0000000000000002          Bytes out: 2
+            TCP DATA 'T'                            start tcp proto data
+                TCP PROTO COUNT 0x0001              1 tcp_proto entry
+                PORT 0x0050                         http (port 80)
+                    SYN COUNT 0x0000000000000003    SYNs: 3
+                    IN 0x0000000000000001           Bytes in: 1
+                    OUT 0x0000000000000002          Bytes out: 2
+            UDP DATA 'U'                            start udp proto data
+                UDP PROTO COUNT 0x0001              1 udp_proto entry
+                PORT 0x0045                         tftp (port 69)
+                    IN 0x0000000000000001           Bytes in: 1
+                    OUT 0x0000000000000002          Bytes out: 2
+    SECTION HEADER 0xDA 'G' 'R' 0x01                graph_db ver1
+        LAST_TIME (time_t as 64-bit uint)
+        For each of 4 graphs: (60 seconds, 60 minutes, 24 hours, 31 days)
+            8 bits - number of bars in this graph
+            8 bits - index of last_time bar, in the range [0:n_bars)
+            For each bar:
+                64 bits - bytes in
+                64 bits - bytes out
+
+Host header version 1 is just version 2 without the last_seen time.

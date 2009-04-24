@@ -1,0 +1,33 @@
+AUTHORS
+-------
+
+- Emil Mikulic <emikulic@gmail.com> [ http://dmr.ath.cx/ ]
+  Primary maintainer.
+
+  (please read the manpage before sending me an e-mail about how your
+  graphs are all blank)
+
+Big thanks to everyone who contributed code:
+
+- Ben Stewart [ http://tucuxi.org/ ]
+  Web interface design, import/export code and export format design.
+
+- Chris Kuethe
+  Security, cool patches, OpenBSD port maintainer.
+
+- Bartosz Kuzma
+  DLT_PPP and DLT_PPP_SERIAL decoding, pkgsrc maintainer.
+
+- Claudio Leite
+  DLT_PPP_ETHER decoding.
+
+- Can Erkin Acar
+  BIOCSETWF patch.
+
+- Ingo Bressler
+  DLT_LINUX_SLL decoding.
+
+- Dennis Jansen
+  Motivation for keeping memory use down, cool patches.
+
+My apologies if I missed anyone - please mail any corrections to me (Emil)

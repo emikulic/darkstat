@@ -1,0 +1,114 @@
+# darkstat 3
+# copyright (c) 2001-2007 Emil Mikulic.
+#
+# You may use, modify and redistribute this file under the terms of the
+# GNU General Public License version 2. (see COPYING.GPL)
+
+CC = @CC@
+CFLAGS = @CFLAGS@
+CPP = @CPP@
+CPPFLAGS = @CPPFLAGS@
+INSTALL = @INSTALL@
+LDFLAGS = @LDFLAGS@
+LIBS = @LIBS@
+
+HOSTCC ?= $(CC)
+HOSTCFLAGS ?= $(CFLAGS)
+
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+sbindir = @sbindir@
+datarootdir = @datarootdir@
+mandir = @mandir@
+
+# Optimizations FIXME: dead code.  push into autoconf?
+#CPPFLAGS += -D__OPTIMIZE__ -DNDEBUG
+
+SRCS = \
+acct.c		\
+cap.c		\
+conv.c		\
+darkstat.c	\
+daylog.c	\
+db.c		\
+decode.c	\
+dns.c		\
+err.c		\
+graph_db.c	\
+hosts_db.c	\
+hosts_sort.c	\
+http.c		\
+localip.c	\
+ncache.c	\
+pidfile.c	\
+str.c
+
+OBJS = $(SRCS:%.c=%.o)
+
+all: darkstat
+
+darkstat: $(OBJS)
+	@echo Linking $@
+	$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) $(LIBS) -o $@
+
+.c.o:
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+clean:
+	rm -f darkstat $(OBJS) c-ify graphjs.h stylecss.h
+
+depend: stylecss.h graphjs.h config.status
+	cp Makefile.in Makefile.in.old
+	sed '/^# Automatically generated dependencies$$/,$$d' \
+		<Makefile.in.old >Makefile.in
+	echo "# Automatically generated dependencies" >>Makefile.in
+	$(CPP) $(CPPFLAGS) -MM $(SRCS) >>Makefile.in
+	./config.status
+	rm -f Makefile.in.old
+
+show-dep:
+	@echo $(CPP) $(CPPFLAGS) -MM $(SRCS)
+
+# Statics: (FIXME?)
+graphjs.h: static/graph.js c-ify
+	./c-ify graph_js <static/graph.js >$@
+
+stylecss.h: static/style.css c-ify
+	./c-ify style_css <static/style.css >$@
+
+c-ify: static/c-ify.c
+	$(HOSTCC) $(HOSTCFLAGS) static/c-ify.c -o $@
+
+install: darkstat
+	$(INSTALL) -d $(DESTDIR)$(sbindir)
+	$(INSTALL) -m 555 darkstat $(DESTDIR)$(sbindir)
+	$(INSTALL) -d $(DESTDIR)$(mandir)/man8
+	$(INSTALL) -m 444 darkstat.8 $(DESTDIR)$(mandir)/man8
+
+# Automatically generated dependencies
+acct.o: acct.c darkstat.h config.h acct.h decode.h conv.h daylog.h \
+  graph_db.h err.h hosts_db.h str.h localip.h now.h
+cap.o: cap.c darkstat.h config.h cap.h conv.h decode.h hosts_db.h str.h \
+  localip.h err.h
+conv.o: conv.c darkstat.h config.h conv.h err.h
+darkstat.o: darkstat.c darkstat.h config.h acct.h decode.h cap.h conv.h \
+  daylog.h graph_db.h db.h dns.h http.h hosts_db.h str.h localip.h \
+  ncache.h pidfile.h err.h now.h
+daylog.o: daylog.c darkstat.h config.h err.h daylog.h graph_db.h str.h \
+  now.h
+db.o: db.c darkstat.h config.h err.h hosts_db.h str.h graph_db.h db.h
+decode.o: decode.c darkstat.h config.h acct.h decode.h cap.h err.h
+dns.o: dns.c darkstat.h config.h conv.h decode.h dns.h err.h hosts_db.h \
+  str.h queue.h tree.h
+err.o: err.c darkstat.h config.h err.h pidfile.h
+graph_db.o: graph_db.c cap.h conv.h darkstat.h config.h db.h acct.h \
+  decode.h err.h str.h html.h graph_db.h now.h
+hosts_db.o: hosts_db.c darkstat.h config.h conv.h decode.h dns.h err.h \
+  hosts_db.h str.h db.h html.h ncache.h now.h
+hosts_sort.o: hosts_sort.c darkstat.h config.h hosts_db.h str.h err.h
+http.o: http.c darkstat.h config.h http.h conv.h hosts_db.h str.h \
+  graph_db.h err.h queue.h now.h stylecss.h graphjs.h
+localip.o: localip.c darkstat.h config.h conv.h decode.h err.h localip.h
+ncache.o: ncache.c darkstat.h config.h conv.h err.h ncache.h tree.h
+pidfile.o: pidfile.c darkstat.h config.h err.h str.h pidfile.h
+str.o: str.c darkstat.h config.h conv.h err.h str.h

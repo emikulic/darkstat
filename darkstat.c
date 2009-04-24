@@ -1,0 +1,430 @@
+/* darkstat 3
+ * copyright (c) 2001-2008 Emil Mikulic.
+ *
+ * darkstat.c: signals, cmdline parsing, program body.
+ *
+ * You may use, modify and redistribute this file under the terms of the
+ * GNU General Public License version 2. (see COPYING.GPL)
+ */
+
+#include "darkstat.h"
+#include "acct.h"
+#include "cap.h"
+#include "conv.h"
+#include "daylog.h"
+#include "db.h"
+#include "dns.h"
+#include "http.h"
+#include "hosts_db.h"
+#include "localip.h"
+#include "ncache.h"
+#include "pidfile.h"
+
+#include "err.h"
+#include <arpa/inet.h>
+#include <assert.h>
+#include <errno.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <pcap.h>
+
+#include "now.h"
+time_t now;
+
+#ifndef INADDR_NONE
+# define INADDR_NONE (-1) /* Solaris */
+#endif
+
+/* --- Signal handling --- */
+static volatile int running = 1;
+static void sig_shutdown(int signum _unused_) { running = 0; }
+
+static volatile int reset_pending = 0;
+static void sig_reset(int signum _unused_) { reset_pending = 1; }
+
+/* --- Commandline parsing --- */
+static unsigned long
+parsenum(const char *str, unsigned long max /* 0 for no max */)
+{
+   unsigned long n;
+   char *end;
+
+   errno = 0;
+   n = strtoul(str, &end, 10);
+   if (*end != '\0')
+      errx(1, "\"%s\" is not a valid number", str);
+   if (errno == ERANGE)
+      errx(1, "\"%s\" is out of range", str);
+   if ((max != 0) && (n > max))
+      errx(1, "\"%s\" is out of range (max %lu)", str, max);
+   return n;
+}
+
+const char *interface = NULL;
+static void cb_interface(const char *arg) { interface = arg; }
+
+const char *capfile = NULL;
+static void cb_capfile(const char *arg) { capfile = arg; }
+
+int want_pppoe = 0;
+static void cb_pppoe(const char *arg _unused_) { want_pppoe = 1; }
+
+static void cb_verbose(const char *arg _unused_) { want_verbose = 1; }
+
+int want_daemonize = 1;
+static void cb_no_daemon(const char *arg _unused_) { want_daemonize = 0; }
+
+int want_promisc = 1;
+static void cb_no_promisc(const char *arg _unused_) { want_promisc = 0; }
+
+int want_dns = 1;
+static void cb_no_dns(const char *arg _unused_) { want_dns = 0; }
+
+int want_macs = 1;
+static void cb_no_macs(const char *arg _unused_) { want_macs = 0; }
+
+unsigned short bindport = 667;
+static void cb_port(const char *arg) { bindport = parsenum(arg, 65536); }
+
+in_addr_t bindaddr = INADDR_ANY;
+static void cb_bindaddr(const char *arg)
+{
+   bindaddr = inet_addr(arg);
+   if (bindaddr == (in_addr_t)INADDR_NONE)
+      errx(1, "malformed address \"%s\"", arg);
+}
+
+const char *filter = NULL;
+static void cb_filter(const char *arg) { filter = arg; }
+
+static void cb_local(const char *arg) { acct_init_localnet(arg); }
+
+const char *chroot_dir = NULL;
+static void cb_chroot(const char *arg) { chroot_dir = arg; }
+
+const char *privdrop_user = NULL;
+static void cb_user(const char *arg) { privdrop_user = arg; }
+
+const char *daylog_fn = NULL;
+static void cb_daylog(const char *arg)
+{
+   if (chroot_dir == NULL)
+      errx(1, "the daylog file is relative to the chroot.\n"
+      "You must specify a --chroot dir before you can use --daylog.");
+   else
+      daylog_fn = arg;
+}
+
+const char *import_fn = NULL;
+static void cb_import(const char *arg)
+{
+   if (chroot_dir == NULL)
+      errx(1, "the import file is relative to the chroot.\n"
+      "You must specify a --chroot dir before you can use --import.");
+   else
+      import_fn = arg;
+}
+
+const char *export_fn = NULL;
+static void cb_export(const char *arg)
+{
+   if ((chroot_dir == NULL) && (capfile == NULL))
+      errx(1, "the export file is relative to the chroot.\n"
+      "You must specify a --chroot dir before you can use --export.");
+   else
+      export_fn = arg;
+}
+
+static const char *pid_fn = NULL;
+static void cb_pidfile(const char *arg)
+{
+   if (chroot_dir == NULL)
+      errx(1, "the pidfile is relative to the chroot.\n"
+      "You must specify a --chroot dir before you can use --pidfile.");
+   else
+      pid_fn = arg;
+}
+
+unsigned int hosts_max = 1000;
+static void cb_hosts_max(const char *arg)
+{ hosts_max = parsenum(arg, 0); }
+
+unsigned int hosts_keep = 500;
+static void cb_hosts_keep(const char *arg)
+{ hosts_keep = parsenum(arg, 0); }
+
+unsigned int ports_max = 200;
+static void cb_ports_max(const char *arg)
+{ ports_max = parsenum(arg, 65536); }
+
+unsigned int ports_keep = 30;
+static void cb_ports_keep(const char *arg)
+{ ports_keep = parsenum(arg, 65536); }
+
+unsigned int highest_port = 65535;
+static void cb_highest_port(const char *arg)
+{ highest_port = parsenum(arg, 65535); }
+
+/* --- */
+
+struct cmdline_arg {
+   const char *name, *arg_name; /* NULL arg_name means unary */
+   void (*callback)(const char *arg);
+   int num_seen;
+};
+
+static struct cmdline_arg cmdline_args[] = {
+   {"-i",             "interface",       cb_interface,    0},
+   {"-r",             "file",            cb_capfile,      0},
+   {"--pppoe",        NULL,              cb_pppoe,        0},
+   {"--verbose",      NULL,              cb_verbose,      0},
+   {"--no-daemon",    NULL,              cb_no_daemon,    0},
+   {"--no-promisc",   NULL,              cb_no_promisc,   0},
+   {"--no-dns",       NULL,              cb_no_dns,       0},
+   {"--no-macs",      NULL,              cb_no_macs,      0},
+   {"-p",             "port",            cb_port,         0},
+   {"-b",             "bindaddr",        cb_bindaddr,     0},
+   {"-f",             "filter",          cb_filter,       0},
+   {"-l",             "network/netmask", cb_local,        0},
+   {"--chroot",       "dir",             cb_chroot,       0},
+   {"--user",         "username",        cb_user,         0},
+   {"--daylog",       "filename",        cb_daylog,       0},
+   {"--import",       "filename",        cb_import,       0},
+   {"--export",       "filename",        cb_export,       0},
+   {"--pidfile",      "filename",        cb_pidfile,      0},
+   {"--hosts-max",    "count",           cb_hosts_max,    0},
+   {"--hosts-keep",   "count",           cb_hosts_keep,   0},
+   {"--ports-max",    "count",           cb_ports_max,    0},
+   {"--ports-keep",   "count",           cb_ports_keep,   0},
+   {"--highest-port", "port",            cb_highest_port, 0},
+   {NULL,             NULL,              NULL,            0}
+};
+
+static void
+pad(const int width)
+{
+   int i;
+   for (i=0; i<width; i++) printf(" ");
+}
+
+/*
+ * We autogenerate the usage statement from the cmdline_args data structure.
+ */
+static void
+usage(void)
+{
+   int width, first;
+   struct cmdline_arg *arg;
+
+   printf(PACKAGE_STRING " (built with libpcap %d.%d)\n\n",
+      PCAP_VERSION_MAJOR, PCAP_VERSION_MINOR);
+
+   width = printf("usage: darkstat ");
+   first = 1;
+
+   for (arg = cmdline_args; arg->name != NULL; arg++) {
+      if (first) first = 0; else pad(width);
+      printf("[ %s", arg->name);
+      if (arg->arg_name != NULL) printf(" %s", arg->arg_name);
+      printf(" ]\n");
+   }
+   printf("\n"
+"Please refer to the darkstat(1) manual page for further\n"
+"documentation and usage examples.\n");
+}
+
+static void
+parse_sub_cmdline(const int argc, char * const *argv)
+{
+   struct cmdline_arg *arg;
+
+   if (argc == 0) return;
+   for (arg = cmdline_args; arg->name != NULL; arg++)
+      if (strcmp(argv[0], arg->name) == 0) {
+         if ((arg->arg_name != NULL) && (argc == 1)) {
+            printf("\nerror: argument \"%s\" requires parameter \"%s\"\n",
+               arg->name, arg->arg_name);
+            usage();
+            exit(EXIT_FAILURE);
+         }
+         if (arg->num_seen > 0) {
+            printf("\nerror: already specified argument \"%s\"\n",
+               arg->name);
+            usage();
+            exit(EXIT_FAILURE);
+         }
+
+         arg->num_seen++;
+         if (arg->arg_name == NULL) {
+            arg->callback(NULL);
+            parse_sub_cmdline(argc-1, argv+1);
+         } else {
+            arg->callback(argv[1]);
+            parse_sub_cmdline(argc-2, argv+2);
+         }
+         return;
+      }
+
+   printf("\nerror: illegal argument: \"%s\"\n", argv[0]);
+   usage();
+   exit(EXIT_FAILURE);
+}
+
+static void
+parse_cmdline(const int argc, char * const *argv)
+{
+   if (argc < 1) {
+      /* Not enough args. */
+      usage();
+      exit(EXIT_FAILURE);
+   }
+
+   parse_sub_cmdline(argc, argv);
+
+   /* some default values */
+   if (chroot_dir == NULL) chroot_dir = CHROOT_DIR;
+   if (privdrop_user == NULL) privdrop_user = PRIVDROP_USER;
+
+   /* sanity check args */
+   if ((interface == NULL) && (capfile == NULL))
+      errx(1, "must specify either interface (-i) or capture file (-r)");
+
+   if ((interface != NULL) && (capfile != NULL))
+      errx(1, "can't specify both interface (-i) and capture file (-r)");
+
+   if ((hosts_max != 0) && (hosts_keep >= hosts_max))
+      errx(1, "must keep fewer hosts than --hosts-max (%u)", hosts_max);
+   verbosef("max %u hosts, cutting down to %u when exceeded",
+      hosts_max, hosts_keep);
+
+   if ((ports_max != 0) && (ports_keep >= ports_max))
+      errx(1, "must keep fewer ports than --ports-max (%u)", ports_max);
+   verbosef("max %u ports per host, cutting down to %u when exceeded",
+      ports_max, ports_keep);
+}
+
+static void
+run_from_capfile(void)
+{
+   graph_init();
+   hosts_db_init();
+   cap_from_file(capfile, filter);
+   cap_stop();
+   if (export_fn != NULL) db_export(export_fn);
+   hosts_db_free();
+   graph_free();
+   verbosef("Total packets: %qu, bytes: %qu", total_packets, total_bytes);
+}
+
+/* --- Program body --- */
+int
+main(int argc, char **argv)
+{
+   test_64order();
+   parse_cmdline(argc-1, argv+1);
+
+   if (capfile) {
+      /*
+       * This is very different from a regular run against a network
+       * interface.
+       */
+      run_from_capfile();
+      return 0;
+   }
+
+   /* must verbosef() before first fork to init lock */
+   verbosef("starting up");
+   if (pid_fn) pidfile_create(chroot_dir, pid_fn, privdrop_user);
+
+   if (want_daemonize) {
+      verbosef("daemonizing to run in the background!");
+      daemonize_start();
+      verbosef("I am the main process");
+   }
+   if (pid_fn) pidfile_write_close();
+
+   /* do this first as it forks - minimize memory use */
+   if (want_dns) dns_init(privdrop_user);
+   cap_init(interface, filter, want_promisc); /* needs root */
+   http_init(bindaddr, bindport, /*maxconn=*/ -1); /* low ports need root */
+   ncache_init(); /* must do before chroot() */
+
+   privdrop(chroot_dir, privdrop_user);
+
+   /* Don't need root privs for these: */
+   now = time(NULL);
+   if (daylog_fn != NULL) daylog_init(daylog_fn);
+   graph_init();
+   hosts_db_init();
+   if (import_fn != NULL) db_import(import_fn);
+   localip_init(interface);
+
+   if (signal(SIGTERM, sig_shutdown) == SIG_ERR)
+      errx(1, "signal(SIGTERM) failed");
+   if (signal(SIGINT, sig_shutdown) == SIG_ERR)
+      errx(1, "signal(SIGINT) failed");
+   if (signal(SIGUSR1, sig_reset) == SIG_ERR)
+      errx(1, "signal(SIGUSR1) failed");
+
+   verbosef("entering main loop");
+   daemonize_finish();
+
+   while (running) {
+      int select_ret, max_fd = -1, use_timeout = 0;
+      struct timeval timeout;
+      fd_set rs, ws;
+
+      now = time(NULL);
+
+      if (reset_pending) {
+         if (export_fn != NULL) db_export(export_fn); /* FIXME: USR2? */
+         hosts_db_reset();
+         graph_reset();
+         reset_pending = 0;
+      }
+
+      FD_ZERO(&rs);
+      FD_ZERO(&ws);
+
+      cap_fd_set(&rs, &max_fd, &timeout, &use_timeout);
+      http_fd_set(&rs, &ws, &max_fd, &timeout, &use_timeout);
+
+      select_ret = select(max_fd+1, &rs, &ws, NULL,
+         (use_timeout) ? &timeout : NULL);
+
+      if ((select_ret == 0) && (!use_timeout))
+            errx(1, "select() erroneously timed out");
+
+      if (select_ret == -1) {
+         if (errno == EINTR)
+            continue;
+         else
+            err(1, "select()");
+      }
+      else {
+         graph_rotate();
+         cap_poll(&rs);
+         dns_poll();
+         http_poll(&rs, &ws);
+      }
+   }
+
+   verbosef("shutting down");
+   verbosef("pcap stats: %u packets received, %u packets dropped",
+      pkts_recv, pkts_drop);
+   cap_stop();
+   dns_stop();
+   if (export_fn != NULL) db_export(export_fn);
+   hosts_db_free();
+   graph_free();
+   if (daylog_fn != NULL) daylog_free();
+   ncache_free();
+   if (pid_fn) pidfile_unlink();
+   verbosef("shut down");
+   return (EXIT_SUCCESS);
+}
+
+/* vim:set ts=3 sw=3 tw=78 expandtab: */
