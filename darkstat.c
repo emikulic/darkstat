@@ -1,5 +1,5 @@
 /* darkstat 3
- * copyright (c) 2001-2008 Emil Mikulic.
+ * copyright (c) 2001-2009 Emil Mikulic.
  *
  * darkstat.c: signals, cmdline parsing, program body.
  *
@@ -232,7 +232,7 @@ usage(void)
       printf(" ]\n");
    }
    printf("\n"
-"Please refer to the darkstat(1) manual page for further\n"
+"Please refer to the darkstat(8) manual page for further\n"
 "documentation and usage examples.\n");
 }
 
