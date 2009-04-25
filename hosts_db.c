@@ -1,5 +1,5 @@
 /* darkstat 3
- * copyright (c) 2001-2008 Emil Mikulic.
+ * copyright (c) 2001-2009 Emil Mikulic.
  *
  * hosts_db.c: database of hosts, ports, protocols.
  *
@@ -26,6 +26,7 @@
 #include <string.h> /* memset(), strcmp() */
 #include <unistd.h>
 
+extern int want_lastseen;
 int show_mac_addrs = 0;
 extern const char *interface;
 
@@ -273,8 +274,10 @@ format_cols_host(struct str *buf)
    str_append(buf,
       " <th><a href=\"?sort=in\">In</a></th>\n"
       " <th><a href=\"?sort=out\">Out</a></th>\n"
-      " <th><a href=\"?sort=total\">Total</a></th>\n"
-      " <th>Last seen</th>\n"
+      " <th><a href=\"?sort=total\">Total</a></th>\n");
+   if (want_lastseen) str_append(buf,
+      " <th>Last seen</th>\n");
+   str_append(buf,
       "</tr>\n");
 }
 
@@ -283,8 +286,6 @@ format_row_host(struct str *buf, const struct bucket *b,
    const char *css_class)
 {
    const char *ip = ip_to_str( b->u.host.ip );
-   struct str *lastseen = NULL;
-   time_t last_t;
 
    str_appendf(buf,
       "<tr class=\"%s\">\n"
@@ -304,26 +305,33 @@ format_row_host(struct str *buf, const struct bucket *b,
          b->u.host.mac_addr[4],
          b->u.host.mac_addr[5]);
 
-   last_t = b->u.host.last_seen;
-   if (now >= last_t)
-      lastseen = length_of_time(now - last_t);
-
    str_appendf(buf,
       " <td class=\"num\">%'qu</td>\n"
       " <td class=\"num\">%'qu</td>\n"
-      " <td class=\"num\">%'qu</td>\n"
-      " <td class=\"num\">",
+      " <td class=\"num\">%'qu</td>\n",
       b->in, b->out, b->total);
 
-   if (lastseen == NULL)
-      str_append(buf, "(clock error)");
-   else {
-      str_appendstr(buf, lastseen);
-      str_free(lastseen);
+   if (want_lastseen) {
+      time_t last_t = b->u.host.last_seen;
+      struct str *lastseen = NULL;
+
+      last_t = b->u.host.last_seen;
+      if (now >= last_t)
+         lastseen = length_of_time(now - last_t);
+
+      str_append(buf,
+         " <td class=\"num\">");
+      if (lastseen == NULL)
+         str_append(buf, "(clock error)");
+      else {
+         str_appendstr(buf, lastseen);
+         str_free(lastseen);
+      }
+      str_append(buf,
+         "</td>");
    }
 
    str_appendf(buf,
-       "</td>\n"
       "</tr>\n");
 
    /* Only resolve hosts "on demand" */

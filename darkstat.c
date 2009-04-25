@@ -86,6 +86,9 @@ static void cb_no_dns(const char *arg _unused_) { want_dns = 0; }
 int want_macs = 1;
 static void cb_no_macs(const char *arg _unused_) { want_macs = 0; }
 
+int want_lastseen = 1;
+static void cb_no_lastseen(const char *arg _unused_) { want_lastseen = 0; }
+
 unsigned short bindport = 667;
 static void cb_port(const char *arg) { bindport = parsenum(arg, 65536); }
 
@@ -188,6 +191,7 @@ static struct cmdline_arg cmdline_args[] = {
    {"--no-promisc",   NULL,              cb_no_promisc,   0},
    {"--no-dns",       NULL,              cb_no_dns,       0},
    {"--no-macs",      NULL,              cb_no_macs,      0},
+   {"--no-lastseen",  NULL,              cb_no_lastseen,  0},
    {"-p",             "port",            cb_port,         0},
    {"-b",             "bindaddr",        cb_bindaddr,     0},
    {"-f",             "filter",          cb_filter,       0},

@@ -28,6 +28,8 @@ darkstat \- network statistics gatherer
 ] [
 .BI \-\-no\-macs
 ] [
+.BI \-\-no\-lastseen
+] [
 .BI \-p " port"
 ] [
 .BI \-b " bindaddr"
@@ -129,7 +131,11 @@ as an extra process is created for DNS resolving.
 .\"
 .TP
 .BI \-\-no\-macs
-Do not display MAC addresses in hosts table.
+Do not display MAC addresses in the hosts table.
+.\"
+.TP
+.BI \-\-no\-lastseen
+Do not display the last seen time in the hosts table.
 .\"
 .TP
 .BI \-p " port"
