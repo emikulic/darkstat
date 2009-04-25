@@ -1,6 +1,6 @@
 .\"
 .\" darkstat 3
-.\" Copyright 2001-2008, Emil Mikulic.
+.\" Copyright 2001-2009, Emil Mikulic.
 .\"
 .\" You may use, modify and redistribute this file under the terms of the
 .\" GNU General Public License version 2. (see COPYING.GPL)
@@ -57,6 +57,8 @@ darkstat \- network statistics gatherer
 .BI \-\-ports\-keep " count"
 ] [
 .BI \-\-highest\-port " port"
+] [
+.BI \-\-hexdump
 ]
 .\"
 .SH DESCRIPTION
@@ -289,6 +291,11 @@ per-host ports tables, although their traffic will still be accounted
 for.
 This can be used to hide ephemeral ports.
 By default, all ports are tracked.
+.\"
+.TP
+.BI \-\-hexdump
+Show hex dumps of received traffic.
+This is only for debugging, and implies \-\-verbose and \-\-no\-daemon.
 .\"
 .\" --------------------------------------------------------------------
 .SH USAGE EXAMPLES

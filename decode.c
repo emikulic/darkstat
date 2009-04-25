@@ -1,5 +1,5 @@
 /* darkstat 3
- * copyright (c) 2001-2007 Emil Mikulic.
+ * copyright (c) 2001-2009 Emil Mikulic.
  *
  * decode.c: packet decoding.
  *

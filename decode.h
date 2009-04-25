@@ -1,5 +1,5 @@
 /* darkstat 3
- * copyright (c) 2001-2007 Emil Mikulic.
+ * copyright (c) 2001-2009 Emil Mikulic.
  *
  * decode.h: packet decoding.
  *
@@ -26,7 +26,7 @@
 
 typedef struct {
    int linktype;
-   int hdrlen;
+   unsigned int hdrlen;
    pcap_handler handler;
 } linkhdr_t;
 

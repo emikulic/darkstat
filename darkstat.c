@@ -168,6 +168,9 @@ unsigned int highest_port = 65535;
 static void cb_highest_port(const char *arg)
 { highest_port = parsenum(arg, 65535); }
 
+int want_hexdump = 0;
+static void cb_hexdump(const char *arg _unused_) { want_hexdump = 1; }
+
 /* --- */
 
 struct cmdline_arg {
@@ -200,6 +203,7 @@ static struct cmdline_arg cmdline_args[] = {
    {"--ports-max",    "count",           cb_ports_max,    0},
    {"--ports-keep",   "count",           cb_ports_keep,   0},
    {"--highest-port", "port",            cb_highest_port, 0},
+   {"--hexdump",      NULL,              cb_hexdump,      0},
    {NULL,             NULL,              NULL,            0}
 };
 
@@ -310,6 +314,16 @@ parse_cmdline(const int argc, char * const *argv)
    }
    verbosef("max %u ports per host, cutting down to %u when exceeded",
       ports_max, ports_keep);
+
+   if (want_hexdump && !want_verbose) {
+      want_verbose = 1;
+      verbosef("--hexdump implies --verbose");
+   }
+
+   if (want_hexdump && want_daemonize) {
+      want_daemonize = 0;
+      verbosef("--hexdump implies --no-daemon");
+   }
 }
 
 static void

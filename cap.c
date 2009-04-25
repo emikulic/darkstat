@@ -1,5 +1,5 @@
 /* darkstat 3
- * copyright (c) 2001-2008 Emil Mikulic.
+ * copyright (c) 2001-2009 Emil Mikulic.
  *
  * cap.c: interface to libpcap.
  *
@@ -28,7 +28,7 @@
 #include <string.h>
 #include <unistd.h>
 
-extern int want_pppoe, want_macs;
+extern int want_pppoe, want_macs, want_hexdump;
 
 /* The cap process life-cycle:
  *
@@ -92,7 +92,7 @@ cap_init(const char *device, const char *filter, int promisc)
    errbuf[0] = '\0'; /* zero length string */
    pcap = pcap_open_live(
       tmp_device,
-      caplen,      /* snaplen */
+      caplen,
       promisc,
       CAP_TIMEOUT,
       errbuf);
@@ -210,6 +210,44 @@ cap_stats_update(void)
    pkts_drop = ps.ps_drop;
 }
 
+/*
+ * Print hexdump of received packet.
+ */
+static void
+hexdump(const u_char *buf, const uint32_t len)
+{
+   uint32_t i, col;
+
+   printf("packet of %u bytes:\n", len);
+   col = 0;
+   for (i=0, col=0; i<len; i++) {
+      if (col == 0) printf(" ");
+      printf("%02x", buf[i]);
+      if (i+1 == linkhdr->hdrlen)
+         printf("[");
+      else if (i+1 == linkhdr->hdrlen + IP_HDR_LEN)
+         printf("]");
+      else printf(" ");
+      col += 3;
+      if (col >= 72) {
+         printf("\n");
+         col = 0;
+      }
+   }
+   if (col != 0) printf("\n");
+   printf("\n");
+}
+
+/*
+ * Callback function for pcap_dispatch() which chains to the decoder specified
+ * in linkhdr struct.
+ */
+static void
+callback(u_char *user, const struct pcap_pkthdr *h, const u_char *bytes)
+{
+   if (want_hexdump) hexdump(bytes, h->caplen);
+   linkhdr->handler(user, h, bytes);
+}
 
 /*
  * Process any packets currently in the capture buffer.
@@ -241,7 +279,7 @@ cap_poll(fd_set *read_set
       ret = pcap_dispatch(
             pcap,
             -1,               /* count, -1 = entire buffer */
-            linkhdr->handler, /* callback func from decode.c */
+            callback,
             NULL);            /* user */
 
       if (ret < 0) {
@@ -322,7 +360,7 @@ cap_from_file(const char *capfile, const char *filter)
    ret = pcap_dispatch(
          pcap,
          -1,               /* count, -1 = entire buffer */
-         linkhdr->handler, /* callback func from decode.c */
+         callback,
          NULL);            /* user */
 
    if (ret < 0)
