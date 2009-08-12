@@ -303,6 +303,10 @@ cap_poll(fd_set *read_set
 
    total = 0;
    for (;;) {
+#ifndef NDEBUG
+      struct timeval t1;
+      gettimeofday(&t1, NULL);
+#endif
       ret = pcap_dispatch(
             pcap,
             -1,               /* count, -1 = entire buffer */
@@ -313,6 +317,19 @@ cap_poll(fd_set *read_set
          warnx("pcap_dispatch(): %s", pcap_geterr(pcap));
          return;
       }
+
+#ifndef NDEBUG
+      {
+         struct timeval t2;
+         int td;
+
+         gettimeofday(&t2, NULL);
+         td = (t2.tv_sec - t1.tv_sec) * 1000000 + t2.tv_usec - t1.tv_usec;
+         if (td > CAP_TIMEOUT*1000)
+            warnx("pcap_dispatch blocked for %d usec! (expected <= %d usec)\n",
+               td, CAP_TIMEOUT*1000);
+      }
+#endif
 
       /* Despite count = -1, Linux will only dispatch one packet at a time. */
       total += ret;
