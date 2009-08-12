@@ -28,7 +28,7 @@
 #include <string.h>
 #include <unistd.h>
 
-extern int want_pppoe, want_macs, want_hexdump;
+extern int want_pppoe, want_macs, want_hexdump, want_snaplen;
 
 /* The cap process life-cycle:
  *
@@ -52,7 +52,7 @@ void
 cap_init(const char *device, const char *filter, int promisc)
 {
    char errbuf[PCAP_ERRBUF_SIZE], *tmp_device;
-   int linktype, caplen;
+   int linktype, snaplen;
 
    /* pcap doesn't like device being const */
    tmp_device = xstrdup(device);
@@ -69,7 +69,7 @@ cap_init(const char *device, const char *filter, int promisc)
    if (pcap == NULL)
       errx(1, "pcap_open_live(): %s", errbuf);
 
-   /* Work out the linktype and what caplen it needs. */
+   /* Work out the linktype and what snaplen we need. */
    linktype = pcap_datalink(pcap);
    verbosef("linktype is %d", linktype);
    if ((linktype == DLT_EN10MB) && want_macs)
@@ -79,20 +79,23 @@ cap_init(const char *device, const char *filter, int promisc)
       errx(1, "unknown linktype %d", linktype);
    if (linkhdr->handler == NULL)
       errx(1, "no handler for linktype %d", linktype);
-   caplen = getcaplen(linkhdr);
+   snaplen = getsnaplen(linkhdr);
    if (want_pppoe) {
-      caplen += PPPOE_HDR_LEN;
+      snaplen += PPPOE_HDR_LEN;
       if (linktype != DLT_EN10MB)
          errx(1, "can't do PPPoE decoding on a non-Ethernet linktype");
    }
-   verbosef("caplen is %d", caplen);
+   verbosef("calculated snaplen minimum %d", snaplen);
+   if (want_snaplen > -1)
+      snaplen = want_snaplen;
+   verbosef("using snaplen %d", snaplen);
 
-   /* Close and re-open pcap to use the new caplen. */
+   /* Close and re-open pcap to use the new snaplen. */
    pcap_close(pcap);
    errbuf[0] = '\0'; /* zero length string */
    pcap = pcap_open_live(
       tmp_device,
-      caplen,
+      snaplen,
       promisc,
       CAP_TIMEOUT,
       errbuf);

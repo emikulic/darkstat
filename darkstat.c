@@ -69,6 +69,9 @@ static void cb_interface(const char *arg) { interface = arg; }
 const char *capfile = NULL;
 static void cb_capfile(const char *arg) { capfile = arg; }
 
+int want_snaplen = -1;
+static void cb_snaplen(const char *arg) { want_snaplen = parsenum(arg, 0); }
+
 int want_pppoe = 0;
 static void cb_pppoe(const char *arg _unused_) { want_pppoe = 1; }
 
@@ -185,6 +188,7 @@ struct cmdline_arg {
 static struct cmdline_arg cmdline_args[] = {
    {"-i",             "interface",       cb_interface,    0},
    {"-r",             "file",            cb_capfile,      0},
+   {"--snaplen",      "bytes",           cb_snaplen,      0},
    {"--pppoe",        NULL,              cb_pppoe,        0},
    {"--verbose",      NULL,              cb_verbose,      0},
    {"--no-daemon",    NULL,              cb_no_daemon,    0},

@@ -16,6 +16,8 @@ darkstat \- network statistics gatherer
 ] [
 .BI \-r " file"
 ] [
+.BI \-\-snaplen " bytes"
+] [
 .BI \-\-pppoe
 ] [
 .BI \-\-verbose
@@ -89,6 +91,12 @@ The
 and
 .BI \-i
 arguments are mutually exclusive.
+.\"
+.TP
+.BI \-\-snaplen " bytes"
+How many bytes to capture of the start of each packet.
+You should not need to specify this;
+\fIdarkstat\fR will calculate it automatically.
 .\"
 .TP
 .BI \-\-pppoe

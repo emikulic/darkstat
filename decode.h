@@ -31,7 +31,7 @@ typedef struct {
 } linkhdr_t;
 
 const linkhdr_t *getlinkhdr(int linktype);
-int getcaplen(const linkhdr_t *lh);
+int getsnaplen(const linkhdr_t *lh);
 char *ip_to_str(const in_addr_t ip);
 
 typedef struct {

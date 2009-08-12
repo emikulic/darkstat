@@ -107,11 +107,11 @@ getlinkhdr(int linktype)
 }
 
 /*
- * Returns the minimum caplen needed to decode everything up to the TCP/UDP
+ * Returns the minimum snaplen needed to decode everything up to the TCP/UDP
  * packet headers.  Argument lh is not allowed to be NULL.
  */
 int
-getcaplen(const linkhdr_t *lh)
+getsnaplen(const linkhdr_t *lh)
 {
    assert(lh != NULL);
    return (lh->hdrlen + IP_HDR_LEN + max(TCP_HDR_LEN, UDP_HDR_LEN));
