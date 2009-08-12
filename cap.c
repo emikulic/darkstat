@@ -134,9 +134,14 @@ cap_init(const char *device, const char *filter, int promisc)
    pcap_fd = pcap_fileno(pcap);
 
    /* set non-blocking */
+#ifdef linux
+   if (pcap_setnonblock(pcap, 1, errbuf) == -1)
+      errx(1, "pcap_setnonblock(): %s", errbuf);
+#else
 { int one = 1;
    if (ioctl(pcap_fd, FIONBIO, &one) == -1)
       err(1, "ioctl(pcap_fd, FIONBIO)"); }
+#endif
 
 #ifdef BIOCSETWF
 {
