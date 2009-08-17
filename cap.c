@@ -86,6 +86,14 @@ cap_init(const char *device, const char *filter, int promisc)
          errx(1, "can't do PPPoE decoding on a non-Ethernet linktype");
    }
    verbosef("calculated snaplen minimum %d", snaplen);
+#ifdef linux
+   /* Ubuntu 9.04 has a problem where requesting snaplen <= 60 will
+    * give us 42 bytes, and we need at least 54 for TCP headers.
+    *
+    * Hack to set minimum snaplen to tcpdump's default:
+    */
+   snaplen = max(snaplen, 68);
+#endif
    if (want_snaplen > -1)
       snaplen = want_snaplen;
    verbosef("using snaplen %d", snaplen);
