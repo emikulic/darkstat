@@ -918,7 +918,11 @@ http_fd_set(fd_set *recv_set, fd_set *send_set, int *max_fd,
         /* Time out dead connections. */
         if (idlefor >= idletime)
         {
-            verbosef("timeout on %d", conn->socket);
+            struct sockaddr_in addrin;
+            addrin.sin_addr.s_addr = conn->client;
+            verbosef("http socket timeout from %s (fd %d)",
+                inet_ntoa(addrin.sin_addr),
+                conn->socket);
             conn->state = DONE;
         }
 
