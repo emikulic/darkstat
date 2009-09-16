@@ -353,7 +353,7 @@ We only want to account for SSH traffic:
 darkstat \-i fxp0 \-f "port 22"
 .PP
 .\"
-We don't want to account for network internal traffic:
+We don't want to account for traffic between internal IPs:
 .IP
 darkstat \-i fxp0 \-f "not (src net 192.168.0 and dst net 192.168.0)"
 .PP
