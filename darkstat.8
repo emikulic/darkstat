@@ -20,6 +20,8 @@ darkstat \- network statistics gatherer
 ] [
 .BI \-\-pppoe
 ] [
+.BI \-\-syslog
+] [
 .BI \-\-verbose
 ] [
 .BI \-\-no\-daemon
@@ -115,8 +117,16 @@ argument.
 .RE
 .\"
 .TP
+.BI \-\-syslog
+Errors, warnings, and verbose messages will go to \fBsyslog\fR (facility
+daemon, priority debug) instead of \fBstderr\fR.
+
+On some systems, these messages end up in \fB/var/log/debug\fR or
+\fBdebug.log\fR by default.
+.\"
+.TP
 .BI \-\-verbose
-Print debugging messages to the terminal.
+Output verbose debugging messages.
 .\"
 .TP
 .BI \-\-no\-daemon

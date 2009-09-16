@@ -1,5 +1,5 @@
 /* darkstat 3
- * copyright (c) 2001-2008 Emil Mikulic.
+ * copyright (c) 2001-2009 Emil Mikulic.
  *
  * err.c: BSD-like err() and warn() functions
  *
@@ -17,6 +17,7 @@
  */
 
 #include "darkstat.h"
+#include "conv.h"
 #include "err.h"
 #include "pidfile.h"
 
@@ -25,19 +26,44 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <syslog.h>
 #include <unistd.h>
 #include <unistd.h>
+
+static void
+to_syslog(const char *type, const int want_err,
+          const char *format, va_list va)
+{
+   char buf[512];
+   size_t pos = 0;
+   int saved_errno = errno;
+
+   if (type != NULL) {
+      strlcpy(buf, type, sizeof(buf));
+      pos = strlen(buf);
+   }
+   vsnprintf(buf+pos, sizeof(buf)-pos, format, va);
+   if (want_err) {
+      strlcat(buf, ": ", sizeof(buf));
+      strlcat(buf, strerror(saved_errno), sizeof(buf));
+   }
+   syslog(LOG_DEBUG, "%s", buf);
+}
 
 void
 err(const int code, const char *format, ...)
 {
    va_list va;
 
-   fprintf(stderr, "%5d: error: ", (int)getpid());
    va_start(va, format);
-   vfprintf(stderr, format, va);
+   if (want_syslog)
+      to_syslog("ERROR: ", 1, format, va);
+   else {
+      fprintf(stderr, "%5d: error: ", (int)getpid());
+      vfprintf(stderr, format, va);
+      fprintf(stderr, ": %s\n", strerror(errno));
+   }
    va_end(va);
-   fprintf(stderr, ": %s\n", strerror(errno));
    pidfile_unlink();
    exit(code);
 }
@@ -47,11 +73,15 @@ errx(const int code, const char *format, ...)
 {
    va_list va;
 
-   fprintf(stderr, "%5d: error: ", (int)getpid());
    va_start(va, format);
-   vfprintf(stderr, format, va);
+   if (want_syslog)
+      to_syslog("ERROR: ", 0, format, va);
+   else {
+      fprintf(stderr, "%5d: error: ", (int)getpid());
+      vfprintf(stderr, format, va);
+      fprintf(stderr, "\n");
+   }
    va_end(va);
-   fprintf(stderr, "\n");
    pidfile_unlink();
    exit(code);
 }
@@ -61,11 +91,15 @@ warn(const char *format, ...)
 {
    va_list va;
 
-   fprintf(stderr, "%5d: warning: ", (int)getpid());
    va_start(va, format);
-   vfprintf(stderr, format, va);
+   if (want_syslog)
+      to_syslog("WARNING: ", 1, format, va);
+   else {
+      fprintf(stderr, "%5d: warning: ", (int)getpid());
+      vfprintf(stderr, format, va);
+      fprintf(stderr, ": %s\n", strerror(errno));
+   }
    va_end(va);
-   fprintf(stderr, ": %s\n", strerror(errno));
 }
 
 void
@@ -73,11 +107,15 @@ warnx(const char *format, ...)
 {
    va_list va;
 
-   fprintf(stderr, "%5d: warning: ", (int)getpid());
    va_start(va, format);
-   vfprintf(stderr, format, va);
+   if (want_syslog)
+      to_syslog("WARNING: ", 0, format, va);
+   else {
+      fprintf(stderr, "%5d: warning: ", (int)getpid());
+      vfprintf(stderr, format, va);
+      fprintf(stderr, "\n");
+   }
    va_end(va);
-   fprintf(stderr, "\n");
 }
 
 /* We interlock verbosef() between processes by using a pipe with a single
@@ -127,7 +165,7 @@ unlock(void)
    }
 }
 
-int want_verbose = 0;
+int want_verbose = 0, want_syslog = 0;
 
 void
 verbosef(const char *format, ...)
@@ -135,13 +173,17 @@ verbosef(const char *format, ...)
    va_list va;
 
    if (!want_verbose) return;
-   lock();
-   fprintf(stderr, "darkstat (%05d): ", (int)getpid());
    va_start(va, format);
-   vfprintf(stderr, format, va);
+   if (want_syslog)
+      to_syslog(NULL, 0, format, va);
+   else {
+      lock();
+      fprintf(stderr, "darkstat (%05d): ", (int)getpid());
+      vfprintf(stderr, format, va);
+      fprintf(stderr, "\n");
+      unlock();
+   }
    va_end(va);
-   fprintf(stderr, "\n");
-   unlock();
 }
 
 void

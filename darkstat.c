@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <syslog.h>
 #include <unistd.h>
 #include <pcap.h>
 
@@ -74,6 +75,8 @@ static void cb_snaplen(const char *arg) { want_snaplen = parsenum(arg, 0); }
 
 int want_pppoe = 0;
 static void cb_pppoe(const char *arg _unused_) { want_pppoe = 1; }
+
+static void cb_syslog(const char *arg _unused_) { want_syslog = 1; }
 
 static void cb_verbose(const char *arg _unused_) { want_verbose = 1; }
 
@@ -190,6 +193,7 @@ static struct cmdline_arg cmdline_args[] = {
    {"-r",             "file",            cb_capfile,      0},
    {"--snaplen",      "bytes",           cb_snaplen,      0},
    {"--pppoe",        NULL,              cb_pppoe,        0},
+   {"--syslog",       NULL,              cb_syslog,       0},
    {"--verbose",      NULL,              cb_verbose,      0},
    {"--no-daemon",    NULL,              cb_no_daemon,    0},
    {"--no-promisc",   NULL,              cb_no_promisc,   0},
@@ -257,13 +261,15 @@ parse_sub_cmdline(const int argc, char * const *argv)
    for (arg = cmdline_args; arg->name != NULL; arg++)
       if (strcmp(argv[0], arg->name) == 0) {
          if ((arg->arg_name != NULL) && (argc == 1)) {
-            printf("\nerror: argument \"%s\" requires parameter \"%s\"\n",
+            fprintf(stderr,
+               "error: argument \"%s\" requires parameter \"%s\"\n",
                arg->name, arg->arg_name);
             usage();
             exit(EXIT_FAILURE);
          }
          if (arg->num_seen > 0) {
-            printf("\nerror: already specified argument \"%s\"\n",
+            fprintf(stderr,
+               "error: already specified argument \"%s\"\n",
                arg->name);
             usage();
             exit(EXIT_FAILURE);
@@ -280,7 +286,7 @@ parse_sub_cmdline(const int argc, char * const *argv)
          return;
       }
 
-   printf("\nerror: illegal argument: \"%s\"\n", argv[0]);
+   fprintf(stderr, "error: illegal argument: \"%s\"\n", argv[0]);
    usage();
    exit(EXIT_FAILURE);
 }
@@ -295,6 +301,9 @@ parse_cmdline(const int argc, char * const *argv)
    }
 
    parse_sub_cmdline(argc, argv);
+
+   /* start syslogging as early as possible */
+   if (want_syslog) openlog("darkstat", LOG_NDELAY | LOG_PID, LOG_DAEMON);
 
    /* some default values */
    if (chroot_dir == NULL) chroot_dir = CHROOT_DIR;

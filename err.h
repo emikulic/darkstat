@@ -1,5 +1,5 @@
 /* darkstat 3
- * copyright (c) 2001-2008 Emil Mikulic.
+ * copyright (c) 2001-2009 Emil Mikulic.
  *
  * err.h: BSD-like err() and warn() functions
  *
@@ -22,7 +22,7 @@ void errx(const int code, const char *format, ...) _noreturn_;
 void warn(const char *format, ...);
 void warnx(const char *format, ...);
 
-extern int want_verbose;
+extern int want_verbose, want_syslog;
 void verbosef(const char *format, ...);
 void dverbosef(const char *format _unused_, ...);
 
