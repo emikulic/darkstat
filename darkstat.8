@@ -371,11 +371,13 @@ server (which is running \fIdarkstat\fR):
 darkstat \-i fxp0 \-l 192.168.1.0/255.255.255.0
 .PP
 .\"
-We want to specify the local IP of the gateway manually because it
-cannot be automatically detected, e.g. \fB\-\-pppoe\fR is in use.
+On some systems, we can't capture on a "decoded" interface but
+only on \fInas0\fR which returns PPPoE encapsulated packets.
+Do PPPoE decoding, and override the local IP manually since it
+cannot be automatically detected.
 Note the /32 netmask:
 .IP
-darkstat \-i fxp0 \-\-pppoe \-l 192.168.1.1/255.255.255.255
+darkstat \-i nas0 \-\-pppoe \-l 192.168.1.1/255.255.255.255
 .\"
 .SH SIGNALS
 To shut
