@@ -1,0 +1,131 @@
+v3.0.712 (November 2008)
+	- Web: Add --no-macs option to hide mac addresses.
+	  Thanks Dennis!
+	- Web: Make tables prettier.
+	- Host detail view now triggers a DNS lookup.
+	- Manpage tweaks, also move from section 1 to section 8.
+	- Track and show how long ago a host was last seen.
+	  Suggested by: Prof A Olowofoyeku (The African Chief)
+	- Show pcap_stats (like number of packets dropped) in the web
+	  interface and also upon exit.
+
+v3.0.711 (August 2008)
+	- Split --debug into --verbose and --no-daemon
+	- Include launchd config and instructions for running darkstat
+	  on Mac OS X.  Contributed by Damien Clauzel.
+	- Implement PPPoE decoding on ethernet iface. (--pppoe)
+	- Web: Add automatic reload button.  Thanks Dennis!
+	- Web: Add a graph legend with min/avg/max.
+	- Web: Remove hashtable stats pages.
+
+v3.0.708 (May 2008)
+
+	- Implement limiting of number of ports tracked per host,
+	  configurable on the commandline (--ports-max)
+	- Optionally don't track high ports (--highest-port)
+	  Thanks Dennis!
+	- Fix rare use-after-free resulting from hosts table reduction.
+	- Make hosts limit configurable (--hosts-max)
+	- Option to read from capfile as alternative to live capture
+	  (really only useful for development, benchmarking)
+	- Add the sniffed interface name to HTML reports.
+	  Thanks Chris!
+
+v3.0.707 (Sep 2007)
+
+	- Fix silly bug in formatting hex.
+	- Check for pcap.h in include/pcap/ for old RedHat-a-likes.
+	- New commandline parser.
+	- To stay in foreground, pass --debug instead of -d.
+	- We can now reset all statistics at runtime (send SIGUSR1)
+	- Make chroot dir configurable on cmdline (--chroot)
+	- Make privdrop user configurable on cmdline (--user)
+	- Implement daylog (brings back a v2 feature)
+	- Import and export hosts and graphs, this brings back a fairly
+	  major v2 feature.  Big ups to Ben for doing a lot of the
+	  design and implementation of this feature!
+	  Note that the v3 database format is, by design, incompatible
+	  with the v2 format.
+	- Report average KB/s in and out on graphs.
+	  Thanks to Damian Lozinski for suggestion and first cut at the
+	  implementation.
+	- Fix graph rotation when the delay between rotations is big
+	  enough to clear an entire graph.
+	- Make ip_proto 8 bits wide, to match the IP header.
+	- Implement pidfile functionality for people who prefer to
+	  handle daemons in this manner.
+
+v3.0.619 (Apr 2007)
+
+	- Decode DLT_PPP and DLT_PPP_SERIAL on NetBSD,
+	  patch courtesy of Bartosz Kuzma.
+	- Don't use pcap_setnonblock(), with help from Colin Phipps.
+	- Reduce the number of syscalls made.
+	- Answer FAQ about graph axes / labels / scale.
+	- Fix build on OpenBSD (thanks Chris!) and Solaris.
+	- Commandline arg (-n) to disable promiscuous mode when
+	  sniffing, thanks to Chris Kuethe for the implementation.
+	- Commandline arg (-r) to disable DNS resolver.
+	- Track and report per-host last seen MAC address.
+	- Move FAQ into manpage.
+	- Implement display of start time and running time.
+	- Web: implement sorting the hosts table by in/out/total.
+	- Web: implement paging through the hosts table.
+	- Web: implement full view of hosts table.
+	- Don't die if the capture interface loses its IP address.
+	- Make daemonize (previously -d) the default, and make -D the
+	  argument to suppress it.
+	- Commandline arg (-l) to graph traffic entering/leaving the
+	  local network as opposed to just the local IP.  v2 had this.
+	- Allow configure-time override of CHROOT_DIR and PRIVDROP_USER.
+	- Web: new color scheme.
+
+v3.0.540 (Aug 2006)
+
+	- Fix build against old libpcap (thanks Claudio)
+	- Fix build on AIX (thanks Andreas)
+	- Fix build warnings on NetBSD (thanks Bartosz)
+	- Deny writes to BPF socket (thanks Can)
+	- Reverse-resolve IPs less aggressively.
+	- Free up the DNS queue as we process it.
+	- Fix dns_reply silliness.
+	- Web: tweak the look of the top bar.
+	- Web: update total packets and bytes as part of graph update.
+	- Decode DLT_LINUX_SLL (ippp0 on Linux),
+	  patch courtesy of Ingo Bressler
+
+v3.0.524 (Jul 2006)
+
+	- Fix build on NetBSD.
+	- Fix shutdown on Linux.
+	- Performance improvements.
+	- Free the mallocs.
+	- Work around BPF being immediate on Linux.
+	  This improves performance.
+	- Drop privileges when we don't need them.  Chroot.  Generally
+	  be more paranoid.  Thanks to Chris Kuethe for patches and
+	  inspiration.
+	- Daemonize.  (run in the background)
+	- Graphs: Make the entire bar have the same label (instead of
+	  different labels for in/out), add thousands separators for
+	  legibility, include the position/index (i.e. day 22)
+	- Instead of reducing the hosts_db based on time, do it based on
+	  its size.
+	- Implement somewhat better handling of time moving backwards -
+	  we assume that real time is monotonic and just renumber the
+	  graph bars.  (time is hard)
+	- Greatly improve IPC with the DNS child, make it more efficient
+	  and much more robust.
+	- Decode DLT_PPP_ETHER (pppoe0 on OpenBSD), patch courtesy of
+	  Claudio Leite.
+
+v3.0.471 (Jun 2006)
+
+	First public release of darkstat 3.  Almost a complete rewrite
+	since v2.6.  Architecture much improved, better portability and
+	stability.  Approximate feature parity with v2, missing
+	loading/saving DB.
+
+v2.6 (Nov 2003)
+
+	End of the line for darkstat 2
