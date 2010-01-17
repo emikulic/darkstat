@@ -1,5 +1,5 @@
 /* darkstat 3
- * copyright (c) 2001-2009 Emil Mikulic.
+ * copyright (c) 2001-2010 Emil Mikulic.
  *
  * cap.c: interface to libpcap.
  *
@@ -28,7 +28,7 @@
 #include <string.h>
 #include <unistd.h>
 
-extern int want_pppoe, want_macs, want_hexdump, want_snaplen;
+extern int want_pppoe, want_macs, want_hexdump, want_snaplen, wait_secs;
 
 /* The cap process life-cycle:
  *
@@ -52,22 +52,34 @@ void
 cap_init(const char *device, const char *filter, int promisc)
 {
    char errbuf[PCAP_ERRBUF_SIZE], *tmp_device;
-   int linktype, snaplen;
+   int linktype, snaplen, waited;
 
    /* pcap doesn't like device being const */
    tmp_device = xstrdup(device);
 
    /* Open packet capture descriptor. */
-   errbuf[0] = '\0'; /* zero length string */
-   pcap = pcap_open_live(
-      tmp_device,
-      1,          /* snaplen, irrelevant at this point */
-      0,          /* promisc, also irrelevant */
-      CAP_TIMEOUT,
-      errbuf);
+   waited = 0;
+   for (;;) {
+      errbuf[0] = '\0'; /* zero length string */
+      pcap = pcap_open_live(
+         tmp_device,
+         1,          /* snaplen, irrelevant at this point */
+         0,          /* promisc, also irrelevant */
+         CAP_TIMEOUT,
+         errbuf);
+      if (pcap != NULL) break; /* success! */
 
-   if (pcap == NULL)
-      errx(1, "pcap_open_live(): %s", errbuf);
+      if ((wait_secs != -1) && strstr(errbuf, "device is not up")) {
+         if ((wait_secs > 0) && (waited >= wait_secs))
+            errx(1, "waited %d secs, giving up: pcap_open_live(): %s",
+               waited, errbuf);
+
+         verbosef("waited %d secs, interface is not up", waited);
+         sleep(1);
+         waited++;
+      }
+      else errx(1, "pcap_open_live(): %s", errbuf);
+   }
 
    /* Work out the linktype and what snaplen we need. */
    linktype = pcap_datalink(pcap);

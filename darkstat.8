@@ -64,6 +64,8 @@ darkstat \- network statistics gatherer
 ] [
 .BI \-\-highest\-port " port"
 ] [
+.BI \-\-wait " secs"
+] [
 .BI \-\-hexdump
 ]
 .\"
@@ -314,6 +316,18 @@ per-host ports tables, although their traffic will still be accounted
 for.
 This can be used to hide ephemeral ports.
 By default, all ports are tracked.
+.\"
+.TP
+.BI \-\-wait " secs"
+Don't use this.
+It's a hack to help victims of \fINetworkManager\fR and similar systems.
+.RS
+
+You should start \fIdarkstat\fR after the capture interface has come up.
+If you can't, specifying the \fB\-\-wait\fR option will make \fIdarkstat\fR
+sleep up to the specified number of seconds for the interface to become ready.
+Zero means wait indefinitely.
+.RE
 .\"
 .TP
 .BI \-\-hexdump
