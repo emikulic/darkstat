@@ -315,7 +315,6 @@ format_row_host(struct str *buf, const struct bucket *b,
       time_t last_t = b->u.host.last_seen;
       struct str *lastseen = NULL;
 
-      last_t = b->u.host.last_seen;
       if (now >= last_t)
          lastseen = length_of_time(now - last_t);
 

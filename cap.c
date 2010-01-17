@@ -235,7 +235,6 @@ hexdump(const u_char *buf, const uint32_t len)
    uint32_t i, col;
 
    printf("packet of %u bytes:\n", len);
-   col = 0;
    for (i=0, col=0; i<len; i++) {
       if (col == 0) printf(" ");
       printf("%02x", buf[i]);
