@@ -1,6 +1,6 @@
 .\"
 .\" darkstat 3
-.\" Copyright 2001-2009, Emil Mikulic.
+.\" Copyright 2001-2010, Emil Mikulic.
 .\"
 .\" You may use, modify and redistribute this file under the terms of the
 .\" GNU General Public License version 2. (see COPYING.GPL)
@@ -69,8 +69,8 @@ darkstat \- network statistics gatherer
 .\"
 .SH DESCRIPTION
 .I darkstat
-is a packet sniffer that runs as a background process on
-a cable/DSL router, gathers all sorts of statistics about network usage,
+is a packet sniffer that runs as a background process,
+gathers all sorts of statistics about network usage,
 and serves them over HTTP.
 
 All settings are passed on the commandline.
@@ -96,14 +96,13 @@ arguments are mutually exclusive.
 .\"
 .TP
 .BI \-\-snaplen " bytes"
-How many bytes to capture of the start of each packet.
+How many bytes to capture from the start of each packet.
 You should not need to specify this;
 \fIdarkstat\fR will calculate it automatically.
 .\"
 .TP
 .BI \-\-pppoe
 Don't use this.
-.RS
 
 Instead, capture on the tunnel interface that your PPPoE software
 provides, for example \fBtun0\fR on \fIFreeBSD\fR, \fBpppoe0\fR on
@@ -113,20 +112,19 @@ If you really must, you can capture on an Ethernet interface and pass
 this argument to have \fIdarkstat\fR decode PPPoE frames and ignore
 everything else.
 Make sure you also specify your local address with the \fB\-l\fR
-argument.
-.RE
+argument!
 .\"
 .TP
 .BI \-\-syslog
 Errors, warnings, and verbose messages will go to \fBsyslog\fR (facility
 daemon, priority debug) instead of \fBstderr\fR.
 
-On some systems, these messages end up in \fB/var/log/debug\fR or
-\fBdebug.log\fR by default.
+On some systems, these messages end up in \fB/var/log/debug\fR
+by default.
 .\"
 .TP
 .BI \-\-verbose
-Output verbose debugging messages.
+Produce more verbose debugging messages.
 .\"
 .TP
 .BI \-\-no\-daemon
@@ -136,8 +134,9 @@ stay in the foreground.
 .TP
 .BI \-\-no\-promisc
 Do not use promiscuous mode to capture.
-Note that an interface may already be in promiscuous mode.
-If this is a problem, use an appropriate
+Note that an interface may already be in promiscuous mode, or may later
+enter promiscuous mode, due to circumstances beyond \fIdarkstat\fR's control.
+If this is a problem, use \fB\-f\fR to specify an appropriate
 .BR bpf (4)
 filter.
 .\"
@@ -145,7 +144,7 @@ filter.
 .BI \-\-no\-dns
 Do not resolve IPs to host names.
 This can significantly reduce memory footprint on small systems
-as an extra process is created for DNS resolving.
+as an extra process is created for DNS resolution.
 .\"
 .TP
 .BI \-\-no\-macs
@@ -319,7 +318,8 @@ By default, all ports are tracked.
 .TP
 .BI \-\-hexdump
 Show hex dumps of received traffic.
-This is only for debugging, and implies \-\-verbose and \-\-no\-daemon.
+This is only for debugging, and implies \fB\-\-verbose\fR and
+\fB\-\-no\-daemon\fR.
 .\"
 .\" --------------------------------------------------------------------
 .SH USAGE EXAMPLES
