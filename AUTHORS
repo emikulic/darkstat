@@ -7,10 +7,10 @@ AUTHORS
   (please read the manpage before sending me an e-mail about how your
   graphs are all blank)
 
-Big thanks to everyone who contributed code:
+Big thanks to everyone who helped out, in no particular order:
 
-- Ben Stewart [ http://tucuxi.org/ ]
-  Web interface design, import/export code and export format design.
+- Ben Stewart
+  Web interface design for v3, import/export code and file format design.
 
 - Chris Kuethe
   Security, cool patches, OpenBSD port maintainer.
@@ -18,16 +18,29 @@ Big thanks to everyone who contributed code:
 - Bartosz Kuzma
   DLT_PPP and DLT_PPP_SERIAL decoding, pkgsrc maintainer.
 
-- Claudio Leite
-  DLT_PPP_ETHER decoding.
+- Claudio Leite - DLT_PPP_ETHER decoding.
 
-- Can Erkin Acar
-  BIOCSETWF patch.
+- Can Erkin Acar - BIOCSETWF patch.
 
-- Ingo Bressler
-  DLT_LINUX_SLL decoding.
+- Ingo Bressler - DLT_LINUX_SLL decoding.
 
 - Dennis Jansen
   Motivation for keeping memory use down, cool patches.
+
+- Anton S. Ustyuzhanin - DLT_RAW decoding.
+
+- Cristian Rodriguez - SUSE package maintainer.
+
+- Rene Mayorga - Debian package maintainer.
+
+- Cedric Delfosse - Debian package maintainer (retired).
+
+- Damian Lozinski - initial implementation of average KB/s on graphs.
+
+- Damien Clauzel - launchd config and Mac OS X instructions.
+
+Cyro W. Corte Real Filho, Jean-Edouard Babin, Leif Terrens, Moritz Grimm,
+Andreas Reimann, Colin Phipps, Cheng-Lung Sung, Martin Wilke, Piotr Kalina,
+Carlo Florendo, and others.
 
 My apologies if I missed anyone - please mail any corrections to me (Emil)

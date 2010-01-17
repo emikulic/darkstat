@@ -26,7 +26,6 @@ LICENSE \
 Makefile.in \
 NEWS \
 README \
-THANKS \
 acct.c \
 acct.h \
 cap.c \
