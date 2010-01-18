@@ -1,3 +1,17 @@
+v3.0.713 (March 2010)
+	- Don't require --verbose for pcap_stats.
+	- Survive interface going down on Linux.
+	- Support DLT_RAW, implemented by Anton S. Ustyuzhanin.
+	- Skip accounting for hosts or ports if their max is set to zero.
+	- Implement --hexdump for troubleshooting.
+	- Web: Implement --no-lastseen
+	- Implement --snaplen manual override.
+	- Fix snaplen problem on recent (1-2 years?) Linux kernels.
+	- Implement --syslog
+	- Implement --wait as a NetworkManager workaround.
+
+(there were no releases made in 2009)
+
 v3.0.712 (November 2008)
 	- Web: Add --no-macs option to hide mac addresses.
 	  Thanks Dennis!
