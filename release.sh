@@ -33,7 +33,7 @@ cap.h \
 contrib \
 conv.c \
 conv.h \
-darkstat.8 \
+darkstat.8.in \
 darkstat.c \
 darkstat.h \
 daylog.c \

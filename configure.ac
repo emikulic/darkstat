@@ -179,5 +179,5 @@ AC_CHECK_HEADERS(sys/sockio.h)
 # Some OSes (Solaris) need sys/filio.h for FIONBIO
 AC_CHECK_HEADERS(sys/filio.h)
 
-AC_CONFIG_FILES(Makefile)
+AC_CONFIG_FILES([Makefile darkstat.8])
 AC_OUTPUT

@@ -5,7 +5,7 @@
 .\" You may use, modify and redistribute this file under the terms of the
 .\" GNU General Public License version 2. (see COPYING.GPL)
 .\"
-.TH darkstat 8 "September 2008" "darkstat 3"
+.TH darkstat 8 "March 2010" "@PACKAGE_STRING@"
 .SH NAME
 darkstat \- network statistics gatherer
 .\"
