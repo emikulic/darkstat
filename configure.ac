@@ -7,21 +7,24 @@ RULE="------------------------------------------------------------"
 # Let user specify CHROOT_DIR, or else autodetect it, or else die.
 AC_ARG_WITH(chroot-dir, AS_HELP_STRING([--with-chroot-dir],
  [specify the chroot directory (default: /var/empty)]),
- [_chd="$withval"],
+ [if test "x$withval" = "xyes"; then
+   AC_MSG_ERROR([please specify --with-chroot-dir=/path/to/darkstat/chroot])
+  fi
+  _chd="$withval"],
  [# Find an "empty" directory to serve as the chroot.
   _chd="/var/empty"
   AC_MSG_CHECKING([for $_chd])
   if test -d $_chd ; then
    AC_MSG_RESULT(found it)
   else
-   AC_MSG_RESULT(not there - what a shitty Unix)
+   AC_MSG_RESULT(not there)
    _chd="/var/lib/empty"
    AC_MSG_CHECKING([for $_chd])
    if test -d $_chd ; then
     AC_MSG_RESULT(found it)
    else
     AC_MSG_RESULT(not there either)
-    AC_MSG_ERROR([please specify --with-chroot-dir])
+    AC_MSG_ERROR([please specify --with-chroot-dir=/path/to/darkstat/chroot])
    fi
   fi])
 AC_DEFINE_UNQUOTED(CHROOT_DIR, "$_chd", [Default chroot directory.])
