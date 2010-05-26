@@ -8,7 +8,7 @@
 #include <sys/select.h>
 #include <netinet/in.h>
 
-void http_init(const in_addr_t bindaddr, const unsigned short bindport,
+void http_init(const char * bindaddr, const unsigned short bindport,
    const int max_conn);
 void http_fd_set(fd_set *recv_set, fd_set *send_set, int *max_fd,
    struct timeval *timeout, int *need_timeout);

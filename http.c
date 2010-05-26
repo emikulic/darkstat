@@ -20,6 +20,8 @@
 #include <sys/uio.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
+#include <netdb.h>
 #include <assert.h>
 #include <ctype.h>
 #include <errno.h>
@@ -53,7 +55,7 @@ struct connection {
     LIST_ENTRY(connection) entries;
 
     int socket;
-    in_addr_t client;
+    struct sockaddr_storage client;
     time_t last_active;
     enum {
         RECV_REQUEST,          /* receiving request */
@@ -257,7 +259,7 @@ static struct connection *new_connection(void)
     struct connection *conn = xmalloc(sizeof(*conn));
 
     conn->socket = -1;
-    conn->client = INADDR_ANY;
+    memset(&conn->client, '\0', sizeof(conn->client));
     conn->last_active = now;
     conn->request = NULL;
     conn->request_length = 0;
@@ -295,12 +297,13 @@ static struct connection *new_connection(void)
  */
 static void accept_connection(void)
 {
-    struct sockaddr_in addrin;
+    struct sockaddr_storage addrin;
     socklen_t sin_size;
     struct connection *conn;
+    char ipaddr[INET6_ADDRSTRLEN], portstr[12];
     int sock;
 
-    sin_size = (socklen_t)sizeof(struct sockaddr);
+    sin_size = (socklen_t)sizeof(addrin);
     sock = accept(sockin, (struct sockaddr *)&addrin, &sin_size);
     if (sock == -1)
     {
@@ -318,12 +321,13 @@ static void accept_connection(void)
     conn = new_connection();
     conn->socket = sock;
     conn->state = RECV_REQUEST;
-    conn->client = addrin.sin_addr.s_addr;
+    memcpy(&conn->client, &addrin, sizeof(conn->client));
     LIST_INSERT_HEAD(&connlist, conn, entries);
 
-    verbosef("accepted connection from %s:%u",
-        inet_ntoa(addrin.sin_addr),
-        ntohs(addrin.sin_port) );
+    getnameinfo((struct sockaddr *) &addrin, sizeof(addrin),
+            ipaddr, sizeof(ipaddr), portstr, sizeof(portstr),
+            NI_NUMERICHOST | NI_NUMERICSERV);
+    verbosef("accepted connection from %s:%u", ipaddr, portstr);
 }
 
 
@@ -858,36 +862,64 @@ static void poll_send_reply(struct connection *conn)
  * Initialize the sockin global.  This is the socket that we accept
  * connections from.  Pass -1 as max_conn for system limit.
  */
-void http_init(const in_addr_t bindaddr, const unsigned short bindport,
+void http_init(const char *bindaddr, const unsigned short bindport,
    const int max_conn)
 {
-    struct sockaddr_in addrin;
-    int sockopt;
+    struct sockaddr_storage addrin;
+    struct addrinfo hints, *ai, *aiptr;
+    char ipaddr[INET6_ADDRSTRLEN], portstr[12];
+    int sockopt, ret;
 
-    /* create incoming socket */
-    sockin = socket(PF_INET, SOCK_STREAM, 0);
-    if (sockin == -1) err(1, "socket()");
+    memset(&hints, '\0', sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE | AI_ADDRCONFIG;
+    snprintf(portstr, sizeof(portstr), "%u", bindport);
 
-    /* reuse address */
-    sockopt = 1;
-    if (setsockopt(sockin, SOL_SOCKET, SO_REUSEADDR,
-            &sockopt, sizeof(sockopt)) == -1)
-        err(1, "setsockopt(SO_REUSEADDR)");
+    if (ret = getaddrinfo(bindaddr, portstr, &hints, &aiptr))
+        err(1, "getaddrinfo(): %s", gai_strerror(ret));
 
-    /* bind socket */
-    addrin.sin_family = (u_char)PF_INET;
-    addrin.sin_port = htons(bindport);
-    addrin.sin_addr.s_addr = bindaddr;
-    memset(&(addrin.sin_zero), 0, 8);
-    if (bind(sockin, (struct sockaddr *)&addrin,
-            sizeof(struct sockaddr)) == -1)
-        err(1, "bind(%s:%u)", inet_ntoa(addrin.sin_addr), bindport);
+    for (ai = aiptr; ai; ai = ai->ai_next) {
+        /* create incoming socket */
+        sockin = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
+        if (sockin == -1)
+            continue;
 
-    verbosef("listening on %s:%u", inet_ntoa(addrin.sin_addr), bindport);
+        /* reuse address */
+        sockopt = 1;
+        if (setsockopt(sockin, SOL_SOCKET, SO_REUSEADDR,
+                &sockopt, sizeof(sockopt)) == -1) {
+            close(sockin);
+            continue;
+        }
 
-    /* listen on socket */
-    if (listen(sockin, max_conn) == -1)
-        err(1, "listen()");
+        /* Recover address and port strings. */
+        getnameinfo(ai->ai_addr, ai->ai_addrlen, ipaddr, sizeof(ipaddr),
+                NULL, 0, NI_NUMERICHOST);
+
+        /* bind socket */
+        memcpy(&addrin, ai->ai_addr, ai->ai_addrlen);
+        if (bind(sockin, (struct sockaddr *)&addrin,
+                sizeof(addrin)) == -1) {
+            close(sockin);
+            continue;
+        }
+
+        verbosef("listening on %s:%u", ipaddr, bindport);
+
+        /* listen on socket */
+        if (listen(sockin, max_conn) >= 0)
+            /* Successfully bound and now listening. */
+            break;
+
+        /* Next candidate. */
+        continue;
+    }
+
+    freeaddrinfo(aiptr);
+
+    if (ai == NULL)
+        err(1, "getaddrinfo() unable to locate address");
 
     /* ignore SIGPIPE */
     if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
@@ -918,11 +950,11 @@ http_fd_set(fd_set *recv_set, fd_set *send_set, int *max_fd,
         /* Time out dead connections. */
         if (idlefor >= idletime)
         {
-            struct sockaddr_in addrin;
-            addrin.sin_addr.s_addr = conn->client;
+            char ipaddr[INET6_ADDRSTRLEN];
+            getnameinfo((struct sockaddr *) &conn->client, sizeof(conn->client),
+                    ipaddr, sizeof(ipaddr), NULL, 0, NI_NUMERICHOST);
             verbosef("http socket timeout from %s (fd %d)",
-                inet_ntoa(addrin.sin_addr),
-                conn->socket);
+                    ipaddr, conn->socket);
             conn->state = DONE;
         }
 

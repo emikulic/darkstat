@@ -22,6 +22,7 @@
 
 #include "err.h"
 #include <arpa/inet.h>
+#include <netdb.h>
 #include <assert.h>
 #include <errno.h>
 #include <signal.h>
@@ -98,12 +99,21 @@ static void cb_no_lastseen(const char *arg _unused_) { want_lastseen = 0; }
 unsigned short bindport = 667;
 static void cb_port(const char *arg) { bindport = parsenum(arg, 65536); }
 
-in_addr_t bindaddr = INADDR_ANY;
+char * bindaddr = NULL;
 static void cb_bindaddr(const char *arg)
 {
-   bindaddr = inet_addr(arg);
-   if (bindaddr == (in_addr_t)INADDR_NONE)
+   struct addrinfo hints, *ai;
+
+   memset(&hints, '\0', sizeof(hints));
+   hints.ai_flags = AI_PASSIVE | AI_ADDRCONFIG;
+   hints.ai_family = AF_UNSPEC;
+   hints.ai_socktype = SOCK_STREAM;
+
+   if (getaddrinfo(arg, NULL, &hints, &ai))
       errx(1, "malformed address \"%s\"", arg);
+
+   freeaddrinfo(ai);
+   bindaddr = strdup(arg);
 }
 
 const char *filter = NULL;
