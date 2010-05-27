@@ -22,6 +22,7 @@
 
 #include "err.h"
 #include <arpa/inet.h>
+#include <sys/socket.h>
 #include <netdb.h>
 #include <assert.h>
 #include <errno.h>
