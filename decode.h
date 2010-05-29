@@ -9,12 +9,14 @@
 
 #include <pcap.h>
 #include <netinet/in.h> /* in_addr_t */
+#include <netinet/ip.h> /* struct ip */
 
 #define PPP_HDR_LEN     4
 #define FDDI_HDR_LEN    21
-#define IP_HDR_LEN      20
-#define TCP_HDR_LEN     20
-#define UDP_HDR_LEN     8
+#define IP_HDR_LEN      sizeof(struct ip)
+#define IPV6_HDR_LEN    sizeof(struct ip6_hdr)
+#define TCP_HDR_LEN     sizeof(struct tcphdr)
+#define UDP_HDR_LEN     sizeof(struct udphdr)
 #define NULL_HDR_LEN    4
 #define PPPOE_HDR_LEN   8
 #define SLL_HDR_LEN     16
@@ -33,12 +35,21 @@ typedef struct {
 const linkhdr_t *getlinkhdr(int linktype);
 int getsnaplen(const linkhdr_t *lh);
 char *ip_to_str(const in_addr_t ip);
+char *ip6_to_str(const struct in6_addr *ip6);
 
 typedef struct {
    /* Fields are in host byte order (except IPs) */
-   in_addr_t src_ip, dest_ip;
+   union {
+      in_addr_t src_ip;
+      struct in6_addr src_ip6;
+   };
+   union {
+      in_addr_t dest_ip;
+      struct in6_addr dest_ip6;
+   };
    time_t time;
    uint16_t len;
+   uint8_t af;                   /* AF_{UNSPEC, INET, INET6} */
    uint8_t proto;                /* IPPROTO_{TCP, UDP, ICMP} */
    uint8_t tcp_flags;            /* only for TCP */
    uint16_t src_port, dest_port; /* only for TCP, UDP */

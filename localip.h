@@ -10,6 +10,7 @@
 #include <netinet/in.h> /* for in_addr_t */
 
 extern in_addr_t localip;
+extern struct in6_addr localip6;
 
 void localip_init(const char *interface);
 void localip_update(void);

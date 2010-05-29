@@ -324,10 +324,10 @@ static void accept_connection(void)
     memcpy(&conn->client, &addrin, sizeof(conn->client));
     LIST_INSERT_HEAD(&connlist, conn, entries);
 
-    getnameinfo((struct sockaddr *) &addrin, sizeof(addrin),
+    getnameinfo((struct sockaddr *) &addrin, sin_size,
             ipaddr, sizeof(ipaddr), portstr, sizeof(portstr),
             NI_NUMERICHOST | NI_NUMERICSERV);
-    verbosef("accepted connection from %s:%u", ipaddr, portstr);
+    verbosef("accepted connection from %s:%s", ipaddr, portstr);
 }
 
 

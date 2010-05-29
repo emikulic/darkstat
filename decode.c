@@ -49,6 +49,7 @@
 #include <net/if.h> /* struct ifreq */
 #include <netinet/in_systm.h> /* n_long */
 #include <netinet/ip.h> /* struct ip */
+#include <netinet/ip6.h> /* struct ip6_hdr */
 #define __FAVOR_BSD
 #include <netinet/tcp.h> /* struct tcphdr */
 #include <netinet/udp.h> /* struct udphdr */
@@ -70,6 +71,8 @@ static void decode_linux_sll(u_char *, const struct pcap_pkthdr *,
 static void decode_raw(u_char *, const struct pcap_pkthdr *,
    const u_char *);
 static void decode_ip(const u_char *pdata, const uint32_t len,
+   pktsummary *sm);
+static void decode_ipv6(const u_char *pdata, const uint32_t len,
    pktsummary *sm);
 
 /* Link-type header information */
@@ -130,6 +133,17 @@ ip_to_str(const in_addr_t ip)
    return (inet_ntoa(in));
 }
 
+char ip6str[INET6_ADDRSTRLEN];
+
+char *
+ip6_to_str(const struct in6_addr *ip6)
+{
+   ip6str[0] = '\0';
+   inet_ntop(AF_INET6, ip6, ip6str, sizeof(ip6str));
+
+   return (ip6str);
+}
+
 /* Decoding functions. */
 static void
 decode_ether(u_char *user _unused_,
@@ -158,6 +172,7 @@ decode_ether(u_char *user _unused_,
    type = ntohs( hdr->ether_type );
    switch (type) {
    case ETHERTYPE_IP:
+   case ETHERTYPE_IPV6:
       if (!want_pppoe) {
          decode_ip(pdata + ETHER_HDR_LEN,
                    pheader->caplen - ETHER_HDR_LEN, &sm);
@@ -199,6 +214,12 @@ decode_loop(u_char *user _unused_,
 #endif
    if (family == AF_INET) {
       /* OpenBSD tun or FreeBSD tun or FreeBSD lo */
+      decode_ip(pdata + NULL_HDR_LEN, pheader->caplen - NULL_HDR_LEN, &sm);
+      sm.time = pheader->ts.tv_sec;
+      acct_for(&sm);
+   }
+   else if (family == AF_INET6) {
+      /* XXX: Check this! */
       decode_ip(pdata + NULL_HDR_LEN, pheader->caplen - NULL_HDR_LEN, &sm);
       sm.time = pheader->ts.tv_sec;
       acct_for(&sm);
@@ -290,6 +311,7 @@ decode_linux_sll(u_char *user _unused_,
    type = ntohs( hdr->ether_type );
    switch (type) {
    case ETHERTYPE_IP:
+   case ETHERTYPE_IPV6:
       decode_ip(pdata + SLL_HDR_LEN, pheader->caplen - SLL_HDR_LEN, &sm);
       sm.time = pheader->ts.tv_sec;
       acct_for(&sm);
@@ -320,6 +342,11 @@ decode_ip(const u_char *pdata, const uint32_t len, pktsummary *sm)
 {
    const struct ip *hdr = (const struct ip *)pdata;
 
+   if (hdr->ip_v == 6) {
+      /* Redirect parsing of IPv6 packets. */
+      decode_ipv6(pdata, len, sm);
+      return;
+   }
    if (len < IP_HDR_LEN) {
       verbosef("ip: packet too short (%u bytes)", len);
       return;
@@ -330,6 +357,7 @@ decode_ip(const u_char *pdata, const uint32_t len, pktsummary *sm)
    }
 
    sm->len = ntohs(hdr->ip_len);
+   sm->af = AF_INET;
    sm->proto = hdr->ip_p;
    sm->src_ip = hdr->ip_src.s_addr;
    sm->dest_ip = hdr->ip_dst.s_addr;
@@ -367,6 +395,58 @@ decode_ip(const u_char *pdata, const uint32_t len, pktsummary *sm)
 
       default:
          verbosef("ip: unknown protocol %d", sm->proto);
+   }
+}
+
+static void
+decode_ipv6(const u_char *pdata, const uint32_t len, pktsummary *sm)
+{
+   const struct ip6_hdr *hdr = (const struct ip6_hdr *)pdata;
+
+   if (len < IPV6_HDR_LEN) {
+      verbosef("ipv6: packet too short (%u bytes)", len);
+      return;
+   }
+
+   sm->len = ntohs(hdr->ip6_plen) + IPV6_HDR_LEN;
+   sm->af = AF_INET6;
+   sm->proto = hdr->ip6_nxt;
+   memcpy(&sm->src_ip6, &hdr->ip6_src, sizeof(sm->src_ip6));
+   memcpy(&sm->dest_ip6, &hdr->ip6_dst, sizeof(sm->dest_ip6));
+
+   switch (sm->proto) {
+      case IPPROTO_TCP: {
+         const struct tcphdr *thdr =
+            (const struct tcphdr *)(pdata + IPV6_HDR_LEN);
+         if (len < IPV6_HDR_LEN + TCP_HDR_LEN) {
+            verbosef("tcp6: packet too short (%u bytes)", len);
+            return;
+         }
+         sm->src_port = ntohs(thdr->th_sport);
+         sm->dest_port = ntohs(thdr->th_dport);
+         sm->tcp_flags = thdr->th_flags &
+            (TH_FIN|TH_SYN|TH_RST|TH_PUSH|TH_ACK|TH_URG);
+         break;
+      }
+
+      case IPPROTO_UDP: {
+         const struct udphdr *uhdr =
+            (const struct udphdr *)(pdata + IPV6_HDR_LEN);
+         if (len < IPV6_HDR_LEN + UDP_HDR_LEN) {
+            verbosef("udp6: packet too short (%u bytes)", len);
+            return;
+         }
+         sm->src_port = ntohs(uhdr->uh_sport);
+         sm->dest_port = ntohs(uhdr->uh_dport);
+         break;
+      }
+
+      case IPPROTO_ICMPV6:
+         /* known protocol, don't complain about it */
+         break;
+
+      default:
+         verbosef("ipv6: unknown protocol %d", sm->proto);
    }
 }
 

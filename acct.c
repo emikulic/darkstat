@@ -104,18 +104,26 @@ acct_for(const pktsummary *sm)
    /* Graphs. */
    dir_in = dir_out = 0;
 
-   if (using_localnet) {
-      if ((sm->src_ip & localmask) == localnet)
+   if (sm->af == AF_INET) {
+      if (using_localnet) {
+         if ((sm->src_ip & localmask) == localnet)
+            dir_out = 1;
+         if ((sm->dest_ip & localmask) == localnet)
+            dir_in = 1;
+         if (dir_in == 1 && dir_out == 1)
+            /* Traffic staying within the network isn't counted. */
+            dir_in = dir_out = 0;
+      } else {
+         if (sm->src_ip == localip)
+            dir_out = 1;
+         if (sm->dest_ip == localip)
+            dir_in = 1;
+      }
+   } else if (sm->af == AF_INET6) {
+      /* Only exact address has been implemented. */
+      if (memcmp(&sm->src_ip6, &localip6, sizeof(localip6)) == 0)
          dir_out = 1;
-      if ((sm->dest_ip & localmask) == localnet)
-         dir_in = 1;
-      if (dir_in == 1 && dir_out == 1)
-         /* Traffic staying within the network isn't counted. */
-         dir_in = dir_out = 0;
-   } else {
-      if (sm->src_ip == localip)
-         dir_out = 1;
-      if (sm->dest_ip == localip)
+      if (memcmp(&sm->dest_ip6, &localip6, sizeof(localip6)) == 0)
          dir_in = 1;
    }
 
@@ -127,6 +135,8 @@ acct_for(const pktsummary *sm)
       daylog_acct((uint64_t)sm->len, GRAPH_IN);
       graph_acct((uint64_t)sm->len, GRAPH_IN);
    }
+
+   if (sm->af == AF_INET6) return; /* Still no continuation for IPv6! */
 
    if (hosts_max == 0) return; /* skip per-host accounting */
 
@@ -195,6 +205,7 @@ acct_for(const pktsummary *sm)
       break;
 
    case IPPROTO_ICMP:
+   case IPPROTO_ICMPV6:
       /* known protocol, don't complain about it */
       break;
 
