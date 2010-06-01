@@ -13,6 +13,7 @@
 #include "err.h"
 #include "localip.h"
 
+#include <sys/socket.h>
 #include <net/if.h>
 #include <ifaddrs.h>
 #include <errno.h>
@@ -73,8 +74,13 @@ localip_update(void)
       if( ifa->ifa_addr->sa_family == AF_INET6 ) {
          struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *) ifa->ifa_addr;
 
+#ifdef __FreeBSD__
+         if( IN6_IS_ADDR_LINKLOCAL(&(sa6->sin6_addr))
+            || IN6_IS_ADDR_SITELOCAL(&(sa6->sin6_addr)) )
+#else
          if( IN6_IS_ADDR_LINKLOCAL(&(sa6->sin6_addr.s6_addr))
             || IN6_IS_ADDR_SITELOCAL(&(sa6->sin6_addr.s6_addr)) )
+#endif
             continue;
          else
             /* Only standard IPv6 can reach this point. */
