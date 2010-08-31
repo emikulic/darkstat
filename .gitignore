@@ -10,5 +10,6 @@ config.status
 configure
 configure.lineno
 darkstat
+darkstat.8
 graphjs.h
 stylecss.h
