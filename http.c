@@ -639,6 +639,7 @@ static void process_get(struct connection *conn)
         if (buf == NULL) {
             default_reply(conn, 404, "Not Found",
                 "The page you requested could not be found.");
+            free(decoded_url);
             return;
         }
         str_extract(buf, &(conn->reply_length), &(conn->reply));
@@ -658,6 +659,7 @@ static void process_get(struct connection *conn)
     else {
         default_reply(conn, 404, "Not Found",
             "The page you requested could not be found.");
+        free(decoded_url);
         return;
     }
     free(decoded_url);
