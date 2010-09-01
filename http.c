@@ -384,6 +384,7 @@ static void generate_header(struct connection *conn,
         "Content-Type: %s\r\n"
         "Content-Length: %d\r\n"
         "Content-Encoding: %s\r\n"
+        "X-Robots-Tag: noindex, noarchive\r\n"
         "%s"
         "\r\n"
         ,

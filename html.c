@@ -23,6 +23,7 @@ void html_open(struct str *buf, const char *title, const char *interface,
     str_appendf(buf, "<title>%s (darkstat3 : %s)</title>\n"
         "<meta name=\"generator\" content=\"%s\" />\n", title, interface,
         PACKAGE_STRING);
+    str_append(buf, "<meta name=\"robots\" content=\"noindex, noarchive\" />\n");
     str_appendf(buf, "<link rel=\"stylesheet\" href=\"%s%s\" type=\"text/css\"/>\n",
         base_url, "style.css");
     if (header_callback != NULL)
