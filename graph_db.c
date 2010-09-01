@@ -16,7 +16,8 @@
 #include "acct.h"
 #include "err.h"
 #include "str.h"
-#include "html.h" /* FIXME: should be pushed into a .c file? */
+#include "html.h"
+#include "http.h"
 #include "graph_db.h"
 #include "now.h"
 
@@ -301,6 +302,12 @@ graph_export(const int fd)
    return 1;
 }
 
+static void cb_headers(struct str *buf)
+{
+   str_appendf(buf, "<script src=\"%s%s\" type=\"text/javascript\">"
+      "</script>\n", base_url, "graph.js");
+}
+
 /* ---------------------------------------------------------------------------
  * Web interface: front page!
  */
@@ -312,16 +319,9 @@ html_front_page(void)
    char start_when[100];
 
    buf = str_make();
-   str_append(buf, html_header_1);
-   str_appendf(buf, "<title>" PACKAGE_STRING " : graphs (%s)</title>\n",
-               interface);
-   str_append(buf, "<script src=\"graph.js\" type=\"text/javascript\">"
-                   "</script>\n");
-   str_append(buf, html_header_2);
-   str_appendf(buf, "<h2 class=\"pageheader\">Graphs (%s)</h2>\n", interface);
+   html_open(buf, "Graphs", interface, cb_headers);
 
    str_append(buf, "<p>\n");
-
    str_append(buf, "<b>Running for</b> <span id=\"rf\">");
    rf = length_of_time(now - start_time);
    /* FIXME: use a more monotonic clock perhaps? */
@@ -374,7 +374,7 @@ html_front_page(void)
       "</div>\n"
    );
 
-   str_append(buf, html_footer);
+   html_close(buf);
    return (buf);
 }
 

@@ -34,6 +34,8 @@
 #include <unistd.h>
 #include <zlib.h>
 
+const char *base_url = "/";
+
 static const char mime_type_xml[] = "text/xml";
 static const char mime_type_html[] = "text/html; charset=us-ascii";
 static const char mime_type_css[] = "text/css";

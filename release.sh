@@ -53,6 +53,7 @@ graph_db.h \
 hosts_db.c \
 hosts_db.h \
 hosts_sort.c \
+html.c \
 html.h \
 http.c \
 http.h \

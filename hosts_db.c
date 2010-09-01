@@ -974,10 +974,7 @@ html_hosts_main(const char *qs)
 #define NEXT "next page &gt;&gt;&gt;"
 #define FULL "full table"
 
-   str_append(buf, html_header_1);
-   str_appendf(buf, " <title>darkstat3: Hosts (%s)</title>\n", interface);
-   str_append(buf, html_header_2);
-   str_appendf(buf, "<h2 class=\"pageheader\">Hosts (%s)</h2>\n", interface);
+   html_open(buf, "Hosts", interface, NULL);
    format_table(buf, hosts_db, start, sort, full);
 
    /* <prev | full | stats | next> */
@@ -1003,7 +1000,8 @@ html_hosts_main(const char *qs)
       str_append(buf, " | " NEXT);
 
    str_append(buf, "<br/>\n");
-   str_append(buf, html_footer);
+
+   html_close(buf);
 done:
    if (qs_start != NULL) free(qs_start);
    if (qs_sort != NULL) free(qs_sort);
@@ -1033,10 +1031,7 @@ html_hosts_detail(const char *ip)
 
    /* Overview. */
    buf = str_make();
-   str_append(buf, html_header_1);
-   str_appendf(buf, " <title>%s</title>\n", ip);
-   str_append(buf, html_header_2);
-   str_appendf(buf, "<h2>%s</h2>\n", ip);
+   html_open(buf, ip, interface, NULL);
    if (strcmp(ip, canonical) != 0)
       str_appendf(buf, "(canonically <b>%s</b>)\n", canonical);
    str_appendf(buf,
@@ -1097,7 +1092,7 @@ html_hosts_detail(const char *ip)
    str_append(buf, "<h3>IP protocols</h3>\n");
    format_table(buf, h->u.host.ip_protos, 0,TOTAL,0);
 
-   str_append(buf, html_footer);
+   html_close(buf);
    return (buf);
 }
 

@@ -38,6 +38,7 @@ err.c		\
 graph_db.c	\
 hosts_db.c	\
 hosts_sort.c	\
+html.c		\
 http.c		\
 localip.c	\
 ncache.c	\
@@ -105,10 +106,11 @@ dns.o: dns.c darkstat.h config.h conv.h decode.h dns.h err.h hosts_db.h \
   str.h queue.h tree.h
 err.o: err.c darkstat.h config.h conv.h err.h pidfile.h
 graph_db.o: graph_db.c cap.h conv.h darkstat.h config.h db.h acct.h \
-  decode.h err.h str.h html.h graph_db.h now.h
+  decode.h err.h str.h html.h http.h graph_db.h now.h
 hosts_db.o: hosts_db.c darkstat.h config.h conv.h decode.h dns.h err.h \
   hosts_db.h str.h db.h html.h ncache.h now.h
 hosts_sort.o: hosts_sort.c darkstat.h config.h hosts_db.h str.h err.h
+html.o: html.c darkstat.h config.h str.h http.h
 http.o: http.c darkstat.h config.h http.h conv.h hosts_db.h str.h \
   graph_db.h err.h queue.h now.h stylecss.h graphjs.h
 localip.o: localip.c darkstat.h config.h conv.h decode.h err.h localip.h
