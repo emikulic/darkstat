@@ -5,7 +5,7 @@
 .\" You may use, modify and redistribute this file under the terms of the
 .\" GNU General Public License version 2. (see COPYING.GPL)
 .\"
-.TH darkstat 8 "March 2010" "@PACKAGE_STRING@"
+.TH darkstat 8 "September 2010" "@PACKAGE_STRING@"
 .SH NAME
 darkstat \- network statistics gatherer
 .\"
@@ -37,6 +37,8 @@ darkstat \- network statistics gatherer
 .BI \-p " port"
 ] [
 .BI \-b " bindaddr"
+] [
+.BI \-\-base " path"
 ] [
 .BI \-f " filter"
 ] [
@@ -165,6 +167,25 @@ The default is 667.
 .BI \-b " bindaddr"
 Bind the web interface to the specified address.
 The default is to listen on all interfaces.
+.\"
+.TP
+.BI \-\-base " path"
+.RS
+Specify the path of the base URL.
+This can be useful if \fIdarkstat\fR is accessed via a reverse proxy.
+
+For example, if you use Apache's \fImod_proxy\fR and want to avoid a
+complicated setup with \fImod_proxy_html\fR (and \fImod_header\fR to unset
+the \fIAccept-Encoding\fR header), just set the base path to something like
+\fIstats\fR and use a config similar to the following snippet:
+
+.IP
+ ProxyPass /stats/ http://localhost:667/stats/
+ ProxyPassReverse /stats/ http://localhost:667/stats/
+.PP
+
+The default is \fI/\fR (ie. the root).
+.RE
 .\"
 .TP
 .BI \-f " filter"

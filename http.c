@@ -596,6 +596,17 @@ static void process_get(struct connection *conn)
         return;
     }
 
+    /* make relative (or fail) */
+    decoded_url = safe_url;
+    if (!str_starts_with(decoded_url, base_url))
+    {
+        default_reply(conn, 404, "Not Found",
+            "The page you requested could not be found.");
+        free(decoded_url);
+        return;
+    }
+    safe_url = decoded_url + strlen(base_url) - 1;
+
     if (strcmp(safe_url, "/") == 0) {
         struct str *buf = html_front_page();
         str_extract(buf, &(conn->reply_length), &(conn->reply));
@@ -628,7 +639,7 @@ static void process_get(struct connection *conn)
             "The page you requested could not be found.");
         return;
     }
-    free(safe_url);
+    free(decoded_url);
 
     process_gzip(conn);
     assert(conn->mime_type != NULL);
@@ -858,7 +869,34 @@ static void poll_send_reply(struct connection *conn)
 
 
 
-/* ---------------------------------------------------------------------------
+/* --------------------------------------------------------------------------
+ * Initialize the base path.
+ */
+void http_init_base(const char *url)
+{
+    char *slashed_url, *safe_url;
+    size_t urllen;
+
+    /* make sure that the url has leading and trailing slashes */
+    urllen = strlen(url);
+    slashed_url = xmalloc(urllen+3);
+    memset(slashed_url, '/', urllen+2);
+    memcpy(slashed_url+1, url, urllen); /* don't copy NULL */
+    slashed_url[urllen+2] = '\0';
+
+    /* clean the url */
+    safe_url = make_safe_uri(slashed_url);
+    free(slashed_url);
+    if (safe_url == NULL)
+    {
+        verbosef("invalid base \"%s\", ignored", url, "/");
+        return;
+    }
+
+    base_url = safe_url;
+}
+
+/* --------------------------------------------------------------------------
  * Initialize the sockin global.  This is the socket that we accept
  * connections from.  Pass -1 as max_conn for system limit.
  */

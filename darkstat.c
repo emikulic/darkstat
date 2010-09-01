@@ -134,6 +134,8 @@ static void cb_local(const char *arg) { acct_init_localnet(arg); }
 const char *chroot_dir = NULL;
 static void cb_chroot(const char *arg) { chroot_dir = arg; }
 
+static void cb_base(const char *arg) { http_init_base(arg); }
+
 const char *privdrop_user = NULL;
 static void cb_user(const char *arg) { privdrop_user = arg; }
 
@@ -226,6 +228,7 @@ static struct cmdline_arg cmdline_args[] = {
    {"--no-lastseen",  NULL,              cb_no_lastseen,  0},
    {"-p",             "port",            cb_port,         0},
    {"-b",             "bindaddr",        cb_bindaddr,     0},
+   {"--base",         "path",            cb_base,         0},
    {"-f",             "filter",          cb_filter,       0},
    {"-l",             "network/netmask", cb_local,        0},
    {"--chroot",       "dir",             cb_chroot,       0},
