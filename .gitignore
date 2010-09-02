@@ -1,4 +1,5 @@
 *.o
+*.swp
 Makefile
 a.out
 autom4te.cache
