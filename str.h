@@ -26,13 +26,13 @@ struct str;
 struct str *str_make(void);
 void str_free(struct str *s);
 void str_extract(struct str *buf, size_t *len, char **str);
-void str_append2(struct str *buf, const char *s, const size_t len);
+void str_appendn(struct str *buf, const char *s, const size_t len);
 void str_appendstr(struct str *buf, const struct str *s);
 
 #ifdef __GNUC__
 /* amusing efficiency hack */
 #include <string.h>
-#define str_append(buf, s) str_append2(buf, s, \
+#define str_append(buf, s) str_appendn(buf, s, \
     (__builtin_constant_p(s) ? sizeof(s)-1 : strlen(s)) )
 #else
 void str_append(struct str *buf, const char *s);

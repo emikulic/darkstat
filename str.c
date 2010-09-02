@@ -63,7 +63,7 @@ str_extract(struct str *s, size_t *len, char **str)
 }
 
 void
-str_append2(struct str *buf, const char *s, const size_t len)
+str_appendn(struct str *buf, const char *s, const size_t len)
 {
    if (buf->pool < buf->len + len) {
       /* pool has dried up */
@@ -78,14 +78,14 @@ str_append2(struct str *buf, const char *s, const size_t len)
 void
 str_appendstr(struct str *buf, const struct str *s)
 {
-   str_append2(buf, s->buf, s->len);
+   str_appendn(buf, s->buf, s->len);
 }
 
 #ifndef str_append
 void
 str_append(struct str *buf, const char *s)
 {
-   str_append2(buf, s, strlen(s));
+   str_appendn(buf, s, strlen(s));
 }
 #endif
 
@@ -132,7 +132,7 @@ str_append_u32(struct str *s, const uint32_t i, const int mod_sep)
          pos--;
       }
    }
-   str_append2(s, out+pos+1, sizeof(out)-1-pos);
+   str_appendn(s, out+pos+1, sizeof(out)-1-pos);
 }
 
 static void
@@ -196,7 +196,7 @@ str_append_u64(struct str *s, const uint64_t i, const int mod_sep)
          pos--;
       }
    }
-   str_append2(s, out+pos+1, sizeof(out)-1-pos);
+   str_appendn(s, out+pos+1, sizeof(out)-1-pos);
 }
 
 static void
@@ -217,7 +217,7 @@ str_append_hex8(struct str *s, const uint8_t b)
 
    out[0] = hexset[ ((b >> 4) & 15) ];
    out[1] = hexset[ (b & 15) ];
-   str_append2(s, out, 2);
+   str_appendn(s, out, 2);
 }
 
 /* accepted formats: %s %d %u %x
@@ -239,7 +239,7 @@ str_vappendf(struct str *s, const char *format, va_list va)
          pos++;
       }
       if (span_len > 0)
-         str_append2(s, format+span_start, span_len);
+         str_appendn(s, format+span_start, span_len);
 
       if (format[pos] == '%') {
          int mod_quad = 0, mod_sep = 0;
@@ -301,7 +301,7 @@ xvasprintf(char **result, const char *format, va_list va)
    size_t len;
    struct str *s = str_make();
    str_vappendf(s, format, va);
-   str_append2(s, "", 1); /* "" still contains \0 */
+   str_appendn(s, "", 1); /* "" still contains \0 */
    str_extract(s, &len, result);
    return (len-1);
 }
