@@ -40,6 +40,21 @@ AC_DEFINE_UNQUOTED(PRIVDROP_USER, "$_pdu", [User to privdrop to.])
 AC_PROG_INSTALL
 AC_PROG_CC
 
+# Let user disable debugging symbols so we create smaller binaries.
+AC_MSG_CHECKING(if we want debug code)
+AC_ARG_ENABLE(debug, AS_HELP_STRING([--disable-debug],
+ [turn off debugging code and asserts]),
+ [if test "x$enableval" = "xno" ; then
+   CFLAGS="$CFLAGS -DNDEBUG -g0"
+   AC_MSG_RESULT(nope)
+  elif test "x$enableval" = "xyes" ; then
+   AC_MSG_RESULT(sure)
+  else
+   CFLAGS="$CFLAGS -g$enableval"
+   AC_MSG_RESULT(sure ($enableval))
+  fi],
+ [AC_MSG_RESULT(sure)])
+
 # Augment CFLAGS for fun.
 echo "int main(void){return 1;}" > conftest.$ac_ext
 
