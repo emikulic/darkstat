@@ -53,10 +53,10 @@ else
  CFLAGS="$save_cflags"
 fi
 
-AC_ARG_WITH(mad-warnings, AS_HELP_STRING([--with-mad-warnings],
+AC_ARG_ENABLE(mad-warnings, AS_HELP_STRING([--enable-mad-warnings],
  [turn on lots of compile-time warnings, this needs GCC and is only
  really useful for development]),
- [if test "$withval" = yes ; then
+ [if test "x$enableval" = "xyes" ; then
    AC_MSG_CHECKING(if your C compiler throws mad warnings)
    save_cflags="$CFLAGS"
    CFLAGS="$CFLAGS -fdiagnostics-show-option \
