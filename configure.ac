@@ -165,11 +165,10 @@ AC_CHECK_LIB(c, setproctitle,
   [Define to 1 if you have setproctitle().]))
 
 # A real OS will have safe string functions
-AC_CHECK_LIB(c, strlcpy,
+AC_SEARCH_LIBS(strlcpy, [bsd],
  AC_DEFINE(HAVE_STRLCPY, 1,
   [Define to 1 if you have strlcpy().]))
-
-AC_CHECK_LIB(c, strlcat,
+AC_SEARCH_LIBS(strlcat, [bsd],
  AC_DEFINE(HAVE_STRLCAT, 1,
   [Define to 1 if you have strlcat().]))
 
