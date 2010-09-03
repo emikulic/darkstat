@@ -3,6 +3,7 @@
 Makefile
 a.out
 autom4te.cache
+darkstat-*
 c-ify
 config.h
 config.h.in
