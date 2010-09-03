@@ -1,4 +1,4 @@
-AC_INIT(darkstat, 3.0.0-git)
+AC_INIT(darkstat, 3.0.0-git, , , http://dmr.ath.cx/net/darkstat/)
 AC_CONFIG_SRCDIR([darkstat.c])
 AC_CONFIG_HEADER([config.h])
 
