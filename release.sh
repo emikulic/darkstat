@@ -77,12 +77,16 @@ tree.h \
 "
 # end packing list
 
+say() {
+  echo ==\> "$@" >&2
+}
+
 PKG=$NAME-$VERSION
-echo ==\> releasing $PKG
+say releasing $PKG
 
 run() {
-  echo ==\> $@
-  eval $@ || { echo ERROR!; exit 1; }
+  say "$@"
+  "$@" || { say ERROR!; exit 1; }
 }
 
 run mkdir $PKG
@@ -92,7 +96,7 @@ run cp -r $files $PKG/.
 (echo "AC_INIT(darkstat, $VERSION)"
  grep -v "^AC_INIT" configure.ac) > $PKG/configure.ac
 
-echo ==\> set version: `grep '^AC_INIT' $PKG/configure.ac`
+say set version: `grep '^AC_INIT' $PKG/configure.ac`
 (
  cd $PKG
  run autoconf
@@ -103,6 +107,6 @@ echo ==\> set version: `grep '^AC_INIT' $PKG/configure.ac`
 # package it up
 run tar -cf $PKG.tar $PKG
 run bzip2 -9vv $PKG.tar
-echo ==\> output:
+say output:
 ls -l $PKG.tar.bz2
-echo ==\> FINISHED!
+say FINISHED!
