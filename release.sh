@@ -93,8 +93,7 @@ run mkdir $PKG
 run cp -r $files $PKG/.
 
 # set the version number
-(echo "AC_INIT(darkstat, $VERSION)"
- grep -v "^AC_INIT" configure.ac) > $PKG/configure.ac
+run sed -e "/AC_INIT/s/darkstat, [^,)]*/darkstat, $VERSION/" configure.ac > $PKG/configure.ac
 
 say set version: `grep '^AC_INIT' $PKG/configure.ac`
 (
