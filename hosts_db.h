@@ -57,7 +57,7 @@ struct bucket {
    } u;
 };
 
-enum sort_dir { IN, OUT, TOTAL };
+enum sort_dir { IN, OUT, TOTAL, LASTSEEN };
 
 extern int show_mac_addrs;
 

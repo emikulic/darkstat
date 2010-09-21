@@ -318,7 +318,7 @@ format_cols_host(struct str *buf)
       " <th><a href=\"?sort=out\">Out</a></th>\n"
       " <th><a href=\"?sort=total\">Total</a></th>\n");
    if (want_lastseen) str_append(buf,
-      " <th>Last seen</th>\n");
+      " <th><a href=\"?sort=lastseen\">Last seen</a></th>\n");
    str_append(buf,
       "</tr>\n");
 }
@@ -956,6 +956,7 @@ html_hosts_main(const char *qs)
    else if (strcmp(qs_sort, "total") == 0) sort = TOTAL;
    else if (strcmp(qs_sort, "in") == 0) sort = IN;
    else if (strcmp(qs_sort, "out") == 0) sort = OUT;
+   else if (strcmp(qs_sort, "lastseen") == 0) sort = LASTSEEN;
    else {
       str_append(buf, "Error: invalid value for \"sort\".\n");
       goto done;
