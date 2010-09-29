@@ -9,6 +9,7 @@
 
 #include <pcap.h>
 #include <netinet/in_systm.h>	/* n_time */
+#define __USE_GNU 1
 #include <netinet/in.h> /* in_addr_t */
 #include <netinet/ip.h> /* struct ip */
 
@@ -50,7 +51,7 @@ typedef struct {
    };
    time_t time;
    uint16_t len;
-   uint8_t af;                   /* AF_{UNSPEC, INET, INET6} */
+   sa_family_t af;               /* AF_{UNSPEC, INET, INET6} */
    uint8_t proto;                /* IPPROTO_{TCP, UDP, ICMP} */
    uint8_t tcp_flags;            /* only for TCP */
    uint16_t src_port, dest_port; /* only for TCP, UDP */

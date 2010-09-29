@@ -14,7 +14,11 @@
 struct hashtable;
 
 struct host {
-   in_addr_t ip;
+   union {
+      in_addr_t ip;
+      struct in6_addr ip6;
+   };
+   sa_family_t af;
    char *dns;
    uint8_t mac_addr[6];
    time_t last_seen;

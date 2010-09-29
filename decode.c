@@ -120,13 +120,14 @@ getlinkhdr(int linktype)
 
 /*
  * Returns the minimum snaplen needed to decode everything up to the TCP/UDP
- * packet headers.  Argument lh is not allowed to be NULL.
+ * packet headers.  The IPv6 header is normative.  The argument lh is not
+ * allowed to be NULL.
  */
 int
 getsnaplen(const linkhdr_t *lh)
 {
    assert(lh != NULL);
-   return (lh->hdrlen + IP_HDR_LEN + max(TCP_HDR_LEN, UDP_HDR_LEN));
+   return (lh->hdrlen + IPV6_HDR_LEN + max(TCP_HDR_LEN, UDP_HDR_LEN));
 }
 
 /*
@@ -361,7 +362,7 @@ decode_ip(const u_char *pdata, const uint32_t len, pktsummary *sm)
       return;
    }
    if (hdr->ip_v != 4) {
-      verbosef("ip: version %d (expecting 4)", hdr->ip_v);
+      verbosef("ip: version %d (expecting 4 or 6)", hdr->ip_v);
       return;
    }
 

@@ -106,6 +106,22 @@ ipv4_hash(const uint32_t ip)
    return ( (ip) ^ ((ip) >> 7) ^ ((ip) >> 17) );
 }
 
+#ifndef s6_addr32
+/* Covers OpenBSD and FreeBSD.  The macro __USE_GNU has
+ * taken care of GNU/Linux and GNU/kfreebsd.  */
+# define s6_addr32 __u6_addr.__u6_addr32
+#endif
+
+/*
+ * This is the IPv6 hash function used by FreeBSD in the same file as above,
+ * svn rev 122922.
+ */
+inline static uint32_t
+ipv6_hash(const struct in6_addr *const ip6)
+{
+   return ( ip6->s6_addr32[0] ^ ip6->s6_addr32[1] ^ ip6->s6_addr32[2] ^ ip6->s6_addr32[3] );
+}
+
 /* ---------------------------------------------------------------------------
  * hash_func collection
  */
@@ -193,7 +209,7 @@ find_func_ip_proto(const struct bucket *b, const void *key)
    struct bucket *next; \
    uint64_t in, out, total; \
    union { struct type t; } u; } _custom_bucket; \
-   struct bucket *name_bucket = xmalloc(sizeof(_custom_bucket)); \
+   struct bucket *name_bucket = xcalloc(1, sizeof(_custom_bucket)); \
    struct type *name_content = &(name_bucket->u.type); \
    name_bucket->next = NULL; \
    name_bucket->in = name_bucket->out = name_bucket->total = 0;
@@ -655,7 +671,7 @@ hashtable_reduce(struct hashtable *ht)
    assert(ht->count_keep < ht->count);
 
    /* Fill table with pointers to buckets in hashtable. */
-   table = xmalloc(sizeof(*table) * ht->count);
+   table = xcalloc(ht->count, sizeof(*table));
    for (pos=0, i=0; i<ht->size; i++) {
       struct bucket *b = ht->table[i];
       while (b != NULL) {
@@ -835,7 +851,7 @@ format_table(struct str *buf, struct hashtable *ht, int start,
    }
 
    /* Fill table with pointers to buckets in hashtable. */
-   table = xmalloc(sizeof(*table) * ht->count);
+   table = xcalloc(ht->count, sizeof(*table));
    for (pos=0, i=0; i<ht->size; i++) {
       struct bucket *b = ht->table[i];
       while (b != NULL) {
