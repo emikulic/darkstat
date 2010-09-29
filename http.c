@@ -873,10 +873,13 @@ void http_init(const char *bindaddr, const unsigned short bindport,
     memset(&hints, '\0', sizeof(hints));
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_PASSIVE | AI_ADDRCONFIG;
+    hints.ai_flags = AI_PASSIVE;
+#ifdef AI_ADDRCONFIG
+    hints.ai_flags |= AI_ADDRCONFIG;
+#endif
     snprintf(portstr, sizeof(portstr), "%u", bindport);
 
-    if (ret = getaddrinfo(bindaddr, portstr, &hints, &aiptr))
+    if ((ret = getaddrinfo(bindaddr, portstr, &hints, &aiptr)))
         err(1, "getaddrinfo(): %s", gai_strerror(ret));
 
     for (ai = aiptr; ai; ai = ai->ai_next) {
@@ -899,8 +902,7 @@ void http_init(const char *bindaddr, const unsigned short bindport,
 
         /* bind socket */
         memcpy(&addrin, ai->ai_addr, ai->ai_addrlen);
-        if (bind(sockin, (struct sockaddr *)&addrin,
-                sizeof(addrin)) == -1) {
+        if (bind(sockin, (struct sockaddr *)&addrin, ai->ai_addrlen) == -1) {
             close(sockin);
             continue;
         }

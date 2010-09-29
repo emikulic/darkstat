@@ -8,6 +8,7 @@
  */
 
 #include <pcap.h>
+#include <netinet/in_systm.h>	/* n_time */
 #include <netinet/in.h> /* in_addr_t */
 #include <netinet/ip.h> /* struct ip */
 

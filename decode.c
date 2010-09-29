@@ -46,6 +46,11 @@
 #define ETHERTYPE_PPPOE 0x8864
 #endif
 
+#ifndef ETHERTYPE_IPV6
+# include <net/if_ether.h>	/* ETH_P_IPV6 for GNU/kfreebsd */
+# define ETHERTYPE_IPV6 ETH_P_IPV6
+#endif
+
 #include <net/if.h> /* struct ifreq */
 #include <netinet/in_systm.h> /* n_long */
 #include <netinet/ip.h> /* struct ip */
