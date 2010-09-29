@@ -47,8 +47,12 @@
 #endif
 
 #ifndef ETHERTYPE_IPV6
-# include <net/if_ether.h>	/* ETH_P_IPV6 for GNU/kfreebsd */
-# define ETHERTYPE_IPV6 ETH_P_IPV6
+# ifdef HAVE_NET_IF_ETHER_H
+#  include <net/if_ether.h>	/* ETH_P_IPV6 for GNU/kfreebsd */
+# endif
+# ifdef ETH_P_IPV6
+#  define ETHERTYPE_IPV6 ETH_P_IPV6
+# endif
 #endif
 
 #include <net/if.h> /* struct ifreq */

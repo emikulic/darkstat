@@ -179,5 +179,8 @@ AC_CHECK_HEADERS(sys/sockio.h)
 # Some OSes (Solaris) need sys/filio.h for FIONBIO
 AC_CHECK_HEADERS(sys/filio.h)
 
+# GNU/kfreebsd needs net/if_ether.h for ETH_P_IPV6
+AC_CHECK_HEADERS(net/if_ether.h)
+
 AC_CONFIG_FILES([Makefile darkstat.8])
 AC_OUTPUT
