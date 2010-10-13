@@ -10,8 +10,10 @@
 #include <pcap.h>
 #include <netinet/in_systm.h>	/* n_time */
 #define __USE_GNU 1
-#include <netinet/in.h> /* in_addr_t */
+#include <netinet/in.h> /* for <netinet/ip.h>  */
 #include <netinet/ip.h> /* struct ip */
+
+#include "hosts_db.h"   /* addr46 */
 
 #define PPP_HDR_LEN     4
 #define FDDI_HDR_LEN    21
@@ -36,17 +38,17 @@ typedef struct {
 
 const linkhdr_t *getlinkhdr(int linktype);
 int getsnaplen(const linkhdr_t *lh);
-char *ip_to_str(const in_addr_t ip);
-char *ip6_to_str(const struct in6_addr *ip6);
+char *ip_to_str(const struct addr46 *const ip);
+char *ip_to_str_af(const void *const addr, sa_family_t af);
 
 typedef struct {
    /* Fields are in host byte order (except IPs) */
    union {
-      in_addr_t src_ip;
+      struct in_addr src_ip;
       struct in6_addr src_ip6;
    };
    union {
-      in_addr_t dest_ip;
+      struct in_addr dest_ip;
       struct in6_addr dest_ip6;
    };
    time_t time;

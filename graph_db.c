@@ -8,7 +8,6 @@
  */
 
 #include <sys/types.h>
-#include <netinet/in.h> /* for in_addr_t (db.h needs it) */
 
 #include "cap.h"
 #include "conv.h"

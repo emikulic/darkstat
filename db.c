@@ -152,14 +152,20 @@ read32(const int fd, uint32_t *dest)
    return 1;
 }
 
-/* Read an in_addr_t from a file.  Addresses are always stored in network
+/* Read a struct addr46 from a file.  Addresses are always stored in network
  * order, both in the file and in the host's memory (FIXME: is that right?)
+ * The component "dest->af" must specify AF_INET or AF_INET6.
  */
 int
-readaddr(const int fd, in_addr_t *dest)
+readaddr(const int fd, struct addr46 *dest)
 {
-   assert(sizeof(*dest) == 4);
-   return readn(fd, dest, sizeof(*dest));
+   assert(sizeof(*dest) == sizeof(struct addr46));
+   assert(dest->af == AF_INET || dest->af == AF_INET6);
+
+   if (dest->af == AF_INET)
+      return readn(fd, &dest->addr.ip, sizeof(struct in_addr));
+   else
+      return readn(fd, &dest->addr.ip6, sizeof(struct in6_addr));
 }
 
 /* Read a network order uint64_t from a file
@@ -237,14 +243,20 @@ write64(const int fd, const uint64_t i)
 }
 
 
-/* Write an in_addr_t to a file.  Addresses are always stored in network
- * order, both in the file and in the host's memory (FIXME: is that right?)
+/* Write the active address part in a struct addr46 structure to a file.
+ * Addresses are always stored in network order, both in the file and
+ * in the host's memory (FIXME: is that right?)
  */
 int
-writeaddr(const int fd, const in_addr_t addr)
+writeaddr(const int fd, const struct addr46 *const ip)
 {
-   assert(sizeof(addr) == 4);
-   return writen(fd, &addr, sizeof(addr));
+   assert(sizeof(*ip) == sizeof(struct addr46));
+   assert(ip->af == AF_INET || ip->af == AF_INET6);
+
+   if (ip->af == AF_INET)
+      return writen(fd, &ip->addr.ip, sizeof(ip->addr.ip));
+   else
+      return writen(fd, &ip->addr.ip6, sizeof(ip->addr.ip6));
 }
 
 /* ---------------------------------------------------------------------------

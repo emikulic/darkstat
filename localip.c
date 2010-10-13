@@ -9,7 +9,7 @@
 
 #include "darkstat.h"
 #include "conv.h" /* for strlcpy */
-#include "decode.h" /* for ip_to_str, ip6_to_str */
+#include "decode.h" /* for ip_to_str */
 #include "err.h"
 #include "localip.h"
 
@@ -22,8 +22,8 @@
 
 static const char *iface = NULL;
 
-in_addr_t localip = 0;
-static in_addr_t last_localip = 0;
+struct in_addr localip = { 0 };
+static struct in_addr last_localip = { 0 };
 
 struct in6_addr localip6;
 static struct in6_addr last_localip6;
@@ -46,8 +46,8 @@ localip_update(void)
 
    if (iface == NULL) {
       /* reading from capfile */
-      localip = 0;
-      memset(&localip6, '\0', sizeof(localip6));
+      memset(&localip, 0, sizeof(localip));
+      memset(&localip6, 0, sizeof(localip6));
       return;
    }
 
@@ -65,7 +65,7 @@ localip_update(void)
       if ( (ifa->ifa_addr->sa_family == AF_INET)
             && ! (flags & HAS_IPV4) ) {
          /* Good IPv4 address. */
-         localip = ((struct sockaddr_in *) ifa->ifa_addr)->sin_addr.s_addr;
+         localip.s_addr = ((struct sockaddr_in *) ifa->ifa_addr)->sin_addr.s_addr;
          flags |= HAS_IPV4;
          continue;
       }
@@ -103,12 +103,14 @@ localip_update(void)
     *      __u32   s_addr;
     */
 
-   if (last_localip != localip) {
-      verbosef("local_ip update(%s) = %s", iface, ip_to_str(localip));
-      last_localip = localip;
+   if (last_localip.s_addr != localip.s_addr) {
+      verbosef("local_ip update(%s) = %s", iface,
+               ip_to_str_af(&localip, AF_INET));
+      memcpy(&last_localip, &localip, sizeof(last_localip));
    }
    if (memcmp(&last_localip6, &localip6, sizeof(localip6))) {
-      verbosef("local_ip6 update(%s) = %s", iface, ip6_to_str(&localip6));
+      verbosef("local_ip6 update(%s) = %s", iface,
+               ip_to_str_af(&localip6, AF_INET6));
       memcpy(&last_localip6, &localip6, sizeof(localip6));
    }
 }

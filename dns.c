@@ -35,8 +35,8 @@ static int sock[2];
 static pid_t pid = -1;
 
 struct dns_reply {
-   in_addr_t ip;
-   int error; /* h_errno, or 0 if no error */
+   struct addr46 addr;
+   int error; /* for gai_strerror(), or 0 if no error */
    char name[MAXHOSTNAMELEN];
 };
 
@@ -86,15 +86,26 @@ dns_stop(void)
 
 struct tree_rec {
    RB_ENTRY(tree_rec) ptree;
-   in_addr_t ip;
+   struct addr46 ip;
 };
 
 static int
 tree_cmp(struct tree_rec *a, struct tree_rec *b)
 {
-   if (a->ip < b->ip) return (-1); else
-   if (a->ip > b->ip) return (+1); else
-   return (0);
+   if (a->ip.af != b->ip.af)
+      /* Sort IPv4 to the left of IPv6.  */
+      return (a->ip.af == AF_INET ? -1 : +1);
+
+   if (a->ip.af == AF_INET) {
+      return (memcmp(&a->ip.addr.ip, &b->ip.addr.ip, sizeof(a->ip.addr.ip)));
+   }
+
+   /* AF_INET6 should remain.  */
+   if (a->ip.af == AF_INET6)
+      return (memcmp(&a->ip.addr.ip6, &b->ip.addr.ip6, sizeof(a->ip.addr.ip6)));
+
+   /* Last resort.  */
+   return -1;
 }
 
 static RB_HEAD(tree_t, tree_rec) ip_tree = RB_INITIALIZER(&tree_rec);
@@ -106,7 +117,7 @@ static struct tree_rec * tree_t_RB_MINMAX(struct tree_t *head, int val)
 RB_GENERATE(tree_t, tree_rec, ptree, tree_cmp)
 
 void
-dns_queue(const in_addr_t ip)
+dns_queue(const struct addr46 *const ipaddr)
 {
    struct tree_rec *rec;
    ssize_t num_w;
@@ -114,38 +125,46 @@ dns_queue(const in_addr_t ip)
    if (pid == -1)
       return; /* no child was started - we're not doing any DNS */
 
+#if 1
+   if (ipaddr->af != AF_INET) {
+      verbosef("dns_queue() for unknown family %d.\n", ipaddr->af);
+      /* Not yet IPv6 capable.  */
+      return;
+   }
+#endif
+
    rec = xmalloc(sizeof(*rec));
-   rec->ip = ip;
+   memcpy(&rec->ip, ipaddr, sizeof(rec->ip));
+
    if (RB_INSERT(tree_t, &ip_tree, rec) != NULL) {
       /* Already queued - this happens seldom enough that we don't care about
        * the performance hit of needlessly malloc()ing. */
-      verbosef("already queued %s", ip_to_str(ip));
+      verbosef("already queued %s", ip_to_str(ipaddr));
       free(rec);
       return;
    }
 
-   num_w = write(sock[PARENT], &ip, sizeof(ip)); /* won't block */
+   num_w = write(sock[PARENT], ipaddr, sizeof(*ipaddr)); /* won't block */
    if (num_w == 0)
       warnx("dns_queue: write: ignoring end of file");
    else if (num_w == -1)
       warn("dns_queue: ignoring write error");
-   else if (num_w != sizeof(ip))
-      err(1, "dns_queue: wrote %d instead of %d",
-         (int)num_w, (int)sizeof(ip));
+   else if (num_w != sizeof(*ipaddr))
+      err(1, "dns_queue: wrote %z instead of %z", num_w, sizeof(*ipaddr));
 }
 
 static void
-dns_unqueue(const in_addr_t ip)
+dns_unqueue(const struct addr46 *const ipaddr)
 {
    struct tree_rec tmp, *rec;
 
-   tmp.ip = ip;
+   memcpy(&tmp.ip, ipaddr, sizeof(tmp.ip));
    if ((rec = RB_FIND(tree_t, &ip_tree, &tmp)) != NULL) {
       RB_REMOVE(tree_t, &ip_tree, rec);
       free(rec);
    }
    else
-      verbosef("couldn't unqueue %s - not in queue!", ip_to_str(ip));
+      verbosef("couldn't unqueue %s - not in queue!", ip_to_str(ipaddr));
 }
 
 /*
@@ -153,7 +172,7 @@ dns_unqueue(const in_addr_t ip)
  * (name buffer is allocated by dns_poll)
  */
 static int
-dns_get_result(in_addr_t *ip, char **name)
+dns_get_result(struct addr46 *ipaddr, char **name)
 {
    struct dns_reply reply;
    ssize_t numread;
@@ -168,16 +187,38 @@ dns_get_result(in_addr_t *ip, char **name)
    if (numread == 0)
       goto error; /* EOF */
    if (numread != sizeof(reply))
-      errx(1, "dns_get_result read got %d, expected %d",
-         (int)numread, (int)sizeof(reply));
+      errx(1, "dns_get_result read got %z, expected %z", numread, sizeof(reply));
 
    /* Return successful reply. */
-   *ip = reply.ip;
+   memcpy(ipaddr, &reply.addr, sizeof(*ipaddr));
+#if DARKSTAT_USES_HOSTENT
    if (reply.error != 0)
       xasprintf(name, "(%s)", hstrerror(reply.error));
    else
       *name = xstrdup(reply.name);
-   dns_unqueue(reply.ip);
+#else /* !DARKSTAT_USES_HOSTENT */
+   if (reply.error != 0) {
+      /* Identify common special cases.  */
+      char *type = "none";
+
+      if (reply.addr.af == AF_INET6) {
+         if (IN6_IS_ADDR_LINKLOCAL(&reply.addr.addr.ip6))
+            type = "link-local";
+         else if (IN6_IS_ADDR_SITELOCAL(&reply.addr.addr.ip6))
+            type = "site-local";
+         else if (IN6_IS_ADDR_MULTICAST(&reply.addr.addr.ip6))
+            type = "multicast";
+      } else { /* AF_INET */
+         if (IN_MULTICAST(reply.addr.addr.ip.s_addr))
+            type = "multicast";
+      }
+      xasprintf(name, "(%s)", type);
+   }
+   else  /* Correctly resolved name.  */
+      *name = xstrdup(reply.name);
+#endif /* !DARKSTAT_USES_HOSTENT */
+
+   dns_unqueue(&reply.addr);
    return (1);
 
 error:
@@ -189,7 +230,7 @@ error:
 void
 dns_poll(void)
 {
-   in_addr_t ip;
+   struct addr46 ip;
    char *name;
 
    if (pid == -1)
@@ -197,15 +238,16 @@ dns_poll(void)
 
    while (dns_get_result(&ip, &name)) {
       /* push into hosts_db */
-      struct bucket *b = host_find(ip);
+      struct bucket *b = host_find(&ip);
+
       if (b == NULL) {
          verbosef("resolved %s to %s but it's not in the DB!",
-            ip_to_str(ip), name);
+            ip_to_str(&ip), name);
          return;
       }
       if (b->u.host.dns != NULL) {
          verbosef("resolved %s to %s but it's already in the DB!",
-            ip_to_str(ip), name);
+            ip_to_str(&ip), name);
          return;
       }
       b->u.host.dns = name;
@@ -216,25 +258,25 @@ dns_poll(void)
 
 struct qitem {
    STAILQ_ENTRY(qitem) entries;
-   in_addr_t ip;
+   struct addr46 ip;
 };
 
 STAILQ_HEAD(qhead, qitem) queue = STAILQ_HEAD_INITIALIZER(queue);
 
 static void
-enqueue(const in_addr_t ip)
+enqueue(const struct addr46 *const ip)
 {
    struct qitem *i;
 
    i = xmalloc(sizeof(*i));
-   i->ip = ip;
+   memcpy(&i->ip, ip, sizeof(i->ip));
    STAILQ_INSERT_TAIL(&queue, i, entries);
    verbosef("DNS: enqueued %s", ip_to_str(ip));
 }
 
 /* Return non-zero and populate <ip> pointer if queue isn't empty. */
 static int
-dequeue(in_addr_t *ip)
+dequeue(struct addr46 *ip)
 {
    struct qitem *i;
 
@@ -242,8 +284,9 @@ dequeue(in_addr_t *ip)
    if (i == NULL)
       return (0);
    STAILQ_REMOVE_HEAD(&queue, entries);
-   *ip = i->ip;
+   memcpy(ip, &i->ip, sizeof(*ip));
    free(i);
+   verbosef("DNS: dequeued %s", ip_to_str(ip));
    return 1;
 }
 
@@ -261,7 +304,7 @@ xwrite(const int d, const void *buf, const size_t nbytes)
 static void
 dns_main(void)
 {
-   in_addr_t ip;
+   struct addr46 ip;
 
 #ifdef HAVE_SETPROCTITLE
    setproctitle("DNS child");
@@ -292,9 +335,8 @@ dns_main(void)
             err(1, "DNS: read failed");
          }
          if (numread != sizeof(ip))
-            err(1, "DNS: read got %d bytes, expecting %d",
-               (int)numread, (int)sizeof(ip));
-         enqueue(ip);
+            err(1, "DNS: read got %z bytes, expecting %z", numread, sizeof(ip));
+         enqueue(&ip);
          if (blocking) {
             /* After one blocking read, become non-blocking so that when we
              * run out of input we fall through to queue processing.
@@ -307,10 +349,11 @@ dns_main(void)
       /* Process queue. */
       if (dequeue(&ip)) {
          struct dns_reply reply;
+#if DARKSTAT_USES_HOSTENT
          struct hostent *he;
 
-         reply.ip = ip;
-         he = gethostbyaddr((char *)&ip, sizeof(ip), AF_INET);
+         memcpy(&reply.addr, &ip, sizeof(reply.addr));
+         he = gethostbyaddr((char *)&ip.addr.ip, sizeof(ip.addr.ip), ip.af); /* TODO MEA */
 
          /* On some platforms (for example Linux with GLIBC 2.3.3), h_errno
           * will be non-zero here even though the lookup succeeded.
@@ -325,8 +368,52 @@ dns_main(void)
          }
          fd_set_block(sock[CHILD]);
          xwrite(sock[CHILD], &reply, sizeof(reply));
-         verbosef("DNS: %s is %s", ip_to_str(ip),
+         verbosef("DNS: %s is %s", ip_to_str(&reply.addr),
             (h_errno == 0)?reply.name:hstrerror(h_errno));
+#else /* !DARKSTAT_USES_HOSTENT */
+         struct sockaddr_in sin;
+         struct sockaddr_in6 sin6;
+         char host[NI_MAXHOST];
+         int ret, flags;
+
+         reply.addr.af = ip.af;
+         flags = NI_NAMEREQD;
+#  ifdef NI_IDN
+         flags |= NI_IDN;
+#  endif
+         switch (ip.af) {
+            case AF_INET:
+               sin.sin_family = ip.af;
+               memcpy(&reply.addr.addr.ip, &ip.addr.ip, sizeof(reply.addr.addr.ip));
+               memcpy(&sin.sin_addr, &ip.addr.ip, sizeof(sin.sin_addr));
+               ret = getnameinfo((struct sockaddr *) &sin, sizeof(sin),
+                                 host, sizeof(host), NULL, 0, flags);
+               break;
+            case AF_INET6:
+               sin6.sin6_family = ip.af;
+               memcpy(&reply.addr.addr.ip6, &ip.addr.ip6, sizeof(reply.addr.addr.ip6));
+               memcpy(&sin6.sin6_addr, &ip.addr.ip6, sizeof(sin6.sin6_addr));
+               ret = getnameinfo((struct sockaddr *) &sin6, sizeof(sin6),
+                                 host, sizeof(host), NULL, 0, flags);
+               break;
+            default:
+               ret = EAI_FAMILY;
+
+         }
+
+         if (ret != 0) {
+            reply.name[0] = '\0';
+            reply.error = ret;
+         } else {
+            assert(sizeof(reply.name) > sizeof(char *)); /* not just a ptr */
+            strlcpy(reply.name, host, sizeof(reply.name));
+            reply.error = 0;
+         }
+         fd_set_block(sock[CHILD]);
+         xwrite(sock[CHILD], &reply, sizeof(reply));
+         verbosef("DNS: %s is \"%s\".", ip_to_str(&reply.addr),
+            (ret == 0) ? reply.name : gai_strerror(ret));
+#endif /* !DARKSTAT_USES_HOSTENT */
       }
    }
 }

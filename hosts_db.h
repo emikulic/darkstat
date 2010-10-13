@@ -7,18 +7,26 @@
  * GNU General Public License version 2. (see COPYING.GPL)
  */
 
+#ifndef __HOSTS_DB_H
+#  define __HOSTS_DB_H 1
+
 #include <sys/types.h>
+#include <sys/socket.h>
 #include <netinet/in.h>
 #include "str.h"
+
+struct addr46 {
+   sa_family_t af;
+   union {
+      struct in_addr ip;
+      struct in6_addr ip6;
+   } addr;
+};
 
 struct hashtable;
 
 struct host {
-   union {
-      in_addr_t ip;
-      struct in6_addr ip6;
-   };
-   sa_family_t af;
+   struct addr46 ipaddr;
    char *dns;
    uint8_t mac_addr[6];
    time_t last_seen;
@@ -66,8 +74,8 @@ void hosts_db_free(void);
 int hosts_db_import(const int fd);
 int hosts_db_export(const int fd);
 
-struct bucket *host_find(const in_addr_t ip); /* can return NULL */
-struct bucket *host_get(const in_addr_t ip);
+struct bucket *host_find(const struct addr46 *const ip); /* can return NULL */
+struct bucket *host_get(const struct addr46 *const ip);
 struct bucket *host_get_port_tcp(struct bucket *host, const uint16_t port);
 struct bucket *host_get_port_udp(struct bucket *host, const uint16_t port);
 struct bucket *host_get_ip_proto(struct bucket *host, const uint8_t proto);
@@ -79,4 +87,5 @@ struct str *html_hosts(const char *uri, const char *query);
 void qsort_buckets(const struct bucket **a, size_t n,
    size_t left, size_t right, const enum sort_dir d);
 
+#endif /* !__HOSTS_DB_H */
 /* vim:set ts=3 sw=3 tw=78 expandtab: */

@@ -127,31 +127,32 @@ int
 getsnaplen(const linkhdr_t *lh)
 {
    assert(lh != NULL);
-   return (lh->hdrlen + IPV6_HDR_LEN + max(TCP_HDR_LEN, UDP_HDR_LEN));
+   /* TODO MEA Investigate why the supplementary value 20 is needed on GNU/Linux.  */
+   return (20 + lh->hdrlen + IPV6_HDR_LEN + max(TCP_HDR_LEN, UDP_HDR_LEN));
 }
 
 /*
- * Convert IP address to a numbers-and-dots notation in a static buffer
- * provided by inet_ntoa().
+ * Convert IP address to a presentation notation in a static buffer
+ * using inet_ntop(3).
  */
-char *
-ip_to_str(const in_addr_t ip)
-{
-   struct in_addr in;
+char ipstr[INET6_ADDRSTRLEN]; /* TODO Reentrant? */
 
-   in.s_addr = ip;
-   return (inet_ntoa(in));
+char *
+ip_to_str(const struct addr46 *const ip)
+{
+   ipstr[0] = '\0';
+   inet_ntop(ip->af, &ip->addr.ip6, ipstr, sizeof(ipstr));
+
+   return (ipstr);
 }
 
-char ip6str[INET6_ADDRSTRLEN];
-
 char *
-ip6_to_str(const struct in6_addr *ip6)
+ip_to_str_af(const void *const addr, sa_family_t af)
 {
-   ip6str[0] = '\0';
-   inet_ntop(AF_INET6, ip6, ip6str, sizeof(ip6str));
+   ipstr[0] = '\0';
+   inet_ntop(af, addr, ipstr, sizeof(ipstr));
 
-   return (ip6str);
+   return (ipstr);
 }
 
 /* Decoding functions. */
@@ -369,8 +370,8 @@ decode_ip(const u_char *pdata, const uint32_t len, pktsummary *sm)
    sm->len = ntohs(hdr->ip_len);
    sm->af = AF_INET;
    sm->proto = hdr->ip_p;
-   sm->src_ip = hdr->ip_src.s_addr;
-   sm->dest_ip = hdr->ip_dst.s_addr;
+   memcpy(&sm->src_ip, &hdr->ip_src, sizeof(sm->src_ip));
+   memcpy(&sm->dest_ip, &hdr->ip_dst, sizeof(sm->dest_ip));
 
    switch (sm->proto) {
       case IPPROTO_TCP: {

@@ -63,8 +63,8 @@ acct_init_localnet(const char *spec)
    free(tokens[1]);
    free(tokens);
 
-   verbosef("local network address: %s", ip_to_str(localnet));
-   verbosef("   local network mask: %s", ip_to_str(localmask));
+   verbosef("local network address: %s", ip_to_str_af(&localnet, AF_INET));
+   verbosef("   local network mask: %s", ip_to_str_af(&localmask, AF_INET));
 
    if ((localnet & localmask) != localnet)
       errx(1, "this is an invalid combination of address and mask!\n"
@@ -77,11 +77,12 @@ acct_for(const pktsummary *sm)
 {
    struct bucket *hs = NULL, *hd = NULL;
    struct bucket *ps, *pd;
+   struct addr46 ipaddr;
    int dir_in, dir_out;
 
 #if 0 /* WANT_CHATTY? */
-   printf("%15s > ", ip_to_str(sm->src_ip));
-   printf("%15s ", ip_to_str(sm->dest_ip));
+   printf("%15s > ", ip_to_str_af(&sm->src_ip, AF_INET));
+   printf("%15s ", ip_to_str_af(&sm->dest_ip, AF_INET));
    printf("len %4d proto %2d", sm->len, sm->proto);
 
    if (sm->proto == IPPROTO_TCP || sm->proto == IPPROTO_UDP)
@@ -107,17 +108,17 @@ acct_for(const pktsummary *sm)
 
    if (sm->af == AF_INET) {
       if (using_localnet) {
-         if ((sm->src_ip & localmask) == localnet)
+         if ((sm->src_ip.s_addr & localmask) == localnet)
             dir_out = 1;
-         if ((sm->dest_ip & localmask) == localnet)
+         if ((sm->dest_ip.s_addr & localmask) == localnet)
             dir_in = 1;
          if (dir_in == 1 && dir_out == 1)
             /* Traffic staying within the network isn't counted. */
             dir_in = dir_out = 0;
       } else {
-         if (sm->src_ip == localip)
+         if (memcmp(&sm->src_ip, &localip, sizeof(localip)) == 0)
             dir_out = 1;
-         if (sm->dest_ip == localip)
+         if (memcmp(&sm->dest_ip, &localip, sizeof(localip)) == 0)
             dir_in = 1;
       }
    } else if (sm->af == AF_INET6) {
@@ -142,20 +143,24 @@ acct_for(const pktsummary *sm)
    if (hosts_max == 0) return; /* skip per-host accounting */
 
    /* Hosts. */
-   hs = host_get(sm->src_ip);
+   ipaddr.af = sm->af; /* TODO */
+   ipaddr.addr.ip = sm->src_ip; /* TODO */
+   hs = host_get(&ipaddr);
    hs->out   += sm->len;
    hs->total += sm->len;
    memcpy(hs->u.host.mac_addr, sm->src_mac, sizeof(sm->src_mac));
    hs->u.host.last_seen = now;
 
-   hd = host_get(sm->dest_ip); /* this can invalidate hs! */
+   ipaddr.addr.ip = sm->dest_ip; /* TODO */
+   hd = host_get(&ipaddr); /* this can invalidate hs! */
    hd->in    += sm->len;
    hd->total += sm->len;
    memcpy(hd->u.host.mac_addr, sm->dst_mac, sizeof(sm->dst_mac));
    hd->u.host.last_seen = now;
 
    /* Protocols. */
-   hs = host_find(sm->src_ip);
+   ipaddr.addr.ip = sm->src_ip; /* TODO */
+   hs = host_find(&ipaddr);
    if (hs != NULL) {
       ps = host_get_ip_proto(hs, sm->proto);
       ps->out   += sm->len;
