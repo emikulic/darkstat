@@ -173,6 +173,10 @@ AC_CHECK_LIB(c, strlcat,
  AC_DEFINE(HAVE_STRLCAT, 1,
   [Define to 1 if you have strlcat().]))
 
+AC_CHECK_LIB(c, strtonum,
+ AC_DEFINE(HAVE_STRTONUM, 1,
+  [Define to 1 if you have strtonum(3).]))
+
 # Some OSes (Solaris) need sys/sockio.h for SIOCGIFADDR
 AC_CHECK_HEADERS(sys/sockio.h)
 

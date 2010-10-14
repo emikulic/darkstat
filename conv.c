@@ -31,6 +31,7 @@
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
+#include <limits.h>
 
 #define PATH_DEVNULL "/dev/null"
 
@@ -454,5 +455,56 @@ strlcat(dst, src, siz)
         return(dlen + (s - src));       /* count does not include NUL */
 }
 #endif
+
+#ifndef HAVE_STRTONUM
+/*
+ * Convert an ASCII string to a decimal numerical value. An acceptable
+ * range is specified, and an optional error message string.
+ *
+ * Implementation built from the manual page description of OpenBSD 4.6.
+ */
+long long
+strtonum(const char *nptr, long long minval, long long maxval,
+         const char **errstr)
+{
+   long long val;
+   char *p;
+
+   if ((nptr == NULL) || (*nptr == '\0') || (minval > maxval)) {
+      if (errstr)
+         *errstr = "invalid";
+      errno = EINVAL;
+      return 0;
+   }
+
+   errno = 0;
+   val = strtoll(nptr, &p, 10);
+
+   if (*p != '\0') {
+      if (errstr)
+         *errstr = "invalid";
+      errno = EINVAL;
+      return 0;
+   }
+
+   if ((val == LLONG_MIN) || (val < minval)) {
+      if (errstr)
+         *errstr = "too small";
+      errno = ERANGE;
+      return 0;
+   }
+   if ((val == LLONG_MAX) || (val > maxval)) {
+      if (errstr)
+         *errstr = "too large";
+      errno = ERANGE;
+      return 0;
+   }
+
+   /* Correct conversion.  */
+   if (errstr)
+      *errstr = NULL;
+   return val;
+}
+#endif /* !HAVE_STRTONUM */
 
 /* vim:set ts=3 sw=3 tw=78 expandtab: */

@@ -30,4 +30,9 @@ size_t strlcpy(char *dst, const char *src, size_t siz);
 size_t strlcat(char *dst, const char *src, size_t siz);
 #endif
 
+#ifndef HAVE_STRTONUM
+long long strtonum(const char *nptr, long long min,
+                  long long max, const char **estr);
+#endif
+
 /* vim:set ts=3 sw=3 tw=78 expandtab: */
