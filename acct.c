@@ -222,20 +222,34 @@ acct_for(const pktsummary *sm)
       graph_acct((uint64_t)sm->len, GRAPH_IN);
    }
 
-   if (sm->af == AF_INET6) return; /* Still no continuation for IPv6! */
-
    if (hosts_max == 0) return; /* skip per-host accounting */
 
    /* Hosts. */
-   ipaddr.af = sm->af; /* TODO */
-   ipaddr.addr.ip = sm->src_ip; /* TODO */
+   ipaddr.af = sm->af;
+   switch (ipaddr.af) {
+      case AF_INET6:
+         memcpy(&ipaddr.addr.ip6, &sm->src_ip6, sizeof(ipaddr.addr.ip6));
+         break;
+      case AF_INET:
+      default:
+         memcpy(&ipaddr.addr.ip, &sm->src_ip, sizeof(ipaddr.addr.ip));
+         break;
+   }
    hs = host_get(&ipaddr);
    hs->out   += sm->len;
    hs->total += sm->len;
    memcpy(hs->u.host.mac_addr, sm->src_mac, sizeof(sm->src_mac));
    hs->u.host.last_seen = now;
 
-   ipaddr.addr.ip = sm->dest_ip; /* TODO */
+   switch (ipaddr.af) {
+      case AF_INET6:
+         memcpy(&ipaddr.addr.ip6, &sm->dest_ip6, sizeof(ipaddr.addr.ip6));
+         break;
+      case AF_INET:
+      default:
+         memcpy(&ipaddr.addr.ip, &sm->dest_ip, sizeof(ipaddr.addr.ip));
+         break;
+   }
    hd = host_get(&ipaddr); /* this can invalidate hs! */
    hd->in    += sm->len;
    hd->total += sm->len;
@@ -243,7 +257,15 @@ acct_for(const pktsummary *sm)
    hd->u.host.last_seen = now;
 
    /* Protocols. */
-   ipaddr.addr.ip = sm->src_ip; /* TODO */
+   switch (ipaddr.af) {
+      case AF_INET6:
+         memcpy(&ipaddr.addr.ip6, &sm->src_ip6, sizeof(ipaddr.addr.ip6));
+         break;
+      case AF_INET:
+      default:
+         memcpy(&ipaddr.addr.ip, &sm->src_ip, sizeof(ipaddr.addr.ip));
+         break;
+   }
    hs = host_find(&ipaddr);
    if (hs != NULL) {
       ps = host_get_ip_proto(hs, sm->proto);
@@ -296,6 +318,9 @@ acct_for(const pktsummary *sm)
 
    case IPPROTO_ICMP:
    case IPPROTO_ICMPV6:
+   case IPPROTO_AH:
+   case IPPROTO_ESP:
+   case IPPROTO_OSPF:
       /* known protocol, don't complain about it */
       break;
 

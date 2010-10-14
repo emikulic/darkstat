@@ -401,6 +401,9 @@ decode_ip(const u_char *pdata, const uint32_t len, pktsummary *sm)
       }
 
       case IPPROTO_ICMP:
+      case IPPROTO_AH:
+      case IPPROTO_ESP:
+      case IPPROTO_OSPF:
          /* known protocol, don't complain about it */
          break;
 
@@ -453,6 +456,9 @@ decode_ipv6(const u_char *pdata, const uint32_t len, pktsummary *sm)
       }
 
       case IPPROTO_ICMPV6:
+      case IPPROTO_AH:
+      case IPPROTO_ESP:
+      case IPPROTO_OSPF:
          /* known protocol, don't complain about it */
          break;
 

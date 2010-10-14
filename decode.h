@@ -30,6 +30,10 @@
 #define ETHER_ADDR_LEN 6
 #endif
 
+#ifndef IPPROTO_OSPF
+#  define IPPROTO_OSPF 89
+#endif
+
 typedef struct {
    int linktype;
    unsigned int hdrlen;

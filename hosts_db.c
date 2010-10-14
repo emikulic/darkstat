@@ -331,7 +331,7 @@ format_row_host(struct str *buf, const struct bucket *b,
 
    str_appendf(buf,
       "<tr class=\"%s\">\n"
-      " <td><a href=\"%s/\">%s</a></td>\n"
+      " <td><a href=\"/hosts/%s/\">%s</a></td>\n"
       " <td>%s</td>\n",
       css_class,
       ip, ip,

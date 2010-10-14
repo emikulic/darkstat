@@ -125,13 +125,10 @@ dns_queue(const struct addr46 *const ipaddr)
    if (pid == -1)
       return; /* no child was started - we're not doing any DNS */
 
-#if 1
-   if (ipaddr->af != AF_INET) {
+   if (ipaddr->af != AF_INET && ipaddr->af != AF_INET6) {
       verbosef("dns_queue() for unknown family %d.\n", ipaddr->af);
-      /* Not yet IPv6 capable.  */
       return;
    }
-#endif
 
    rec = xmalloc(sizeof(*rec));
    memcpy(&rec->ip, ipaddr, sizeof(rec->ip));
