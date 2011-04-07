@@ -42,6 +42,6 @@ Reported to also work on:
  - NetBSD
  - Mac OS X
  - AIX
- - Ubuntu (you need build-essentials, zlib1g-dev, libpcap-dev)
+ - Ubuntu (you need build-essential, zlib1g-dev, libpcap-dev)
  - Mandrake
  - OpenSUSE
