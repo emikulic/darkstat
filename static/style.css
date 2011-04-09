@@ -21,8 +21,10 @@ ul.menu li     { list-style: none; display: inline; margin:0;
                  padding:2px 0 3px 0;
                  border-right:1px solid white; }
 ul.menu li.label
-               { padding-left:10px; padding-right:10px; color:#000; }
+               { padding-left:10px; padding-right:10px; color:#000;
+                 text-shadow: 0px 1px 0px #9ab; }
 ul.menu li a   { color: white; text-decoration: none;
+                 text-shadow: 0px 1px 0px #456;
                  border-bottom: none; padding:2px 15px 3px 15px; }
 ul.menu li a:hover
                { background-color: #9ab; }
@@ -62,5 +64,4 @@ div.legend table { margin-left:auto; margin-right:auto; /* center */
 div.legend td { border:0; padding:0 0.2em 0 0.2em; font-size:11px;
                 color:#444; }
 div.legend td.dir { text-align:right; }
-div.legend td.rate { text-align:right; }
-
+div.legend td.rate { text-align:right; white-space: nowrap; }
