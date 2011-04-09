@@ -100,12 +100,12 @@ static void cb_no_lastseen(const char *arg _unused_) { want_lastseen = 0; }
 unsigned short bindport = 667;
 static void cb_port(const char *arg) { bindport = parsenum(arg, 65536); }
 
-char * bindaddr = NULL;
+char *bindaddr = NULL;
 static void cb_bindaddr(const char *arg)
 {
    struct addrinfo hints, *ai;
 
-   memset(&hints, '\0', sizeof(hints));
+   memset(&hints, 0, sizeof(hints));
    hints.ai_flags = AI_PASSIVE;
 #ifdef AI_ADDRCONFIG
    hints.ai_flags |= AI_ADDRCONFIG;

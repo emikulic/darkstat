@@ -259,7 +259,7 @@ static struct connection *new_connection(void)
     struct connection *conn = xmalloc(sizeof(*conn));
 
     conn->socket = -1;
-    memset(&conn->client, '\0', sizeof(conn->client));
+    memset(&conn->client, 0, sizeof(conn->client));
     conn->last_active = now;
     conn->request = NULL;
     conn->request_length = 0;
@@ -304,7 +304,7 @@ static void accept_connection(void)
     int sock;
 
     sin_size = (socklen_t)sizeof(addrin);
-    sock = accept(sockin, (struct sockaddr *)&addrin, &sin_size);
+    sock = accept(sockin, &addrin, &sin_size);
     if (sock == -1)
     {
         if (errno == ECONNABORTED || errno == EINTR)
@@ -870,7 +870,7 @@ void http_init(const char *bindaddr, const unsigned short bindport,
     char ipaddr[INET6_ADDRSTRLEN], portstr[12];
     int sockopt, ret;
 
-    memset(&hints, '\0', sizeof(hints));
+    memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
