@@ -104,7 +104,7 @@ cap_init(const char *device, const char *filter, int promisc)
     *
     * Hack to set minimum snaplen to tcpdump's default:
     */
-   snaplen = max(snaplen, 68);
+   snaplen = max(snaplen, 96);
 #endif
    if (want_snaplen > -1)
       snaplen = want_snaplen;
