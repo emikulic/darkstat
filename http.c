@@ -1026,6 +1026,7 @@ void http_poll(fd_set *recv_set, fd_set *send_set)
         if (FD_ISSET(conn->socket, send_set)) poll_send_reply(conn);
         break;
 
+    case DONE: /* fallthrough */
     default: errx(1, "invalid state");
     }
 }
