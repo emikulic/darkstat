@@ -59,11 +59,100 @@ AC_ARG_WITH(mad-warnings, AS_HELP_STRING([--with-mad-warnings],
  [if test "$withval" = yes ; then
    AC_MSG_CHECKING(if your C compiler throws mad warnings)
    save_cflags="$CFLAGS"
-   CFLAGS="$CFLAGS -Wall -Wredundant-decls -Wnested-externs \
--Wstrict-prototypes -Wmissing-prototypes -Wpointer-arith \
--Winline -Wcast-qual -W -Wbad-function-cast -Wcast-align \
--Wchar-subscripts -Wshadow -Wwrite-strings \
--Wuninitialized -Winline"
+   CFLAGS="$CFLAGS -fdiagnostics-show-option \
+-Wabi \
+-Waddress \
+-Waggregate-return \
+-Wall \
+-Warray-bounds \
+-Wbad-function-cast \
+-Wcast-align \
+-Wcast-qual \
+-Wchar-subscripts \
+-Wclobbered \
+-Wcomment \
+-Wcoverage-mismatch \
+-Wdeclaration-after-statement \
+-Wdisabled-optimization \
+-Wempty-body \
+-Wextra \
+-Wfloat-equal \
+-Wformat \
+-Wformat=2 \
+-Wformat-nonliteral \
+-Wformat-security \
+-Wformat-y2k \
+-Wignored-qualifiers \
+-Wimplicit \
+-Wimplicit-function-declaration \
+-Wimplicit-int \
+-Winit-self \
+-Winline \
+-Winvalid-pch \
+-Wlogical-op \
+-Wlong-long \
+-Wmain \
+-Wmissing-braces \
+-Wmissing-declarations \
+-Wmissing-field-initializers \
+-Wmissing-format-attribute \
+-Wmissing-include-dirs \
+-Wmissing-noreturn \
+-Wmissing-parameter-type \
+-Wmissing-prototypes \
+-Wnested-externs \
+-Wnonnull \
+-Wold-style-declaration \
+-Wold-style-definition \
+-Wpacked \
+-Wpacked-bitfield-compat \
+-Wparentheses \
+-Wpointer-arith \
+-Wpointer-sign \
+-Wredundant-decls \
+-Wreturn-type \
+-Wsequence-point \
+-Wshadow \
+-Wsign-compare \
+-Wstrict-aliasing -fstrict-aliasing \
+-Wstrict-overflow=5 -fstrict-overflow \
+-Wstrict-prototypes \
+-Wswitch \
+-Wswitch-default \
+-Wswitch-enum \
+-Wsync-nand \
+-Wtrigraphs \
+-Wtype-limits \
+-Wundef \
+-Wuninitialized \
+-Wunknown-pragmas \
+-Wunsafe-loop-optimizations \
+-Wunused \
+-Wunused-function \
+-Wunused-label \
+-Wunused-parameter \
+-Wunused-value \
+-Wunused-variable \
+-Wvariadic-macros \
+-Wvla \
+-Wvolatile-register-var \
+-Wwrite-strings \
+"
+
+# the above are valid for gcc version 4.4.3
+# we skip:
+#-pedantic
+#-Wc++-compat
+#-Wconversion
+#-Wfatal-errors
+#-Wpadded
+#-Wsign-conversion
+#-Wstack-protector
+#-Wsystem-headers
+#-Wtraditional
+#-Wtraditional-conversion
+#-Wunreachable-code
+
    if (eval $ac_link) 2>/dev/null; then
     AC_MSG_RESULT(sure does)
    else
