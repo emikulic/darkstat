@@ -100,7 +100,7 @@ static void cb_no_lastseen(const char *arg _unused_) { want_lastseen = 0; }
 unsigned short bindport = 667;
 static void cb_port(const char *arg) { bindport = parsenum(arg, 65536); }
 
-char *bindaddr = NULL;
+const char *bindaddr = NULL;
 static void cb_bindaddr(const char *arg)
 {
    struct addrinfo hints, *ai;
@@ -117,7 +117,7 @@ static void cb_bindaddr(const char *arg)
       errx(1, "malformed address \"%s\"", arg);
 
    freeaddrinfo(ai);
-   bindaddr = strdup(arg);
+   bindaddr = arg;
 }
 
 const char *filter = NULL;
