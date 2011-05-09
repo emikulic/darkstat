@@ -41,7 +41,7 @@ extern int want_pppoe, want_macs, want_hexdump, want_snaplen, wait_secs;
 /* Globals - only useful within this module. */
 static pcap_t *pcap = NULL;
 static int pcap_fd = -1;
-static const linkhdr_t *linkhdr = NULL;
+static const struct linkhdr *linkhdr = NULL;
 
 #define CAP_TIMEOUT 500 /* granularity of capture buffer, in milliseconds */
 

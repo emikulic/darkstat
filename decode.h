@@ -34,14 +34,14 @@
 #  define IPPROTO_OSPF 89
 #endif
 
-typedef struct {
+struct linkhdr {
    int linktype;
    unsigned int hdrlen;
    pcap_handler handler;
-} linkhdr_t;
+};
 
-const linkhdr_t *getlinkhdr(int linktype);
-int getsnaplen(const linkhdr_t *lh);
+const struct linkhdr *getlinkhdr(const int linktype);
+int getsnaplen(const struct linkhdr *lh);
 char *ip_to_str(const struct addr46 *const ip);
 char *ip_to_str_af(const void *const addr, sa_family_t af);
 

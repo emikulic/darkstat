@@ -85,7 +85,7 @@ static void decode_ipv6(const u_char *pdata, const uint32_t len,
    pktsummary *sm);
 
 /* Link-type header information */
-static const linkhdr_t linkhdrs[] = {
+static const struct linkhdr linkhdrs[] = {
   /* linktype       hdrlen         handler       */
    { DLT_EN10MB,    ETHER_HDR_LEN, decode_ether  },
    { DLT_LOOP,      NULL_HDR_LEN,  decode_loop  },
@@ -104,13 +104,13 @@ static const linkhdr_t linkhdrs[] = {
 };
 
 /*
- * Returns a pointer to the linkhdr_t record matching the given linktype, or
+ * Returns a pointer to the linkhdr record matching the given linktype, or
  * NULL if no matching entry found.
  */
-const linkhdr_t *
-getlinkhdr(int linktype)
+const struct linkhdr *
+getlinkhdr(const int linktype)
 {
-   int i;
+   size_t i;
 
    for (i=0; linkhdrs[i].linktype != -1; i++)
       if (linkhdrs[i].linktype == linktype)
@@ -124,7 +124,7 @@ getlinkhdr(int linktype)
  * allowed to be NULL.
  */
 int
-getsnaplen(const linkhdr_t *lh)
+getsnaplen(const struct linkhdr *lh)
 {
    assert(lh != NULL);
    /* TODO MEA Investigate why the supplementary value 20 is needed on GNU/Linux.  */
