@@ -6,6 +6,10 @@
  * You may use, modify and redistribute this file under the terms of the
  * GNU General Public License version 2. (see COPYING.GPL)
  */
+#ifndef __DARKSTAT_HTML_H
+#define __DARKSTAT_HTML_H
+
+#include "config.h" /* for PACKAGE_STRING */
 
 static const char html_header_1[] =
 "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"\n"
@@ -32,4 +36,5 @@ static const char html_footer[] =
 "</body>\n"
 "</html>\n";
 
+#endif
 /* vim:set ts=3 sw=3 tw=78 expandtab: */

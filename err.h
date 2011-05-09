@@ -16,6 +16,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include "darkstat.h"
+
 void err(const int code, const char *format, ...) _noreturn_;
 void errx(const int code, const char *format, ...) _noreturn_;
 

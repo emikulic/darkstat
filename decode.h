@@ -6,6 +6,8 @@
  * You may use, modify and redistribute this file under the terms of the
  * GNU General Public License version 2. (see COPYING.GPL)
  */
+#ifndef __DARKSTAT_DECODE_H
+#define __DARKSTAT_DECODE_H
 
 #include <pcap.h>
 #include <netinet/in_systm.h>	/* n_time */
@@ -65,4 +67,5 @@ typedef struct {
            dst_mac[ETHER_ADDR_LEN]; /* only for Ethernet */
 } pktsummary;
 
+#endif /* __DARKSTAT_DECODE_H */
 /* vim:set ts=3 sw=3 tw=78 expandtab: */

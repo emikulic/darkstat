@@ -3,6 +3,8 @@
  *
  * graph_db.h: round robin database for graph data
  */
+#ifndef __DARKSTAT_GRAPH_DB_H
+#define __DARKSTAT_GRAPH_DB_H
 
 #include <stdint.h> /* for uint64_t on Linux and OS X */
 
@@ -24,4 +26,5 @@ int graph_export(const int fd);
 struct str *html_front_page(void);
 struct str *xml_graphs(void);
 
+#endif
 /* vim:set ts=3 sw=3 tw=78 expandtab: */
