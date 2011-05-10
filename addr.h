@@ -23,5 +23,8 @@ struct addr {
 int addr_equal(const struct addr * const a, const struct addr * const b);
 const char *addr_to_str(const struct addr * const a);
 
+/* Returns 0 on success, gai_strerror() code otherwise. */
+int str_to_addr(const char *s, struct addr *a);
+
 #endif
 /* vim:set ts=3 sw=3 tw=78 et: */

@@ -11,6 +11,7 @@
 
 #include <assert.h>
 #include <string.h> /* for memcmp */
+#include <netdb.h> /* for getaddrinfo */
 
 int addr_equal(const struct addr * const a, const struct addr * const b)
 {
@@ -36,6 +37,34 @@ const char *addr_to_str(const struct addr * const a)
       inet_ntop(AF_INET6, &(a->ip.v6), _addrstrbuf, sizeof(_addrstrbuf));
       return (_addrstrbuf);
    }
+}
+
+int str_to_addr(const char *s, struct addr *a)
+{
+   struct addrinfo hints, *ai;
+   int ret;
+
+   memset(&hints, 0, sizeof(hints));
+   hints.ai_family = AF_UNSPEC;
+   hints.ai_flags = AI_NUMERICHOST;
+
+   if ((ret = getaddrinfo(s, NULL, &hints, &ai)) != 0)
+      return (ret);
+
+   if (ai->ai_family == AF_INET) {
+      a->family = IPv4;
+      a->ip.v4 = ((const struct sockaddr_in *)ai->ai_addr)->sin_addr.s_addr;
+   } else if (ai->ai_family == AF_INET6) {
+      a->family = IPv6;
+      memcpy(&(a->ip.v6),
+             ((struct sockaddr_in6 *)ai->ai_addr)->sin6_addr.s6_addr,
+             sizeof(a->ip.v6));
+   } else {
+      ret = EAI_FAMILY;
+   }
+
+   freeaddrinfo(ai);
+   return (ret);
 }
 
 /* vim:set ts=3 sw=3 tw=78 et: */
