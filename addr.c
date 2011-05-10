@@ -67,4 +67,31 @@ int str_to_addr(const char *s, struct addr *a)
    return (ret);
 }
 
+void addr_mask(struct addr *a, const struct addr * const mask)
+{
+   assert(a->family == mask->family);
+   if (a->family == IPv4)
+      a->ip.v4 &= mask->ip.v4;
+   else {
+      size_t i;
+
+      assert(a->family == IPv6);
+      for (i=0; i<sizeof(a->ip.v6.s6_addr); i++)
+         a->ip.v6.s6_addr[i] &= mask->ip.v6.s6_addr[i];
+   }
+}
+
+int addr_inside(const struct addr * const a,
+   const struct addr * const net, const struct addr * const mask)
+{
+   struct addr masked;
+
+   assert(a->family == net->family);
+   assert(a->family == mask->family);
+
+   masked = *a;
+   addr_mask(&masked, mask);
+   return (addr_equal(&masked, net));
+}
+
 /* vim:set ts=3 sw=3 tw=78 et: */

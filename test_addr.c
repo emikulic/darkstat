@@ -48,6 +48,19 @@ void test(const char *in, const char *expect_out, int expect_result)
    printf("\n");
 }
 
+void test_inside(const char *a, const char *net, const char *mask, int expect)
+{
+   struct addr aa, anet, amask;
+
+   str_to_addr(a, &aa);
+   str_to_addr(net, &anet);
+   str_to_addr(mask, &amask);
+
+   printf("%s: %s in %s/%s\n",
+      addr_inside(&aa, &anet, &amask) ? "PASS" : "FAIL",
+      a, net, mask);
+}
+
 int main()
 {
    test("0.0.0.0", "0.0.0.0", 0);
@@ -70,6 +83,11 @@ int main()
    test(".", NULL, EAI_NONAME);
    test(":", NULL, EAI_NONAME);
    test("23.75.345.200", NULL, EAI_NONAME);
+
+   test_inside("192.168.1.2", "192.168.0.0", "255.255.0.0", 1);
+   test_inside("2001:0200::3eff:feb1:44d7",
+               "2001:0200::",
+               "ffff:ffff::", 1);
 
    return 0;
 }

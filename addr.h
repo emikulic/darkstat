@@ -22,6 +22,9 @@ struct addr {
 
 int addr_equal(const struct addr * const a, const struct addr * const b);
 const char *addr_to_str(const struct addr * const a);
+void addr_mask(struct addr *a, const struct addr * const mask);
+int addr_inside(const struct addr * const a,
+   const struct addr * const net, const struct addr * const mask);
 
 /* Returns 0 on success, gai_strerror() code otherwise. */
 int str_to_addr(const char *s, struct addr *a);
