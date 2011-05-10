@@ -49,11 +49,12 @@ OBJS = $(SRCS:%.c=%.o)
 all: darkstat
 
 darkstat: $(OBJS)
-	@echo Linking $@
-	$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) $(LIBS) -o $@
+	@echo "===> Linking $@"
+	@$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) $(LIBS) -o $@
 
 .c.o:
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+	@echo "===> Compiling $@"
+	@$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 clean:
 	rm -f darkstat $(OBJS) c-ify graphjs.h stylecss.h
@@ -78,7 +79,8 @@ stylecss.h: static/style.css c-ify
 	./c-ify style_css <static/style.css >$@
 
 c-ify: static/c-ify.c
-	$(HOSTCC) $(HOSTCFLAGS) static/c-ify.c -o $@
+	@echo "==> Compiling $@"
+	@$(HOSTCC) $(HOSTCFLAGS) static/c-ify.c -o $@
 
 install: darkstat
 	$(INSTALL) -d $(DESTDIR)$(sbindir)
