@@ -7,10 +7,7 @@
  * GNU General Public License version 2. (see COPYING.GPL)
  */
 
-#include <netinet/in.h> /* for in_addr, in6_addr */
-
-extern struct in_addr localip;
-extern struct in6_addr localip6;
+extern struct addr localip4, localip6;
 
 void localip_init(const char *interface);
 void localip_update(void);

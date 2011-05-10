@@ -9,23 +9,12 @@
 #ifndef __DARKSTAT_HOSTS_DB_H
 #define __DARKSTAT_HOSTS_DB_H
 
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include "str.h"
-
-struct addr46 {
-   sa_family_t af;
-   union {
-      struct in_addr ip;
-      struct in6_addr ip6;
-   } addr;
-};
+#include "addr.h"
 
 struct hashtable;
 
 struct host {
-   struct addr46 ipaddr;
+   struct addr addr;
    char *dns;
    uint8_t mac_addr[6];
    time_t last_seen;
@@ -73,8 +62,8 @@ void hosts_db_free(void);
 int hosts_db_import(const int fd);
 int hosts_db_export(const int fd);
 
-struct bucket *host_find(const struct addr46 *const ip); /* can return NULL */
-struct bucket *host_get(const struct addr46 *const ip);
+struct bucket *host_find(const struct addr *const a); /* can return NULL */
+struct bucket *host_get(const struct addr *const a);
 struct bucket *host_get_port_tcp(struct bucket *host, const uint16_t port);
 struct bucket *host_get_port_udp(struct bucket *host, const uint16_t port);
 struct bucket *host_get_ip_proto(struct bucket *host, const uint8_t proto);

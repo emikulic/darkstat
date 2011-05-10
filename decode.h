@@ -15,7 +15,7 @@
 #include <netinet/in.h> /* for <netinet/ip.h>  */
 #include <netinet/ip.h> /* struct ip */
 
-#include "hosts_db.h"   /* addr46 */
+#include "addr.h"
 
 #define PPP_HDR_LEN     4
 #define FDDI_HDR_LEN    21
@@ -44,28 +44,18 @@ struct linkhdr {
 
 const struct linkhdr *getlinkhdr(const int linktype);
 int getsnaplen(const struct linkhdr *lh);
-char *ip_to_str(const struct addr46 *const ip);
-char *ip_to_str_af(const void *const addr, sa_family_t af);
 
-typedef struct {
+struct pktsummary {
    /* Fields are in host byte order (except IPs) */
-   union {
-      struct in_addr src_ip;
-      struct in6_addr src_ip6;
-   };
-   union {
-      struct in_addr dest_ip;
-      struct in6_addr dest_ip6;
-   };
+   struct addr src, dst;
    time_t time;
    uint16_t len;
-   sa_family_t af;               /* AF_{UNSPEC, INET, INET6} */
-   uint8_t proto;                /* IPPROTO_{TCP, UDP, ICMP} */
-   uint8_t tcp_flags;            /* only for TCP */
-   uint16_t src_port, dest_port; /* only for TCP, UDP */
+   uint8_t proto;               /* IPPROTO_{TCP, UDP, ICMP} */
+   uint8_t tcp_flags;           /* only for TCP */
+   uint16_t src_port, dst_port; /* only for TCP, UDP */
    uint8_t src_mac[ETHER_ADDR_LEN],
            dst_mac[ETHER_ADDR_LEN]; /* only for Ethernet */
-} pktsummary;
+};
 
 #endif /* __DARKSTAT_DECODE_H */
 /* vim:set ts=3 sw=3 tw=78 expandtab: */

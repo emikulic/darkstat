@@ -18,6 +18,7 @@
 
 #include "darkstat.h"
 #include "acct.h"
+#include "decode.h"
 #include "conv.h"
 #include "daylog.h"
 #include "err.h"
@@ -29,86 +30,75 @@
 #define __FAVOR_BSD
 #include <netinet/tcp.h>
 #include <sys/socket.h>
+#include <assert.h>
+#include <ctype.h> /* for isdigit */
+#include <netdb.h> /* for gai_strerror */
 #include <stdlib.h> /* for free */
 #include <string.h> /* for memcpy */
-#include <ctype.h>  /* isdigit() */
 
 uint64_t total_packets = 0, total_bytes = 0;
 
-static int using_localnet = 0;
-static int using_localnet6 = 0;
-static in_addr_t localnet, localmask;
-static struct in6_addr localnet6, localmask6;
+static int using_localnet4 = 0, using_localnet6 = 0;
+static struct addr localnet4, localmask4, localnet6, localmask6;
 
 /* Parse the net/mask specification into two IPs or die trying. */
 void
 acct_init_localnet(const char *spec)
 {
-   char **tokens, *p;
-   int num_tokens, isnum, j;
-   int build_ipv6;  /* Zero for IPv4, one for IPv6.  */
+   char **tokens;
+   int num_tokens, isnum, j, ret;
    int pfxlen, octets, remainder;
-   struct in_addr addr;
-   struct in6_addr addr6;
+   struct addr localnet, localmask;
 
    tokens = split('/', spec, &num_tokens);
    if (num_tokens != 2)
       errx(1, "expecting network/netmask, got \"%s\"", spec);
 
-   /* Presence of a colon distinguishes address families.  */
-   if (strchr(tokens[0], ':')) {
-      build_ipv6 = 1;
-      if (inet_pton(AF_INET6, tokens[0], &addr6) != 1)
-         errx(1, "invalid IPv6 network address \"%s\"", tokens[0]);
-      memcpy(&localnet6, &addr6, sizeof(localnet6));
-   } else {
-      build_ipv6 = 0;
-      if (inet_pton(AF_INET, tokens[0], &addr) != 1)
-         errx(1, "invalid network address \"%s\"", tokens[0]);
-      localnet = addr.s_addr;
-   }
+   if ((ret = str_to_addr(tokens[0], &localnet)) != 0)
+      errx(1, "couldn't parse \"%s\": %s", tokens[0], gai_strerror(ret));
 
    /* Detect a purely numeric argument.  */
    isnum = 0;
-   p = tokens[1];
-   while (*p != '\0') {
-      if (isdigit(*p)) {
-         isnum = 1;
-         ++p;
-         continue;
-      } else {
-         isnum = 0;
-         break;
+   {
+      const char *p = tokens[1];
+      while (*p != '\0') {
+         if (isdigit(*p)) {
+            isnum = 1;
+            ++p;
+            continue;
+         } else {
+            isnum = 0;
+            break;
+         }
       }
    }
 
    if (!isnum) {
-      if (build_ipv6) {
-         if (inet_pton(AF_INET6, tokens[1], &addr6) != 1)
-            errx(1, "invalid IPv6 network mask \"%s\"", tokens[1]);
-         memcpy(&localmask6, &addr6, sizeof(localmask6));
-      } else {
-         if (inet_pton(AF_INET, tokens[1], &addr) != 1)
-            errx(1, "invalid network mask \"%s\"", tokens[1]);
-         localmask = addr.s_addr;
-      }
+      if ((ret = str_to_addr(tokens[1], &localmask)) != 0)
+         errx(1, "couldn't parse \"%s\": %s", tokens[1], gai_strerror(ret));
+      if (localmask.family != localnet.family)
+         errx(1, "family mismatch between net and mask");
    } else {
       uint8_t frac, *p;
 
+      localmask.family = localnet.family;
+
       /* Compute the prefix length.  */
-      pfxlen = strtonum(tokens[1], 1, build_ipv6 ? 128 : 32, NULL);
+      pfxlen = strtonum(tokens[1], 1,
+                        (localnet.family == IPv6) ? 128 : 32, NULL);
       if (pfxlen == 0)
          errx(1, "invalid network prefix length \"%s\"", tokens[1]);
 
       /* Construct the network mask.  */
       octets = pfxlen / 8;
       remainder = pfxlen % 8;
-      p = build_ipv6 ? (uint8_t *) localmask6.s6_addr : (uint8_t *) &localmask;
+      p = (localnet.family == IPv6) ? (localmask.ip.v6.s6_addr)
+                                    : ((uint8_t *) &(localmask.ip.v4));
 
-      if (build_ipv6)
-         memset(&localmask6, 0, sizeof(localmask6));
+      if (localnet.family == IPv6)
+         memset(p, 0, 16);
       else
-         memset(&localmask, 0, sizeof(localmask));
+         memset(p, 0, 4);
 
       for (j = 0; j < octets; ++j)
          p[j] = 0xff;
@@ -118,47 +108,65 @@ acct_init_localnet(const char *spec)
          p[j] = frac;   /* Have contribution for next position.  */
    }
 
-   /* Register the correct netmask and calculate the correct net.  */
-   if (build_ipv6) {
-      using_localnet6 = 1;
-      for (j = 0; j < 16; ++j)
-         localnet6.s6_addr[j] &= localmask6.s6_addr[j];
-   } else {
-      using_localnet = 1;
-      localnet &= localmask;
-   }
-
    free(tokens[0]);
    free(tokens[1]);
    free(tokens);
 
-   if (build_ipv6) {
-      verbosef("local network address: %s", ip_to_str_af(&localnet6, AF_INET6));
-      verbosef("   local network mask: %s", ip_to_str_af(&localmask6, AF_INET6));
+   /* Register the correct netmask and calculate the correct net.  */
+   addr_mask(&localnet, &localmask);
+   if (localnet.family == IPv6) {
+      using_localnet6 = 1;
+      localnet6 = localnet;
+      localmask6 = localmask;
    } else {
-      verbosef("local network address: %s", ip_to_str_af(&localnet, AF_INET));
-      verbosef("   local network mask: %s", ip_to_str_af(&localmask, AF_INET));
+      using_localnet4 = 1;
+      localnet4 = localnet;
+      localmask4 = localmask;
    }
 
+   verbosef("local network address: %s", addr_to_str(&localnet));
+   verbosef("   local network mask: %s", addr_to_str(&localmask));
+}
+
+static int
+addr_is_local(const struct addr * const a)
+{
+   if (a->family == IPv4) {
+      if (using_localnet4) {
+         if (addr_inside(a, &localnet4, &localmask4))
+            return 1;
+      } else {
+         if (addr_equal(a, &localip4))
+            return 1;
+      }
+   } else {
+      assert(a->family == IPv6);
+      if (using_localnet6) {
+         if (addr_inside(a, &localnet6, &localmask6))
+            return 1;
+      } else {
+         if (addr_equal(a, &localip6))
+            return 1;
+      }
+   }
+   return 0;
 }
 
 /* Account for the given packet summary. */
 void
-acct_for(const pktsummary *sm)
+acct_for(const struct pktsummary * const sm)
 {
    struct bucket *hs = NULL, *hd = NULL;
    struct bucket *ps, *pd;
-   struct addr46 ipaddr;
-   struct in6_addr scribble;
-   int dir_in, dir_out, j;
+   int dir_in, dir_out;
 
 #if 0 /* WANT_CHATTY? */
-   printf("%15s > ", ip_to_str_af(&sm->src_ip, AF_INET));
-   printf("%15s ", ip_to_str_af(&sm->dest_ip, AF_INET));
+   printf("%15s > ", addr_to_str(&sm->src));
+   printf("%15s ", addr_to_str(&sm->dst));
    printf("len %4d proto %2d", sm->len, sm->proto);
 
    if (sm->proto == IPPROTO_TCP || sm->proto == IPPROTO_UDP)
-      printf(" port %5d : %5d", sm->src_port, sm->dest_port);
+      printf(" port %5d : %5d", sm->src_port, sm->dst_port);
    if (sm->proto == IPPROTO_TCP)
       printf(" %s%s%s%s%s%s",
          (sm->tcp_flags & TH_FIN)?"F":"",
@@ -176,42 +184,12 @@ acct_for(const pktsummary *sm)
    total_bytes += sm->len;
 
    /* Graphs. */
-   dir_in = dir_out = 0;
+   dir_out = addr_is_local(&(sm->src));
+   dir_in  = addr_is_local(&(sm->dst));
 
-   if (sm->af == AF_INET) {
-      if (using_localnet) {
-         if ((sm->src_ip.s_addr & localmask) == localnet)
-            dir_out = 1;
-         if ((sm->dest_ip.s_addr & localmask) == localnet)
-            dir_in = 1;
-         if (dir_in == 1 && dir_out == 1)
-            /* Traffic staying within the network isn't counted. */
-            dir_in = dir_out = 0;
-      } else {
-         if (memcmp(&sm->src_ip, &localip, sizeof(localip)) == 0)
-            dir_out = 1;
-         if (memcmp(&sm->dest_ip, &localip, sizeof(localip)) == 0)
-            dir_in = 1;
-      }
-   } else if (sm->af == AF_INET6) {
-      if (using_localnet6) {
-         for (j = 0; j < 16; ++j)
-            scribble.s6_addr[j] = sm->src_ip6.s6_addr[j] & localmask6.s6_addr[j];
-         if (memcmp(&scribble, &localnet6, sizeof(scribble)) == 0)
-            dir_out = 1;
-         else {
-            for (j = 0; j < 16; ++j)
-               scribble.s6_addr[j] = sm->dest_ip6.s6_addr[j] & localmask6.s6_addr[j];
-            if (memcmp(&scribble, &localnet6, sizeof(scribble)) == 0)
-               dir_in = 1;
-         }
-      } else {
-         if (memcmp(&sm->src_ip6, &localip6, sizeof(localip6)) == 0)
-            dir_out = 1;
-         if (memcmp(&sm->dest_ip6, &localip6, sizeof(localip6)) == 0)
-            dir_in = 1;
-      }
-   }
+   /* Traffic staying within the network isn't counted. */
+   if (dir_in == 1 && dir_out == 1)
+      dir_in = dir_out = 0;
 
    if (dir_out) {
       daylog_acct((uint64_t)sm->len, GRAPH_OUT);
@@ -225,48 +203,20 @@ acct_for(const pktsummary *sm)
    if (hosts_max == 0) return; /* skip per-host accounting */
 
    /* Hosts. */
-   ipaddr.af = sm->af;
-   switch (ipaddr.af) {
-      case AF_INET6:
-         memcpy(&ipaddr.addr.ip6, &sm->src_ip6, sizeof(ipaddr.addr.ip6));
-         break;
-      case AF_INET:
-      default:
-         memcpy(&ipaddr.addr.ip, &sm->src_ip, sizeof(ipaddr.addr.ip));
-         break;
-   }
-   hs = host_get(&ipaddr);
+   hs = host_get(&(sm->src));
    hs->out   += sm->len;
    hs->total += sm->len;
    memcpy(hs->u.host.mac_addr, sm->src_mac, sizeof(sm->src_mac));
    hs->u.host.last_seen = now;
 
-   switch (ipaddr.af) {
-      case AF_INET6:
-         memcpy(&ipaddr.addr.ip6, &sm->dest_ip6, sizeof(ipaddr.addr.ip6));
-         break;
-      case AF_INET:
-      default:
-         memcpy(&ipaddr.addr.ip, &sm->dest_ip, sizeof(ipaddr.addr.ip));
-         break;
-   }
-   hd = host_get(&ipaddr); /* this can invalidate hs! */
+   hd = host_get(&(sm->dst)); /* this can invalidate hs! */
    hd->in    += sm->len;
    hd->total += sm->len;
    memcpy(hd->u.host.mac_addr, sm->dst_mac, sizeof(sm->dst_mac));
    hd->u.host.last_seen = now;
 
    /* Protocols. */
-   switch (ipaddr.af) {
-      case AF_INET6:
-         memcpy(&ipaddr.addr.ip6, &sm->src_ip6, sizeof(ipaddr.addr.ip6));
-         break;
-      case AF_INET:
-      default:
-         memcpy(&ipaddr.addr.ip, &sm->src_ip, sizeof(ipaddr.addr.ip));
-         break;
-   }
-   hs = host_find(&ipaddr);
+   hs = host_find(&(sm->src));
    if (hs != NULL) {
       ps = host_get_ip_proto(hs, sm->proto);
       ps->out   += sm->len;
@@ -290,9 +240,9 @@ acct_for(const pktsummary *sm)
          ps->total += sm->len;
       }
 
-      if (sm->dest_port <= highest_port)
+      if (sm->dst_port <= highest_port)
       {
-         pd = host_get_port_tcp(hd, sm->dest_port);
+         pd = host_get_port_tcp(hd, sm->dst_port);
          pd->in    += sm->len;
          pd->total += sm->len;
          if (sm->tcp_flags == TH_SYN)
@@ -308,9 +258,9 @@ acct_for(const pktsummary *sm)
          ps->total += sm->len;
       }
 
-      if (sm->dest_port <= highest_port)
+      if (sm->dst_port <= highest_port)
       {
-         pd = host_get_port_udp(hd, sm->dest_port);
+         pd = host_get_port_udp(hd, sm->dst_port);
          pd->in    += sm->len;
          pd->total += sm->len;
       }

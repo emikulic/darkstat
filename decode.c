@@ -13,11 +13,12 @@
 #include "darkstat.h"
 #include "acct.h"
 #include "cap.h"
+#include "decode.h"
+#include "err.h"
 
 #include <sys/ioctl.h>
 #include <sys/socket.h>
 #include <assert.h>
-#include "err.h"
 #include <pcap.h>
 #include <string.h>
 #include <unistd.h>
@@ -74,15 +75,15 @@ static void decode_ppp(u_char *, const struct pcap_pkthdr *,
 static void decode_pppoe(u_char *, const struct pcap_pkthdr *,
    const u_char *);
 static void decode_pppoe_real(const u_char *pdata, const uint32_t len,
-   pktsummary *sm);
+   struct pktsummary *sm);
 static void decode_linux_sll(u_char *, const struct pcap_pkthdr *,
    const u_char *);
 static void decode_raw(u_char *, const struct pcap_pkthdr *,
    const u_char *);
 static void decode_ip(const u_char *pdata, const uint32_t len,
-   pktsummary *sm);
+   struct pktsummary *sm);
 static void decode_ipv6(const u_char *pdata, const uint32_t len,
-   pktsummary *sm);
+   struct pktsummary *sm);
 
 /* Link-type header information */
 static const struct linkhdr linkhdrs[] = {
@@ -100,7 +101,7 @@ static const struct linkhdr linkhdrs[] = {
    { DLT_LINUX_SLL, SLL_HDR_LEN,   decode_linux_sll },
 #endif
    { DLT_RAW,       RAW_HDR_LEN,   decode_raw },
-   { -1, -1, NULL }
+   { -1, 0, NULL }
 };
 
 /*
@@ -131,30 +132,6 @@ getsnaplen(const struct linkhdr *lh)
    return (20 + lh->hdrlen + IPV6_HDR_LEN + max(TCP_HDR_LEN, UDP_HDR_LEN));
 }
 
-/*
- * Convert IP address to a presentation notation in a static buffer
- * using inet_ntop(3).
- */
-char ipstr[INET6_ADDRSTRLEN]; /* TODO Reentrant? */
-
-char *
-ip_to_str(const struct addr46 *const ip)
-{
-   ipstr[0] = '\0';
-   inet_ntop(ip->af, &ip->addr.ip6, ipstr, sizeof(ipstr));
-
-   return (ipstr);
-}
-
-char *
-ip_to_str_af(const void *const addr, sa_family_t af)
-{
-   ipstr[0] = '\0';
-   inet_ntop(af, addr, ipstr, sizeof(ipstr));
-
-   return (ipstr);
-}
-
 /* Decoding functions. */
 static void
 decode_ether(u_char *user _unused_,
@@ -163,7 +140,7 @@ decode_ether(u_char *user _unused_,
 {
    u_short type;
    const struct ether_header *hdr = (const struct ether_header *)pdata;
-   pktsummary sm;
+   struct pktsummary sm;
    memset(&sm, 0, sizeof(sm));
    sm.time = pheader->ts.tv_sec;
 
@@ -212,7 +189,7 @@ decode_loop(u_char *user _unused_,
       const u_char *pdata)
 {
    uint32_t family;
-   pktsummary sm;
+   struct pktsummary sm;
    memset(&sm, 0, sizeof(sm));
 
    if (pheader->caplen < NULL_HDR_LEN) {
@@ -244,7 +221,7 @@ decode_ppp(u_char *user _unused_,
       const struct pcap_pkthdr *pheader,
       const u_char *pdata)
 {
-   pktsummary sm;
+   struct pktsummary sm;
    memset(&sm, 0, sizeof(sm));
 
    if (pheader->caplen < PPPOE_HDR_LEN) {
@@ -265,7 +242,7 @@ decode_pppoe(u_char *user _unused_,
       const struct pcap_pkthdr *pheader,
       const u_char *pdata)
 {
-   pktsummary sm;
+   struct pktsummary sm;
    memset(&sm, 0, sizeof(sm));
    sm.time = pheader->ts.tv_sec;
    decode_pppoe_real(pdata, pheader->caplen, &sm);
@@ -273,7 +250,7 @@ decode_pppoe(u_char *user _unused_,
 
 static void
 decode_pppoe_real(const u_char *pdata, const uint32_t len,
-   pktsummary *sm)
+   struct pktsummary *sm)
 {
    if (len < PPPOE_HDR_LEN) {
       verbosef("pppoe: packet too short (%u bytes)", len);
@@ -311,7 +288,7 @@ decode_linux_sll(u_char *user _unused_,
       uint16_t ether_type;
    } *hdr = (const struct sll_header *)pdata;
    u_short type;
-   pktsummary sm;
+   struct pktsummary sm;
    memset(&sm, 0, sizeof(sm));
 
    if (pheader->caplen < SLL_HDR_LEN) {
@@ -340,7 +317,7 @@ decode_raw(u_char *user _unused_,
       const struct pcap_pkthdr *pheader,
       const u_char *pdata)
 {
-   pktsummary sm;
+   struct pktsummary sm;
    memset(&sm, 0, sizeof(sm));
 
    decode_ip(pdata, pheader->caplen, &sm);
@@ -349,7 +326,7 @@ decode_raw(u_char *user _unused_,
 }
 
 static void
-decode_ip(const u_char *pdata, const uint32_t len, pktsummary *sm)
+decode_ip(const u_char *pdata, const uint32_t len, struct pktsummary *sm)
 {
    const struct ip *hdr = (const struct ip *)pdata;
 
@@ -368,10 +345,13 @@ decode_ip(const u_char *pdata, const uint32_t len, pktsummary *sm)
    }
 
    sm->len = ntohs(hdr->ip_len);
-   sm->af = AF_INET;
    sm->proto = hdr->ip_p;
-   memcpy(&sm->src_ip, &hdr->ip_src, sizeof(sm->src_ip));
-   memcpy(&sm->dest_ip, &hdr->ip_dst, sizeof(sm->dest_ip));
+
+   sm->src.family = IPv4;
+   sm->src.ip.v4 = hdr->ip_src.s_addr;
+
+   sm->dst.family = IPv4;
+   sm->dst.ip.v4 = hdr->ip_dst.s_addr;
 
    switch (sm->proto) {
       case IPPROTO_TCP: {
@@ -382,7 +362,7 @@ decode_ip(const u_char *pdata, const uint32_t len, pktsummary *sm)
             return;
          }
          sm->src_port = ntohs(thdr->th_sport);
-         sm->dest_port = ntohs(thdr->th_dport);
+         sm->dst_port = ntohs(thdr->th_dport);
          sm->tcp_flags = thdr->th_flags &
             (TH_FIN|TH_SYN|TH_RST|TH_PUSH|TH_ACK|TH_URG);
          break;
@@ -396,7 +376,7 @@ decode_ip(const u_char *pdata, const uint32_t len, pktsummary *sm)
             return;
          }
          sm->src_port = ntohs(uhdr->uh_sport);
-         sm->dest_port = ntohs(uhdr->uh_dport);
+         sm->dst_port = ntohs(uhdr->uh_dport);
          break;
       }
 
@@ -413,7 +393,7 @@ decode_ip(const u_char *pdata, const uint32_t len, pktsummary *sm)
 }
 
 static void
-decode_ipv6(const u_char *pdata, const uint32_t len, pktsummary *sm)
+decode_ipv6(const u_char *pdata, const uint32_t len, struct pktsummary *sm)
 {
    const struct ip6_hdr *hdr = (const struct ip6_hdr *)pdata;
 
@@ -423,10 +403,13 @@ decode_ipv6(const u_char *pdata, const uint32_t len, pktsummary *sm)
    }
 
    sm->len = ntohs(hdr->ip6_plen) + IPV6_HDR_LEN;
-   sm->af = AF_INET6;
    sm->proto = hdr->ip6_nxt;
-   memcpy(&sm->src_ip6, &hdr->ip6_src, sizeof(sm->src_ip6));
-   memcpy(&sm->dest_ip6, &hdr->ip6_dst, sizeof(sm->dest_ip6));
+
+   sm->src.family = IPv6;
+   memcpy(&sm->src.ip.v6, &hdr->ip6_src, sizeof(sm->src.ip.v6));
+
+   sm->dst.family = IPv6;
+   memcpy(&sm->dst.ip.v6, &hdr->ip6_dst, sizeof(sm->dst.ip.v6));
 
    switch (sm->proto) {
       case IPPROTO_TCP: {
@@ -437,7 +420,7 @@ decode_ipv6(const u_char *pdata, const uint32_t len, pktsummary *sm)
             return;
          }
          sm->src_port = ntohs(thdr->th_sport);
-         sm->dest_port = ntohs(thdr->th_dport);
+         sm->dst_port = ntohs(thdr->th_dport);
          sm->tcp_flags = thdr->th_flags &
             (TH_FIN|TH_SYN|TH_RST|TH_PUSH|TH_ACK|TH_URG);
          break;
@@ -451,7 +434,7 @@ decode_ipv6(const u_char *pdata, const uint32_t len, pktsummary *sm)
             return;
          }
          sm->src_port = ntohs(uhdr->uh_sport);
-         sm->dest_port = ntohs(uhdr->uh_dport);
+         sm->dst_port = ntohs(uhdr->uh_dport);
          break;
       }
 

@@ -8,8 +8,8 @@
  */
 
 #include "darkstat.h"
+#include "addr.h"
 #include "conv.h" /* for strlcpy */
-#include "decode.h" /* for ip_to_str */
 #include "err.h"
 #include "localip.h"
 
@@ -21,12 +21,8 @@
 #include <unistd.h>
 
 static const char *iface = NULL;
-
-struct in_addr localip = { 0 };
-static struct in_addr last_localip = { 0 };
-
-struct in6_addr localip6;
-static struct in6_addr last_localip6;
+struct addr localip4, localip6;
+static struct addr last_localip4, last_localip6;
 
 void
 localip_init(const char *interface)
@@ -39,15 +35,15 @@ void
 localip_update(void)
 {
    struct ifaddrs *ifas, *ifa;
-   int flags = 0;
+   int got_v4 = 0, got_v6 = 0;
 
-#define HAS_IPV4  0x01
-#define HAS_IPV6  0x02
+   localip4.family = IPv4;
+   localip6.family = IPv6;
 
    if (iface == NULL) {
       /* reading from capfile */
-      memset(&localip, 0, sizeof(localip));
-      memset(&localip6, 0, sizeof(localip6));
+      localip4.ip.v4 = 0;
+      memset(&(localip6.ip.v6), 0, sizeof(localip6.ip.v6));
       return;
    }
 
@@ -55,18 +51,19 @@ localip_update(void)
       err(1, "can't get own IP address on interface \"%s\"", iface);
 
    for (ifa = ifas; ifa; ifa = ifa->ifa_next) {
-      if (flags == (HAS_IPV4 | HAS_IPV6))
+      if (got_v4 && got_v6)
          break;   /* Task is already complete. */
 
       if (strncmp(ifa->ifa_name, iface, IFNAMSIZ))
          continue;   /* Wrong interface. */
 
       /* The first IPv4 name is always functional. */
-      if ( (ifa->ifa_addr->sa_family == AF_INET)
-            && ! (flags & HAS_IPV4) ) {
+      if ((ifa->ifa_addr->sa_family == AF_INET) && !got_v4)
+      {
          /* Good IPv4 address. */
-         localip.s_addr = ((struct sockaddr_in *) ifa->ifa_addr)->sin_addr.s_addr;
-         flags |= HAS_IPV4;
+         localip4.ip.v4 =
+            ((struct sockaddr_in *)ifa->ifa_addr)->sin_addr.s_addr;
+         got_v4 = 1;
          continue;
       }
 
@@ -77,41 +74,26 @@ localip_update(void)
          if ( IN6_IS_ADDR_LINKLOCAL(&(sa6->sin6_addr))
               || IN6_IS_ADDR_SITELOCAL(&(sa6->sin6_addr)) )
             continue;
-         else
-            /* Only standard IPv6 can reach this point. */
-            memcpy(&localip6, &sa6->sin6_addr, sizeof(localip6));
-            flags |= HAS_IPV6;
+
+         /* Only standard IPv6 can reach this point. */
+         memcpy(&(localip6.ip.v6), &sa6->sin6_addr, sizeof(localip6.ip.v6));
+         got_v6 = 1;
       }
    }
 
    freeifaddrs(ifas);
 
-   /* Repport an error if IPv4 address could not be found. */
-   if ( !(flags & HAS_IPV4) )
+   /* Report an error if IPv4 address could not be found. */
+   if (!got_v4)
        err(1, "can't get own IPv4 address on interface \"%s\"", iface);
 
-   /* struct sockaddr {
-    *      sa_family_t     sa_family;      * address family, AF_xxx
-    *      char            sa_data[14];    * 14 bytes of protocol address
-    *
-    * struct sockaddr_in {
-    *      sa_family_t           sin_family;     * Address family
-    *      unsigned short int    sin_port;       * Port number
-    *      struct in_addr        sin_addr;       * Internet address
-    *
-    * struct in_addr {
-    *      __u32   s_addr;
-    */
-
-   if (last_localip.s_addr != localip.s_addr) {
-      verbosef("local_ip update(%s) = %s", iface,
-               ip_to_str_af(&localip, AF_INET));
-      memcpy(&last_localip, &localip, sizeof(last_localip));
+   if (!addr_equal(&last_localip4, &localip4)) {
+      verbosef("localip4 update(%s) = %s", iface, addr_to_str(&localip4));
+      last_localip4 = localip4;
    }
-   if (memcmp(&last_localip6, &localip6, sizeof(localip6))) {
-      verbosef("local_ip6 update(%s) = %s", iface,
-               ip_to_str_af(&localip6, AF_INET6));
-      memcpy(&last_localip6, &localip6, sizeof(localip6));
+   if (!addr_equal(&last_localip6, &localip6)) {
+      verbosef("localip6 update(%s) = %s", iface, addr_to_str(&localip6));
+      last_localip6 = localip6;
    }
 }
 

@@ -4,12 +4,14 @@
  * acct.h: traffic accounting
  */
 
-#include "decode.h"
+#include <stdint.h>
+
+struct pktsummary;
 
 extern uint64_t total_packets, total_bytes;
 
 void acct_init_localnet(const char *spec);
-void acct_for(const pktsummary *sm);
+void acct_for(const struct pktsummary * const sm);
 
 extern unsigned int highest_port;
 

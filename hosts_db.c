@@ -17,6 +17,7 @@
 #include "html.h"
 #include "ncache.h"
 #include "now.h"
+#include "str.h"
 
 #include <arpa/inet.h> /* inet_aton() */
 #include <netdb.h>     /* struct addrinfo */
@@ -102,9 +103,10 @@ coprime(const uint32_t u)
  * src/sys/netinet/tcp_hostcache.c 1.1
  */
 inline static uint32_t
-ipv4_hash(const struct in_addr *const ip)
+ipv4_hash(const struct addr *const a)
 {
-   return ( (ip->s_addr) ^ ((ip->s_addr) >> 7) ^ ((ip->s_addr) >> 17) );
+   uint32_t ip = a->ip.v4;
+   return ( (ip) ^ ((ip) >> 7) ^ ((ip) >> 17) );
 }
 
 #ifndef s6_addr32
@@ -118,30 +120,29 @@ ipv4_hash(const struct in_addr *const ip)
  * svn rev 122922.
  */
 inline static uint32_t
-ipv6_hash(const struct in6_addr *const ip6)
+ipv6_hash(const struct addr *const a)
 {
-   return ( ip6->s6_addr32[0] ^ ip6->s6_addr32[1] ^ ip6->s6_addr32[2] ^ ip6->s6_addr32[3] );
+   const struct in6_addr *const ip6 = &(a->ip.v6);
+   return ( ip6->s6_addr32[0] ^ ip6->s6_addr32[1] ^
+            ip6->s6_addr32[2] ^ ip6->s6_addr32[3] );
 }
 
 /* ---------------------------------------------------------------------------
  * hash_func collection
  */
-#define CASTKEY(type) (*((const type *)key))
-
 static uint32_t
 hash_func_host(const struct hashtable *h _unused_, const void *key)
 {
-   struct addr46 *ip = (struct addr46 *) key;
-
-   switch (ip->af) {
-      case AF_INET:
-         return (ipv4_hash(&ip->addr.ip));
-      case AF_INET6:
-         return (ipv6_hash(&ip->addr.ip6));
-      default:
-         return 0;
+   const struct addr *a = key;
+   if (a->family == IPv4)
+      return (ipv4_hash(a));
+   else {
+      assert(a->family == IPv6);
+      return (ipv6_hash(a));
    }
 }
+
+#define CASTKEY(type) (*((const type *)key))
 
 static uint32_t
 hash_func_short(const struct hashtable *h, const void *key)
@@ -162,7 +163,7 @@ hash_func_byte(const struct hashtable *h, const void *key)
 static const void *
 key_func_host(const struct bucket *b)
 {
-   return &(b->u.host.ipaddr);
+   return &(b->u.host.addr);
 }
 
 static const void *
@@ -190,23 +191,7 @@ key_func_ip_proto(const struct bucket *b)
 static int
 find_func_host(const struct bucket *b, const void *key)
 {
-   struct addr46 *ipaddr = (struct addr46 *) key;
-
-   if (b->u.host.ipaddr.af != ipaddr->af)
-      return 0; /* not comparable */
-
-   switch (ipaddr->af) {
-      case AF_INET:
-         return (memcmp(&b->u.host.ipaddr.addr.ip,
-                        &ipaddr->addr.ip, sizeof(ipaddr->addr.ip))
-                  == 0);
-      case AF_INET6:
-         return (memcmp(&b->u.host.ipaddr.addr.ip6,
-                        &ipaddr->addr.ip6, sizeof(ipaddr->addr.ip6))
-                  == 0);
-      default:
-         return 0;
-   }
+   return (addr_equal(key, &(b->u.host.addr)));
 }
 
 static int
@@ -244,7 +229,7 @@ static struct bucket *
 make_func_host(const void *key)
 {
    MAKE_BUCKET(b, h, host);
-   memcpy(&h->ipaddr, key, sizeof(h->ipaddr));
+   h->addr = CASTKEY(struct addr);
    h->dns = NULL;
    h->last_seen = now;
    memset(&h->mac_addr, 0, sizeof(h->mac_addr));
@@ -327,7 +312,7 @@ static void
 format_row_host(struct str *buf, const struct bucket *b,
    const char *css_class)
 {
-   const char *ip = ip_to_str( &b->u.host.ipaddr );
+   const char *ip = addr_to_str(&(b->u.host.addr));
 
    str_appendf(buf,
       "<tr class=\"%s\">\n"
@@ -377,7 +362,7 @@ format_row_host(struct str *buf, const struct bucket *b,
 
    /* Only resolve hosts "on demand" */
    if (b->u.host.dns == NULL)
-      dns_queue(&b->u.host.ipaddr);
+      dns_queue(&(b->u.host.addr));
 }
 
 static void
@@ -657,18 +642,18 @@ hashtable_free(struct hashtable *h)
  * Return existing host or insert a new one.
  */
 struct bucket *
-host_get(const struct addr46 *const ip)
+host_get(const struct addr *const a)
 {
-   return (hashtable_find_or_insert(hosts_db, ip));
+   return (hashtable_find_or_insert(hosts_db, a));
 }
 
 /* ---------------------------------------------------------------------------
  * Find host, returns NULL if not in DB.
  */
 struct bucket *
-host_find(const struct addr46 *const ip)
+host_find(const struct addr *const a)
 {
-   return (hashtable_search(hosts_db, ip));
+   return (hashtable_search(hosts_db, a));
 }
 
 /* ---------------------------------------------------------------------------
@@ -677,8 +662,7 @@ host_find(const struct addr46 *const ip)
 static struct bucket *
 host_search(const char *ipstr)
 {
-   struct addr46 ipaddr;
-   struct sockaddr_storage ss;
+   struct addr a;
    struct addrinfo hints, *ai;
 
    memset(&hints, 0, sizeof(hints));
@@ -688,24 +672,23 @@ host_search(const char *ipstr)
    if (getaddrinfo(ipstr, NULL, &hints, &ai))
       return (NULL); /* invalid addr */
 
-   memcpy(&ss, ai->ai_addr, ai->ai_addrlen);
+   if (ai->ai_family == AF_INET) {
+      a.family = IPv4;
+      a.ip.v4 = ((const struct sockaddr_in *)ai->ai_addr)->sin_addr.s_addr;
+   }
+   else if (ai->ai_family == AF_INET6) {
+      a.family = IPv6;
+      memcpy(&(a.ip.v6),
+             ((struct sockaddr_in6 *)ai->ai_addr)->sin6_addr.s6_addr,
+             sizeof(a.ip.v6));
+   } else {
+      freeaddrinfo(ai);
+      return (NULL); /* unknown family */
+   }
    freeaddrinfo(ai);
 
-   ipaddr.af = ss.ss_family;
-   switch (ss.ss_family) {
-      case AF_INET:
-         memcpy(&ipaddr.addr.ip, &((struct sockaddr_in *) &ss)->sin_addr,
-               sizeof(ipaddr.addr.ip));
-         break;
-      case AF_INET6:
-         memcpy(&ipaddr.addr.ip6, &((struct sockaddr_in6 *) &ss)->sin6_addr,
-               sizeof(ipaddr.addr.ip6));
-         break;
-      default:
-         return (NULL);
-   }
-
-   return (hashtable_search(hosts_db, &ipaddr));
+   verbosef("search(%s) turned into %s", ipstr, addr_to_str(&a));
+   return (hashtable_search(hosts_db, &a));
 }
 
 /* ---------------------------------------------------------------------------
@@ -1030,38 +1013,42 @@ html_hosts_detail(const char *ip)
    struct bucket *h;
    struct str *buf, *ls_len;
    char ls_when[100];
+   const char *canonical;
    time_t ls;
 
    h = host_search(ip);
    if (h == NULL)
       return (NULL); /* no such host */
 
+   canonical = addr_to_str(&(h->u.host.addr));
+
    /* Overview. */
    buf = str_make();
    str_append(buf, html_header_1);
    str_appendf(buf, " <title>%s</title>\n", ip);
    str_append(buf, html_header_2);
+   str_appendf(buf, "<h2>%s</h2>\n", ip);
+   if (strcmp(ip, canonical) != 0)
+      str_appendf(buf, "(canonically <b>%s</b>)\n", canonical);
    str_appendf(buf,
-      "<h2>%s</h2>\n"
       "<p>\n"
        "<b>Hostname:</b> %s<br/>\n",
-      ip,
       (h->u.host.dns == NULL)?"(resolving...)":h->u.host.dns);
 
    /* Resolve host "on demand" */
    if (h->u.host.dns == NULL)
-      dns_queue(&h->u.host.ipaddr);
+      dns_queue(&(h->u.host.addr));
 
    if (show_mac_addrs)
-   str_appendf(buf,
-      "<b>MAC Address:</b> "
-      "<tt>%x:%x:%x:%x:%x:%x</tt><br/>\n",
-      h->u.host.mac_addr[0],
-      h->u.host.mac_addr[1],
-      h->u.host.mac_addr[2],
-      h->u.host.mac_addr[3],
-      h->u.host.mac_addr[4],
-      h->u.host.mac_addr[5]);
+      str_appendf(buf,
+         "<b>MAC Address:</b> "
+         "<tt>%x:%x:%x:%x:%x:%x</tt><br/>\n",
+         h->u.host.mac_addr[0],
+         h->u.host.mac_addr[1],
+         h->u.host.mac_addr[2],
+         h->u.host.mac_addr[3],
+         h->u.host.mac_addr[4],
+         h->u.host.mac_addr[5]);
 
    str_append(buf,
       "</p>\n"
@@ -1226,7 +1213,7 @@ static int
 hosts_db_import_host(const int fd)
 {
    struct bucket *host;
-   struct addr46 ipaddr;
+   struct addr a;
    uint8_t hostname_len;
    uint64_t in, out;
    unsigned int pos = xtell(fd);
@@ -1244,11 +1231,10 @@ hosts_db_import_host(const int fd)
       return 0;
    }
 
-   ipaddr.af = AF_INET;
-   if (!readaddr(fd, &ipaddr)) return 0;
-   verbosef("at file pos %u, importing host %s", pos, ip_to_str(&ipaddr));
-   host = host_get(&ipaddr);
-   assert(host->u.host.ipaddr.addr.ip.s_addr == ipaddr.addr.ip.s_addr); /* make fn? */
+   if (!readaddr(fd, &a)) return 0;
+   verbosef("at file pos %u, importing host %s", pos, addr_to_str(&a));
+   host = host_get(&a);
+   assert(addr_equal(&(host->u.host.addr), &a));
 
    if (ver > 1) {
       uint64_t t;
@@ -1326,7 +1312,7 @@ int hosts_db_export(const int fd)
       if (!writen(fd, export_tag_host_ver2, sizeof(export_tag_host_ver2)))
          return 0;
 
-      if (!writeaddr(fd, &b->u.host.ipaddr)) return 0;
+      if (!writeaddr(fd, &(b->u.host.addr))) return 0;
 
       if (!write64(fd, (uint64_t)(b->u.host.last_seen))) return 0;
 
