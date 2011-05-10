@@ -26,6 +26,7 @@ mandir = @mandir@
 
 SRCS = \
 acct.c		\
+addr.c		\
 cap.c		\
 conv.c		\
 darkstat.c	\
