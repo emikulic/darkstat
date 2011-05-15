@@ -29,6 +29,8 @@ NEWS \
 README \
 acct.c \
 acct.h \
+addr.c \
+addr.h \
 cap.c \
 cap.h \
 contrib \
@@ -50,6 +52,7 @@ err.h \
 export-format.txt \
 graph_db.c \
 graph_db.h \
+graphjs.h \
 hosts_db.c \
 hosts_db.h \
 hosts_sort.c \
@@ -69,6 +72,7 @@ queue.h \
 static \
 str.c \
 str.h \
+stylecss.h \
 tree.h \
 "
 # end packing list
