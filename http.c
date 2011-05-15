@@ -772,8 +772,8 @@ static void poll_send_header_and_reply(struct connection *conn)
     iov[0].iov_base = conn->header;
     iov[0].iov_len = conn->header_length;
 
-    iov[1].iov_base = conn->reply + conn->reply_sent;
-    iov[1].iov_len = conn->reply_length - conn->reply_sent;
+    iov[1].iov_base = conn->reply;
+    iov[1].iov_len = conn->reply_length;
 
     sent = writev(conn->socket, iov, 2);
     conn->last_active = now;
@@ -798,7 +798,7 @@ static void poll_send_header_and_reply(struct connection *conn)
     conn->header_sent = conn->header_length;
     sent -= conn->header_length;
 
-    if (conn->reply_sent + sent < conn->reply_length) {
+    if (sent < (ssize_t)conn->reply_length) {
         verbosef("partially sent reply");
         conn->reply_sent += sent;
         conn->state = SEND_REPLY;
