@@ -90,30 +90,31 @@ install: darkstat
 	$(INSTALL) -m 444 darkstat.8 $(DESTDIR)$(mandir)/man8
 
 # Automatically generated dependencies
-acct.o: acct.c darkstat.h config.h acct.h decode.h conv.h daylog.h \
-  graph_db.h err.h hosts_db.h str.h localip.h now.h
-cap.o: cap.c darkstat.h config.h cap.h conv.h decode.h hosts_db.h str.h \
-  localip.h err.h
-conv.o: conv.c darkstat.h config.h conv.h err.h
-darkstat.o: darkstat.c darkstat.h config.h acct.h decode.h cap.h conv.h \
-  daylog.h graph_db.h db.h dns.h http.h hosts_db.h str.h localip.h \
-  ncache.h pidfile.h err.h now.h
-daylog.o: daylog.c darkstat.h config.h err.h daylog.h graph_db.h str.h \
-  now.h
-db.o: db.c darkstat.h config.h err.h hosts_db.h str.h graph_db.h db.h
-decode.o: decode.c darkstat.h config.h acct.h decode.h cap.h err.h
-dns.o: dns.c darkstat.h config.h conv.h decode.h dns.h err.h hosts_db.h \
-  str.h queue.h tree.h
-err.o: err.c darkstat.h config.h conv.h err.h pidfile.h
-graph_db.o: graph_db.c cap.h conv.h darkstat.h config.h db.h acct.h \
-  decode.h err.h str.h html.h http.h graph_db.h now.h
-hosts_db.o: hosts_db.c darkstat.h config.h conv.h decode.h dns.h err.h \
-  hosts_db.h str.h db.h html.h ncache.h now.h
-hosts_sort.o: hosts_sort.c darkstat.h config.h hosts_db.h str.h err.h
-html.o: html.c darkstat.h config.h str.h http.h
-http.o: http.c darkstat.h config.h http.h conv.h hosts_db.h str.h \
-  graph_db.h err.h queue.h now.h stylecss.h graphjs.h
-localip.o: localip.c darkstat.h config.h conv.h decode.h err.h localip.h
-ncache.o: ncache.c darkstat.h config.h conv.h err.h ncache.h tree.h
-pidfile.o: pidfile.c darkstat.h config.h err.h str.h pidfile.h
-str.o: str.c darkstat.h config.h conv.h err.h str.h
+acct.o: acct.c acct.h decode.h addr.h conv.h config.h daylog.h graph_db.h \
+ err.h cdefs.h hosts_db.h localip.h now.h opt.h
+addr.o: addr.c addr.h
+cap.o: cap.c cdefs.h cap.h config.h conv.h decode.h addr.h hosts_db.h \
+ localip.h opt.h err.h
+conv.o: conv.c cdefs.h config.h conv.h err.h
+darkstat.o: darkstat.c acct.h cap.h cdefs.h config.h conv.h daylog.h \
+ graph_db.h db.h dns.h err.h http.h hosts_db.h addr.h localip.h ncache.h \
+ pidfile.h now.h
+daylog.o: daylog.c err.h cdefs.h daylog.h graph_db.h str.h now.h
+db.o: db.c cdefs.h err.h hosts_db.h addr.h graph_db.h db.h
+decode.o: decode.c cdefs.h acct.h cap.h config.h decode.h addr.h err.h \
+ opt.h
+dns.o: dns.c cdefs.h conv.h config.h decode.h addr.h dns.h err.h \
+ hosts_db.h queue.h str.h tree.h
+err.o: err.c cdefs.h conv.h config.h err.h opt.h pidfile.h
+graph_db.o: graph_db.c cap.h conv.h config.h db.h acct.h err.h cdefs.h \
+ str.h html.h graph_db.h now.h opt.h
+hosts_db.o: hosts_db.c cdefs.h conv.h config.h decode.h addr.h dns.h \
+ err.h hosts_db.h db.h html.h ncache.h now.h opt.h str.h
+hosts_sort.o: hosts_sort.c cdefs.h err.h hosts_db.h addr.h
+html.o: html.c config.h str.h html.h opt.h
+http.o: http.c cdefs.h config.h conv.h err.h graph_db.h hosts_db.h addr.h \
+ http.h now.h queue.h str.h stylecss.h graphjs.h
+localip.o: localip.c addr.h conv.h config.h err.h cdefs.h localip.h
+ncache.o: ncache.c conv.h config.h err.h cdefs.h ncache.h tree.h
+pidfile.o: pidfile.c err.h cdefs.h str.h pidfile.h
+str.o: str.c conv.h config.h err.h cdefs.h str.h
