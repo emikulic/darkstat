@@ -45,8 +45,14 @@ time_t now;
 static volatile int running = 1;
 static void sig_shutdown(int signum _unused_) { running = 0; }
 
-static volatile int reset_pending = 0;
-static void sig_reset(int signum _unused_) { reset_pending = 1; }
+static volatile int reset_pending = 0, export_pending = 0;
+static void sig_reset(int signum _unused_)
+{
+   reset_pending = 1;
+   export_pending = 1;
+}
+
+static void sig_export(int signum _unused_) { export_pending = 1; }
 
 /* --- Commandline parsing --- */
 static unsigned long
@@ -424,6 +430,8 @@ main(int argc, char **argv)
       errx(1, "signal(SIGINT) failed");
    if (signal(SIGUSR1, sig_reset) == SIG_ERR)
       errx(1, "signal(SIGUSR1) failed");
+   if (signal(SIGUSR2, sig_export) == SIG_ERR)
+      errx(1, "signal(SIGUSR2) failed");
 
    verbosef("entering main loop");
    daemonize_finish();
@@ -435,8 +443,13 @@ main(int argc, char **argv)
 
       now = time(NULL);
 
+      if (export_pending) {
+         if (export_fn != NULL)
+            db_export(export_fn);
+         export_pending = 0;
+      }
+
       if (reset_pending) {
-         if (export_fn != NULL) db_export(export_fn); /* FIXME: USR2? */
          hosts_db_reset();
          graph_reset();
          reset_pending = 0;

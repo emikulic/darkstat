@@ -248,7 +248,8 @@ database.
 .\"
 .TP
 .BI \-\-export " filename"
-On shutdown, and upon receiving SIGUSR1, export the in-memory database
+On shutdown, or upon receiving SIGUSR1 or SIGUSR2,
+export the in-memory database
 to the named file, relative to the chroot directory.
 If you wish to use \fB\-\-export\fR, you must first specify a
 \fB\-\-chroot\fR directory, and it must be writeable by the
@@ -404,6 +405,7 @@ Sending the SIGUSR1 signal will cause \fIdarkstat\fR to empty out its
 in-memory database.
 If an \fB\-\-export\fR file was set, it will first save the database to
 file.
+Sending SIGUSR2 will save the database without emptying it.
 .PP
 .\"
 .SH FREQUENTLY ASKED QUESTIONS
