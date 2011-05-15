@@ -272,11 +272,12 @@ AC_CHECK_LIB(c, setproctitle,
 AC_SEARCH_LIBS(strlcpy, [bsd],
  AC_DEFINE(HAVE_STRLCPY, 1,
   [Define to 1 if you have strlcpy().]))
+
 AC_SEARCH_LIBS(strlcat, [bsd],
  AC_DEFINE(HAVE_STRLCAT, 1,
   [Define to 1 if you have strlcat().]))
 
-AC_CHECK_LIB(c, strtonum,
+AC_SEARCH_LIBS(strtonum, [bsd],
  AC_DEFINE(HAVE_STRTONUM, 1,
   [Define to 1 if you have strtonum(3).]))
 
