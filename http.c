@@ -753,8 +753,6 @@ static void poll_send_header_and_reply(struct connection *conn)
 
     sent = writev(conn->socket, iov, 2);
     conn->last_active = now;
-    verbosef("poll_send_header_and_reply(%d) sent %d bytes",
-        conn->socket, (int)sent);
 
     /* handle any errors (-1) or closure (0) in send() */
     if (sent < 1) {

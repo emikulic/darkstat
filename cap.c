@@ -342,7 +342,6 @@ cap_poll(fd_set *read_set
       break;
 #endif
    }
-   /*FIXME*/if (want_verbose) fprintf(stderr, "%-20d\r", total);
    cap_stats_update();
 }
 
