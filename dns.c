@@ -144,7 +144,7 @@ dns_queue(const struct addr *const ipaddr)
    else if (num_w == -1)
       warn("dns_queue: ignoring write error");
    else if (num_w != sizeof(*ipaddr))
-      err(1, "dns_queue: wrote %z instead of %z", num_w, sizeof(*ipaddr));
+      err(1, "dns_queue: wrote %zu instead of %zu", num_w, sizeof(*ipaddr));
 }
 
 static void
@@ -181,7 +181,8 @@ dns_get_result(struct addr *ipaddr, char **name)
    if (numread == 0)
       goto error; /* EOF */
    if (numread != sizeof(reply))
-      errx(1, "dns_get_result read got %z, expected %z", numread, sizeof(reply));
+      errx(1, "dns_get_result read got %zu, expected %zu",
+         numread, sizeof(reply));
 
    /* Return successful reply. */
    memcpy(ipaddr, &reply.addr, sizeof(*ipaddr));
@@ -329,7 +330,8 @@ dns_main(void)
             err(1, "DNS: read failed");
          }
          if (numread != sizeof(ip))
-            err(1, "DNS: read got %z bytes, expecting %z", numread, sizeof(ip));
+            err(1, "DNS: read got %zu bytes, expecting %zu",
+               numread, sizeof(ip));
          enqueue(&ip);
          if (blocking) {
             /* After one blocking read, become non-blocking so that when we
