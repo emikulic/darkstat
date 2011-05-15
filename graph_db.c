@@ -345,7 +345,7 @@ html_front_page(void)
       "var graph_width = " GRAPH_WIDTH ";\n"
       "var graph_height = " GRAPH_HEIGHT ";\n"
       "var bar_gap = 1;\n"
-      "var graphs_uri = \"/graphs.xml\";\n"
+      "var graphs_uri = \"graphs.xml\";\n"
       "var graphs = [\n"
    );
 

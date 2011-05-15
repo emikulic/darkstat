@@ -15,6 +15,7 @@
 #include "hosts_db.h"
 #include "db.h"
 #include "html.h"
+#include "http.h" /* for base_url */
 #include "ncache.h"
 #include "now.h"
 #include "str.h"
@@ -316,10 +317,10 @@ format_row_host(struct str *buf, const struct bucket *b,
 
    str_appendf(buf,
       "<tr class=\"%s\">\n"
-      " <td><a href=\"/hosts/%s/\">%s</a></td>\n"
+      " <td><a href=\"%shosts/%s/\">%s</a></td>\n"
       " <td>%s</td>\n",
       css_class,
-      ip, ip,
+      base_url, ip, ip,
       (b->u.host.dns == NULL) ? "" : b->u.host.dns);
 
    if (show_mac_addrs)
