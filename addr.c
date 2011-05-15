@@ -9,6 +9,7 @@
 
 #include "addr.h"
 
+#include <arpa/inet.h> /* for inet_ntop */
 #include <assert.h>
 #include <string.h> /* for memcmp */
 #include <netdb.h> /* for getaddrinfo */

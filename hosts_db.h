@@ -9,6 +9,8 @@
 #ifndef __DARKSTAT_HOSTS_DB_H
 #define __DARKSTAT_HOSTS_DB_H
 
+#include <sys/types.h> /* for time_t and uint64_t (esp on FreeBSD) */
+
 #include "addr.h"
 
 struct hashtable;
