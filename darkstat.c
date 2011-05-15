@@ -134,7 +134,8 @@ static void cb_local(const char *arg) { acct_init_localnet(arg); }
 const char *chroot_dir = NULL;
 static void cb_chroot(const char *arg) { chroot_dir = arg; }
 
-static void cb_base(const char *arg) { http_init_base(arg); }
+const char *base = NULL;
+static void cb_base(const char *arg) { base = arg; }
 
 const char *privdrop_user = NULL;
 static void cb_user(const char *arg) { privdrop_user = arg; }
@@ -414,7 +415,7 @@ main(int argc, char **argv)
    /* do this first as it forks - minimize memory use */
    if (want_dns) dns_init(privdrop_user);
    cap_init(interface, filter, want_promisc); /* needs root */
-   http_init(bindaddr, bindport, /*maxconn=*/ -1); /* low ports need root */
+   http_init(base, bindaddr, bindport, /*maxconn=*/-1);
    ncache_init(); /* must do before chroot() */
 
    privdrop(chroot_dir, privdrop_user);
@@ -487,6 +488,7 @@ main(int argc, char **argv)
    verbosef("shutting down");
    verbosef("pcap stats: %u packets received, %u packets dropped",
       pkts_recv, pkts_drop);
+   http_stop();
    cap_stop();
    dns_stop();
    if (export_fn != NULL) db_export(export_fn);

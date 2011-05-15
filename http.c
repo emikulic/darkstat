@@ -34,7 +34,7 @@
 #include <unistd.h>
 #include <zlib.h>
 
-const char *base_url = "/";
+char *base_url = NULL;
 
 static const char mime_type_xml[] = "text/xml";
 static const char mime_type_html[] = "text/html; charset=us-ascii";
@@ -883,10 +883,15 @@ static void poll_send_reply(struct connection *conn)
 /* --------------------------------------------------------------------------
  * Initialize the base path.
  */
-void http_init_base(const char *url)
+static void http_init_base(const char *url)
 {
     char *slashed_url, *safe_url;
     size_t urllen;
+
+    if (url == NULL) {
+        base_url = strdup("/");
+        return;
+    }
 
     /* make sure that the url has leading and trailing slashes */
     urllen = strlen(url);
@@ -898,26 +903,28 @@ void http_init_base(const char *url)
     /* clean the url */
     safe_url = make_safe_uri(slashed_url);
     free(slashed_url);
-    if (safe_url == NULL)
-    {
-        verbosef("invalid base \"%s\", ignored", url, "/");
+    if (safe_url == NULL) {
+        verbosef("invalid base \"%s\", ignored", url);
+        base_url = strdup("/"); /* set to default */
         return;
     }
-
-    base_url = safe_url;
+    else
+        base_url = safe_url;
 }
 
 /* --------------------------------------------------------------------------
  * Initialize the sockin global.  This is the socket that we accept
  * connections from.  Pass -1 as max_conn for system limit.
  */
-void http_init(const char *bindaddr, const unsigned short bindport,
-   const int max_conn)
+void http_init(const char *base, const char *bindaddr,
+    const unsigned short bindport, const int max_conn)
 {
     struct sockaddr_storage addrin;
     struct addrinfo hints, *ai, *aiptr;
     char ipaddr[INET6_ADDRSTRLEN], portstr[12];
     int sockopt, ret;
+
+    http_init_base(base);
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
@@ -1078,6 +1085,11 @@ void http_poll(fd_set *recv_set, fd_set *send_set)
     case DONE: /* fallthrough */
     default: errx(1, "invalid state");
     }
+}
+
+void http_stop(void) {
+    free(base_url);
+    close(sockin);
 }
 
 /* vim:set ts=4 sw=4 et tw=78: */
