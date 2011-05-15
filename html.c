@@ -8,10 +8,10 @@
  * GNU General Public License version 2. (see COPYING.GPL)
  */
 
-#include "darkstat.h"
+#include "config.h" /* for PACKAGE_STRING */
 #include "str.h"
-#include "http.h"
-
+#include "html.h"
+#include "http.h" /* for base_url */
 
 void html_open(struct str *buf, const char *title, const char *interface,
     void (*header_callback)(struct str *buf))
