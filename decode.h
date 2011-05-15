@@ -36,6 +36,8 @@
 #  define IPPROTO_OSPF 89
 #endif
 
+#define IPPROTO_INVALID 254 /* don't do proto accounting */
+
 struct linkhdr {
    int linktype;
    unsigned int hdrlen;

@@ -325,6 +325,9 @@ decode_raw(u_char *user _unused_,
    acct_for(&sm);
 }
 
+static void decode_ip_payload(const u_char *pdata, const uint32_t len,
+      struct pktsummary *sm);
+
 static void
 decode_ip(const u_char *pdata, const uint32_t len, struct pktsummary *sm)
 {
@@ -353,43 +356,7 @@ decode_ip(const u_char *pdata, const uint32_t len, struct pktsummary *sm)
    sm->dst.family = IPv4;
    sm->dst.ip.v4 = hdr->ip_dst.s_addr;
 
-   switch (sm->proto) {
-      case IPPROTO_TCP: {
-         const struct tcphdr *thdr =
-            (const struct tcphdr *)(pdata + IP_HDR_LEN);
-         if (len < IP_HDR_LEN + TCP_HDR_LEN) {
-            verbosef("tcp: packet too short (%u bytes)", len);
-            return;
-         }
-         sm->src_port = ntohs(thdr->th_sport);
-         sm->dst_port = ntohs(thdr->th_dport);
-         sm->tcp_flags = thdr->th_flags &
-            (TH_FIN|TH_SYN|TH_RST|TH_PUSH|TH_ACK|TH_URG);
-         break;
-      }
-
-      case IPPROTO_UDP: {
-         const struct udphdr *uhdr =
-            (const struct udphdr *)(pdata + IP_HDR_LEN);
-         if (len < IP_HDR_LEN + UDP_HDR_LEN) {
-            verbosef("udp: packet too short (%u bytes)", len);
-            return;
-         }
-         sm->src_port = ntohs(uhdr->uh_sport);
-         sm->dst_port = ntohs(uhdr->uh_dport);
-         break;
-      }
-
-      case IPPROTO_ICMP:
-      case IPPROTO_AH:
-      case IPPROTO_ESP:
-      case IPPROTO_OSPF:
-         /* known protocol, don't complain about it */
-         break;
-
-      default:
-         verbosef("ip: unknown protocol %d", sm->proto);
-   }
+   decode_ip_payload(pdata + IP_HDR_LEN, len - IP_HDR_LEN, sm);
 }
 
 static void
@@ -411,12 +378,19 @@ decode_ipv6(const u_char *pdata, const uint32_t len, struct pktsummary *sm)
    sm->dst.family = IPv6;
    memcpy(&sm->dst.ip.v6, &hdr->ip6_dst, sizeof(sm->dst.ip.v6));
 
+   decode_ip_payload(pdata + IPV6_HDR_LEN, len - IPV6_HDR_LEN, sm);
+}
+
+static void
+decode_ip_payload(const u_char *pdata, const uint32_t len,
+      struct pktsummary *sm)
+{
    switch (sm->proto) {
       case IPPROTO_TCP: {
-         const struct tcphdr *thdr =
-            (const struct tcphdr *)(pdata + IPV6_HDR_LEN);
-         if (len < IPV6_HDR_LEN + TCP_HDR_LEN) {
-            verbosef("tcp6: packet too short (%u bytes)", len);
+         const struct tcphdr *thdr = (const struct tcphdr *)pdata;
+         if (len < TCP_HDR_LEN) {
+            verbosef("tcp: packet too short (%u bytes)", len);
+            sm->proto = IPPROTO_INVALID; /* don't do accounting! */
             return;
          }
          sm->src_port = ntohs(thdr->th_sport);
@@ -427,10 +401,10 @@ decode_ipv6(const u_char *pdata, const uint32_t len, struct pktsummary *sm)
       }
 
       case IPPROTO_UDP: {
-         const struct udphdr *uhdr =
-            (const struct udphdr *)(pdata + IPV6_HDR_LEN);
-         if (len < IPV6_HDR_LEN + UDP_HDR_LEN) {
-            verbosef("udp6: packet too short (%u bytes)", len);
+         const struct udphdr *uhdr = (const struct udphdr *)pdata;
+         if (len < UDP_HDR_LEN) {
+            verbosef("udp: packet too short (%u bytes)", len);
+            sm->proto = IPPROTO_INVALID; /* don't do accounting! */
             return;
          }
          sm->src_port = ntohs(uhdr->uh_sport);
@@ -438,6 +412,7 @@ decode_ipv6(const u_char *pdata, const uint32_t len, struct pktsummary *sm)
          break;
       }
 
+      case IPPROTO_ICMP:
       case IPPROTO_ICMPV6:
       case IPPROTO_AH:
       case IPPROTO_ESP:
@@ -446,7 +421,7 @@ decode_ipv6(const u_char *pdata, const uint32_t len, struct pktsummary *sm)
          break;
 
       default:
-         verbosef("ipv6: unknown protocol %d", sm->proto);
+         verbosef("ip: unknown protocol %d", sm->proto);
    }
 }
 
