@@ -203,45 +203,42 @@ acct_for(const struct pktsummary * const sm)
    if (hosts_max == 0) return; /* skip per-host accounting */
 
    /* Hosts. */
+   hosts_db_reduce();
    hs = host_get(&(sm->src));
    hs->out   += sm->len;
    hs->total += sm->len;
    memcpy(hs->u.host.mac_addr, sm->src_mac, sizeof(sm->src_mac));
    hs->u.host.last_seen = now;
 
-   hd = host_get(&(sm->dst)); /* this can invalidate hs! */
+   hd = host_get(&(sm->dst));
    hd->in    += sm->len;
    hd->total += sm->len;
    memcpy(hd->u.host.mac_addr, sm->dst_mac, sizeof(sm->dst_mac));
    hd->u.host.last_seen = now;
 
    /* Protocols. */
-   hs = host_find(&(sm->src));
-   if (hs != NULL) {
+   if (sm->proto != IPPROTO_INVALID) {
       ps = host_get_ip_proto(hs, sm->proto);
       ps->out   += sm->len;
       ps->total += sm->len;
-   }
 
-   pd = host_get_ip_proto(hd, sm->proto);
-   pd->in    += sm->len;
-   pd->total += sm->len;
+      pd = host_get_ip_proto(hd, sm->proto);
+      pd->in    += sm->len;
+      pd->total += sm->len;
+   }
 
    if (ports_max == 0) return; /* skip ports accounting */
 
    /* Ports. */
-   switch (sm->proto)
-   {
+   switch (sm->proto) {
    case IPPROTO_TCP:
-      if ((sm->src_port <= highest_port) && (hs != NULL))
-      {
+      if (sm->src_port <= highest_port) {
          ps = host_get_port_tcp(hs, sm->src_port);
          ps->out   += sm->len;
          ps->total += sm->len;
       }
 
-      if (sm->dst_port <= highest_port)
-      {
+      if (sm->dst_port <= highest_port) {
          pd = host_get_port_tcp(hd, sm->dst_port);
          pd->in    += sm->len;
          pd->total += sm->len;
@@ -251,15 +248,13 @@ acct_for(const struct pktsummary * const sm)
       break;
 
    case IPPROTO_UDP:
-      if ((sm->src_port <= highest_port) && (hs != NULL))
-      {
+      if (sm->src_port <= highest_port) {
          ps = host_get_port_udp(hs, sm->src_port);
          ps->out   += sm->len;
          ps->total += sm->len;
       }
 
-      if (sm->dst_port <= highest_port)
-      {
+      if (sm->dst_port <= highest_port) {
          pd = host_get_port_udp(hd, sm->dst_port);
          pd->in    += sm->len;
          pd->total += sm->len;

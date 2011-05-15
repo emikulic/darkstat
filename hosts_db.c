@@ -597,16 +597,18 @@ hashtable_search(struct hashtable *h, const void *key)
    return (NULL);
 }
 
+typedef enum { NO_REDUCE = 0, ALLOW_REDUCE = 1 } reduce_bool;
 /* Search for a key.  If it's not there, make and insert a bucket for it. */
 static struct bucket *
-hashtable_find_or_insert(struct hashtable *h, const void *key)
+hashtable_find_or_insert(struct hashtable *h, const void *key,
+      const reduce_bool allow_reduce)
 {
    struct bucket *b = hashtable_search(h, key);
 
    if (b == NULL) {
       /* Not found, so insert after checking occupancy. */
-      /*assert(h->count <= h->count_max);*/
-      if (h->count >= h->count_max) hashtable_reduce(h);
+      if (allow_reduce && (h->count >= h->count_max))
+         hashtable_reduce(h);
       b = h->make_func(key);
       hashtable_insert(h, b);
    }
@@ -644,7 +646,7 @@ hashtable_free(struct hashtable *h)
 struct bucket *
 host_get(const struct addr *const a)
 {
-   return (hashtable_find_or_insert(hosts_db, a));
+   return (hashtable_find_or_insert(hosts_db, a, NO_REDUCE));
 }
 
 /* ---------------------------------------------------------------------------
@@ -744,6 +746,13 @@ hashtable_reduce(struct hashtable *ht)
    hashtable_rehash(ht, ht->bits); /* is this needed? */
 }
 
+/* Reduce hosts_db if needed. */
+void hosts_db_reduce(void)
+{
+   if (hosts_db->count >= hosts_db->count_max)
+      hashtable_reduce(hosts_db);
+}
+
 /* ---------------------------------------------------------------------------
  * Reset hosts_db to empty.
  */
@@ -801,7 +810,7 @@ host_get_port_tcp(struct bucket *host, const uint16_t port)
          hash_func_short, free_func_simple, key_func_port_tcp,
          find_func_port_tcp, make_func_port_tcp,
          format_cols_port_tcp, format_row_port_tcp);
-   return (hashtable_find_or_insert(h->ports_tcp, &port));
+   return (hashtable_find_or_insert(h->ports_tcp, &port, ALLOW_REDUCE));
 }
 
 /* ---------------------------------------------------------------------------
@@ -817,7 +826,7 @@ host_get_port_udp(struct bucket *host, const uint16_t port)
          hash_func_short, free_func_simple, key_func_port_udp,
          find_func_port_udp, make_func_port_udp,
          format_cols_port_udp, format_row_port_udp);
-   return (hashtable_find_or_insert(h->ports_udp, &port));
+   return (hashtable_find_or_insert(h->ports_udp, &port, ALLOW_REDUCE));
 }
 
 /* ---------------------------------------------------------------------------
@@ -834,7 +843,7 @@ host_get_ip_proto(struct bucket *host, const uint8_t proto)
          hash_func_byte, free_func_simple, key_func_ip_proto,
          find_func_ip_proto, make_func_ip_proto,
          format_cols_ip_proto, format_row_ip_proto);
-   return (hashtable_find_or_insert(h->ip_protos, &proto));
+   return (hashtable_find_or_insert(h->ip_protos, &proto, ALLOW_REDUCE));
 }
 
 static struct str *html_hosts_main(const char *qs);
