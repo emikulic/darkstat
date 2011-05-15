@@ -974,7 +974,7 @@ html_hosts_main(const char *qs)
 #define NEXT "next page &gt;&gt;&gt;"
 #define FULL "full table"
 
-   html_open(buf, "Hosts", interface, NULL);
+   html_open(buf, "Hosts", interface, /*want_graph_js=*/0);
    format_table(buf, hosts_db, start, sort, full);
 
    /* <prev | full | stats | next> */
@@ -1031,7 +1031,7 @@ html_hosts_detail(const char *ip)
 
    /* Overview. */
    buf = str_make();
-   html_open(buf, ip, interface, NULL);
+   html_open(buf, ip, interface, /*want_graph_js=*/0);
    if (strcmp(ip, canonical) != 0)
       str_appendf(buf, "(canonically <b>%s</b>)\n", canonical);
    str_appendf(buf,

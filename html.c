@@ -14,34 +14,37 @@
 #include "http.h" /* for base_url */
 
 void html_open(struct str *buf, const char *title, const char *interface,
-    void (*header_callback)(struct str *buf))
+    const int want_graph_js)
 {
-    str_append(buf,
+    str_appendf(buf,
         "<!DOCTYPE html>\n"
         "<html>\n"
-        "<head>\n");
-    str_appendf(buf, "<title>%s (darkstat3 : %s)</title>\n"
-        "<meta name=\"generator\" content=\"%s\" />\n", title, interface,
-        PACKAGE_STRING);
-    str_append(buf, "<meta name=\"robots\" content=\"noindex, noarchive\" />\n");
-    str_appendf(buf, "<link rel=\"stylesheet\" href=\"%s%s\" type=\"text/css\"/>\n",
-        base_url, "style.css");
-    if (header_callback != NULL)
-        header_callback(buf);
-            
-    str_append(buf, "</head>\n"
+        "<head>\n"
+         "<title>%s (darkstat3 %s)</title>\n"
+         "<meta name=\"generator\" content=\"%s\">\n"
+         "<meta name=\"robots\" content=\"noindex, noarchive\">\n"
+         "<link rel=\"stylesheet\" href=\"%sstyle.css\" type=\"text/css\">\n"
+        , title, interface, PACKAGE_STRING, base_url);
+
+    if (want_graph_js)
+        str_appendf(buf,
+            "<script src=\"%sgraph.js\" type=\"text/javascript\"></script>\n"
+            , base_url);
+
+    str_appendf(buf,
+        "</head>\n"
         "<body>\n"
         "<div class=\"menu\">\n"
-        "<ul class=\"menu\">\n");
-    str_appendf(buf, "<li class=\"label\">%s</li>\n"
-        "<li><a href=\"%s\">graphs</a></li>\n"
-        "<li><a href=\"%shosts/\">hosts</a></li>\n"
-        "<li><a href=\"http://dmr.ath.cx/net/darkstat/\">homepage</a></li>\n",
-        PACKAGE_STRING, base_url, base_url);
-    str_append(buf, "</ul>\n"
+        "<ul class=\"menu\">" /* no whitespace (newlines) in list */
+         "<li class=\"label\">%s</li>"
+         "<li><a href=\"%s\">graphs</a></li>"
+         "<li><a href=\"%shosts/\">hosts</a></li>"
+         "<li><a href=\"http://dmr.ath.cx/net/darkstat/\">homepage</a></li>"
+        "</ul>\n"
         "</div>\n"
-        "<div class=\"content\">\n");
-    str_appendf(buf, "<h2 class=\"pageheader\">%s</h2>\n", title);
+        "<div class=\"content\">\n"
+         "<h2 class=\"pageheader\">%s</h2>\n"
+        , PACKAGE_STRING, base_url, base_url, title);
 }
 
 void html_close(struct str *buf)
@@ -49,9 +52,7 @@ void html_close(struct str *buf)
     str_append(buf, 
         "</div>\n"
         "</body>\n"
-        "</html>\n"
-    );
+        "</html>\n");
 }
-
 
 /* vim:set ts=4 sw=4 tw=78 expandtab: */

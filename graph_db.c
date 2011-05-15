@@ -302,12 +302,6 @@ graph_export(const int fd)
    return 1;
 }
 
-static void cb_headers(struct str *buf)
-{
-   str_appendf(buf, "<script src=\"%s%s\" type=\"text/javascript\">"
-      "</script>\n", base_url, "graph.js");
-}
-
 /* ---------------------------------------------------------------------------
  * Web interface: front page!
  */
@@ -319,7 +313,7 @@ html_front_page(void)
    char start_when[100];
 
    buf = str_make();
-   html_open(buf, "Graphs", interface, cb_headers);
+   html_open(buf, "Graphs", interface, /*want_graph_js=*/1);
 
    str_append(buf, "<p>\n");
    str_append(buf, "<b>Running for</b> <span id=\"rf\">");
