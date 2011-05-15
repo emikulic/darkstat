@@ -15,6 +15,7 @@
 #include "graph_db.h"
 #include "err.h"
 #include "queue.h"
+#include "str.h"
 #include "now.h"
 
 #include <sys/uio.h>
@@ -305,7 +306,7 @@ static void accept_connection(void)
     int sock;
 
     sin_size = (socklen_t)sizeof(addrin);
-    sock = accept(sockin, &addrin, &sin_size);
+    sock = accept(sockin, (struct sockaddr *)&addrin, &sin_size);
     if (sock == -1)
     {
         if (errno == ECONNABORTED || errno == EINTR)
@@ -403,7 +404,7 @@ static void generate_header(struct connection *conn,
 static void default_reply(struct connection *conn,
     const int errcode, const char *errname, const char *format, ...)
 {
-    char *reason, date[DATE_LEN];
+    char *reason;
     va_list va;
 
     va_start(va, format);
@@ -600,7 +601,6 @@ process_gzip(struct connection *conn)
 static void process_get(struct connection *conn)
 {
     char *decoded_url, *safe_url;
-    char date[DATE_LEN];
 
     verbosef("http: %s \"%s\" %s", conn->method, conn->uri,
         (conn->query == NULL)?"":conn->query);
