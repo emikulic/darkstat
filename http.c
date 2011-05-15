@@ -1006,13 +1006,18 @@ http_fd_set(fd_set *recv_set, fd_set *send_set, int *max_fd,
         int idlefor = now - conn->last_active;
 
         /* Time out dead connections. */
-        if (idlefor >= idletime)
-        {
+        if (idlefor >= idletime) {
             char ipaddr[INET6_ADDRSTRLEN];
-            getnameinfo((struct sockaddr *) &conn->client, sizeof(conn->client),
-                    ipaddr, sizeof(ipaddr), NULL, 0, NI_NUMERICHOST);
-            verbosef("http socket timeout from %s (fd %d)",
-                    ipaddr, conn->socket);
+            /* FIXME: this is too late on FreeBSD, socket is invalid */
+            int ret = getnameinfo((struct sockaddr *)&conn->client,
+                sizeof(conn->client), ipaddr, sizeof(ipaddr),
+                NULL, 0, NI_NUMERICHOST);
+            if (ret == 0)
+                verbosef("http socket timeout from %s (fd %d)",
+                        ipaddr, conn->socket);
+            else
+                warn("http socket timeout: getnameinfo error: %s",
+                    gai_strerror(ret));
             conn->state = DONE;
         }
 
