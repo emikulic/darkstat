@@ -16,9 +16,9 @@
 void html_open(struct str *buf, const char *title, const char *interface,
     void (*header_callback)(struct str *buf))
 {
-    str_append(buf, "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"\n"
-        "  \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n"
-        "<html xmlns=\"http://www.w3.org/1999/xhtml\">\n"
+    str_append(buf,
+        "<!DOCTYPE html>\n"
+        "<html>\n"
         "<head>\n");
     str_appendf(buf, "<title>%s (darkstat3 : %s)</title>\n"
         "<meta name=\"generator\" content=\"%s\" />\n", title, interface,

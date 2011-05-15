@@ -333,11 +333,11 @@ html_front_page(void)
       "%Y-%m-%d %H:%M:%S %Z%z", localtime(&start_time)) != 0)
       str_appendf(buf, "<b>, since</b> %s", start_when);
 
-   str_appendf(buf,"<b>.</b><br/>\n"
+   str_appendf(buf,"<b>.</b><br>\n"
       "<b>Total</b> <span id=\"tb\">%'qu</span> <b>bytes, "
       "in</b> <span id=\"tp\">%'qu</span> <b>packets.</b> "
       "(<span id=\"pc\">%'u</span> <b>captured,</b> "
-      "<span id=\"pd\">%'u</span> <b>dropped)</b><br/>\n"
+      "<span id=\"pd\">%'u</span> <b>dropped)</b><br>\n"
       "</p>\n",
       total_bytes,
       total_packets,

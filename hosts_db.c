@@ -910,7 +910,7 @@ format_table(struct str *buf, struct hashtable *ht, int start,
    } else
       end = min(ht->count, (uint32_t)start+MAX_ENTRIES);
 
-   str_appendf(buf, "(%u-%u of %u)<br/>\n", start+1, end, ht->count);
+   str_appendf(buf, "(%u-%u of %u)<br>\n", start+1, end, ht->count);
    qsort_buckets(table, ht->count, start, end, sort);
    ht->format_cols_func(buf);
 
@@ -999,7 +999,7 @@ html_hosts_main(const char *qs)
    else
       str_append(buf, " | " NEXT);
 
-   str_append(buf, "<br/>\n");
+   str_append(buf, "<br>\n");
 
    html_close(buf);
 done:
@@ -1036,7 +1036,7 @@ html_hosts_detail(const char *ip)
       str_appendf(buf, "(canonically <b>%s</b>)\n", canonical);
    str_appendf(buf,
       "<p>\n"
-       "<b>Hostname:</b> %s<br/>\n",
+       "<b>Hostname:</b> %s<br>\n",
       (h->u.host.dns == NULL)?"(resolving...)":h->u.host.dns);
 
    /* Resolve host "on demand" */
@@ -1046,7 +1046,7 @@ html_hosts_detail(const char *ip)
    if (show_mac_addrs)
       str_appendf(buf,
          "<b>MAC Address:</b> "
-         "<tt>%x:%x:%x:%x:%x:%x</tt><br/>\n",
+         "<tt>%x:%x:%x:%x:%x:%x</tt><br>\n",
          h->u.host.mac_addr[0],
          h->u.host.mac_addr[1],
          h->u.host.mac_addr[2],
@@ -1077,9 +1077,9 @@ html_hosts_detail(const char *ip)
    str_appendf(buf,
       "</p>\n"
       "<p>\n"
-      " <b>In:</b> %'qu<br/>\n"
-      " <b>Out:</b> %'qu<br/>\n"
-      " <b>Total:</b> %'qu<br/>\n"
+      " <b>In:</b> %'qu<br>\n"
+      " <b>Out:</b> %'qu<br>\n"
+      " <b>Total:</b> %'qu<br>\n"
       "</p>\n",
       h->in, h->out, h->total);
 
