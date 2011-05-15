@@ -5,8 +5,12 @@ FILE HEADER 0xDA314159                              darkstat export format
     SECTION HEADER 0xDA 'H' 'S' 0x01                hosts_db ver1
         HOST COUNT 0x00000001                       1 host follows
         For each host:
-            HOST HEADER 'H' 'S' 'T' 0x02            host ver2
-            IP ADDR 0x0A010101                      IPv4 10.1.1.1
+            HOST HEADER 'H' 'S' 'T' 0x03            host ver3
+            ADDRESS FAMILY 0x04                     Either 4 or 6.
+              IPv4 ADDR 0x0A010101                  IPv4 10.1.1.1
+              or for 0x06:
+              IPv6 ADDR 0x0000 0000 0000 0000 0000 0000 0000 0001
+                                                    meaning IPv6 ::1
             MACADDR 0x001122334455                  00:11:22:33:44:55
             LAST_SEEN 0x0000000048000123 (time_t)   2008-04-12 00:24:03 UTC
             HOSTNAME 0x09 "localhost"               9 is the string length
@@ -44,3 +48,6 @@ FILE HEADER 0xDA314159                              darkstat export format
                 64 bits - bytes out
 
 Host header version 1 is just version 2 without the last_seen time.
+
+Host header version 2 is just version 3 without the address family
+byte (or the possibility of an IPv6 address).

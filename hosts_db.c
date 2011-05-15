@@ -1117,7 +1117,8 @@ static const char
 
 static const unsigned char
    export_tag_host_ver1[] = {'H', 'S', 'T', 0x01},
-   export_tag_host_ver2[] = {'H', 'S', 'T', 0x02};
+   export_tag_host_ver2[] = {'H', 'S', 'T', 0x02},
+   export_tag_host_ver3[] = {'H', 'S', 'T', 0x03};
 
 /* ---------------------------------------------------------------------------
  * Load a host's ip_proto table from a file.
@@ -1230,7 +1231,9 @@ hosts_db_import_host(const int fd)
    int ver = 0;
 
    if (!readn(fd, hdr, sizeof(hdr))) return 0;
-   if (memcmp(hdr, export_tag_host_ver2, sizeof(hdr)) == 0)
+   if (memcmp(hdr, export_tag_host_ver3, sizeof(hdr)) == 0)
+      ver = 3;
+   else if (memcmp(hdr, export_tag_host_ver2, sizeof(hdr)) == 0)
       ver = 2;
    else if (memcmp(hdr, export_tag_host_ver1, sizeof(hdr)) == 0)
       ver = 1;
@@ -1240,7 +1243,14 @@ hosts_db_import_host(const int fd)
       return 0;
    }
 
-   if (!readaddr(fd, &a)) return 0;
+   if (ver == 3) {
+      if (!readaddr(fd, &a))
+         return 0;
+   } else {
+      assert((ver == 1) || (ver == 2));
+      if (!readaddr_ipv4(fd, &a))
+         return 0;
+   }
    verbosef("at file pos %u, importing host %s", pos, addr_to_str(&a));
    host = host_get(&a);
    assert(addr_equal(&(host->u.host.addr), &a));
@@ -1318,7 +1328,7 @@ int hosts_db_export(const int fd)
    for (i = 0; i<hosts_db->size; i++)
    for (b = hosts_db->table[i]; b != NULL; b = b->next) {
       /* For each host: */
-      if (!writen(fd, export_tag_host_ver2, sizeof(export_tag_host_ver2)))
+      if (!writen(fd, export_tag_host_ver3, sizeof(export_tag_host_ver3)))
          return 0;
 
       if (!writeaddr(fd, &(b->u.host.addr))) return 0;

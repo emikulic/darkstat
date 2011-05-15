@@ -152,18 +152,37 @@ read32(const int fd, uint32_t *dest)
    return 1;
 }
 
+/* Read an IPv4 addr from a file.  This is for backward compatibility with
+ * host records version 1 and 2.
+ */
+int
+readaddr_ipv4(const int fd, struct addr *dest)
+{
+   dest->family = IPv4;
+   return readn(fd, &(dest->ip.v4), sizeof(dest->ip.v4));
+}
+
 /* Read a struct addr from a file.  Addresses are always stored in network
  * order, both in the file and in the host's memory (FIXME: is that right?)
  */
 int
 readaddr(const int fd, struct addr *dest)
 {
-   assert(dest->family == IPv4 || dest->family == AF_INET6);
+   unsigned char family;
 
-   if (dest->family == IPv4)
+   if (!read8(fd, &family))
+      return 0;
+
+   if (family == 4) {
+      dest->family = IPv4;
       return readn(fd, &(dest->ip.v4), sizeof(dest->ip.v4));
-   else
+   }
+   else if (family == 6) {
+      dest->family = IPv6;
       return readn(fd, dest->ip.v6.s6_addr, sizeof(dest->ip.v6.s6_addr));
+   }
+   else
+      return 0; /* no address family I ever heard of */
 }
 
 /* Read a network order uint64_t from a file
@@ -248,6 +267,9 @@ write64(const int fd, const uint64_t i)
 int
 writeaddr(const int fd, const struct addr *const a)
 {
+   if (!write8(fd, a->family))
+      return 0;
+
    if (a->family == IPv4)
       return writen(fd, &(a->ip.v4), sizeof(a->ip.v4));
    else {

@@ -25,6 +25,7 @@ int expect8(const int fd, uint8_t expecting);
 int read16(const int fd, uint16_t *dest);
 int read32(const int fd, uint32_t *dest);
 int read64(const int fd, uint64_t *dest);
+int readaddr_ipv4(const int fd, struct addr *dest);
 int readaddr(const int fd, struct addr *dest);
 int read_file_header(const int fd, const uint8_t expected[4]);
 
