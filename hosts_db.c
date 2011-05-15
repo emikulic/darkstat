@@ -856,7 +856,7 @@ static struct str *html_hosts_detail(const char *ip);
 struct str *
 html_hosts(const char *uri, const char *query)
 {
-   int i, num_elems;
+   unsigned int i, num_elems;
    char **elem = split('/', uri, &num_elems);
    struct str *buf = NULL;
 
@@ -881,11 +881,11 @@ html_hosts(const char *uri, const char *query)
  * Format hashtable into HTML.
  */
 static void
-format_table(struct str *buf, struct hashtable *ht, int start,
+format_table(struct str *buf, struct hashtable *ht, unsigned int start,
    const enum sort_dir sort, const int full)
 {
    const struct bucket **table;
-   uint32_t i, pos, end;
+   unsigned int i, pos, end;
    int alt = 0;
 
    if ((ht == NULL) || (ht->count == 0)) {
@@ -982,7 +982,9 @@ html_hosts_main(const char *qs)
    sortstr = qs_sort;
    if (sortstr == NULL) sortstr = "total";
    if (start > 0) {
-      int prev = max(start - MAX_ENTRIES, 0);
+      int prev = start - MAX_ENTRIES;
+      if (prev < 0)
+         prev = 0;
       str_appendf(buf, "<a href=\"?start=%d&sort=%s\">" PREV "</a>",
          prev, sortstr);
    } else

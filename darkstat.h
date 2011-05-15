@@ -15,9 +15,12 @@
 #ifdef __GNUC__
 # define _unused_ __attribute__((__unused__))
 # define _noreturn_ __attribute__((__noreturn__))
+# define _printflike_(fmtarg, firstvararg) \
+   __attribute__((__format__ (__printf__, fmtarg, firstvararg) ))
 #else
 # define _unused_
 # define _noreturn_
+# define _printflike_(fmtarg, firstvararg)
 #endif
 
 #if __GNUC__ == 2
@@ -26,6 +29,10 @@
 # ifdef __TenDRA__
 #  define inline __inline
 # endif
+#endif
+
+#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901
+#define restrict __restrict
 #endif
 
 #ifndef max

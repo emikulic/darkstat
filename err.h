@@ -18,14 +18,16 @@
 
 #include "darkstat.h"
 
-void err(const int code, const char *format, ...) _noreturn_;
-void errx(const int code, const char *format, ...) _noreturn_;
+void err(const int code, const char *format, ...)
+   _noreturn_ _printflike_(2, 3);
+void errx(const int code, const char *format, ...)
+   _noreturn_ _printflike_(2, 3);
 
-void warn(const char *format, ...);
-void warnx(const char *format, ...);
+void warn(const char *format, ...) _printflike_(1, 2);
+void warnx(const char *format, ...) _printflike_(1, 2);
 
 extern int want_verbose, want_syslog;
-void verbosef(const char *format, ...);
+void verbosef(const char *format, ...) _printflike_(1, 2);
 void dverbosef(const char *format _unused_, ...);
 
 /* vim:set ts=3 sw=3 tw=78 expandtab: */

@@ -79,7 +79,8 @@ const char *capfile = NULL;
 static void cb_capfile(const char *arg) { capfile = arg; }
 
 int want_snaplen = -1;
-static void cb_snaplen(const char *arg) { want_snaplen = parsenum(arg, 0); }
+static void cb_snaplen(const char *arg)
+{ want_snaplen = (int)parsenum(arg, 0); }
 
 int want_pppoe = 0;
 static void cb_pppoe(const char *arg _unused_) { want_pppoe = 1; }
@@ -104,7 +105,8 @@ int want_lastseen = 1;
 static void cb_no_lastseen(const char *arg _unused_) { want_lastseen = 0; }
 
 unsigned short bindport = 667;
-static void cb_port(const char *arg) { bindport = parsenum(arg, 65536); }
+static void cb_port(const char *arg)
+{ bindport = (unsigned short)parsenum(arg, 65536); }
 
 const char *bindaddr = NULL;
 static void cb_bindaddr(const char *arg)
@@ -202,7 +204,7 @@ static void cb_highest_port(const char *arg)
 
 int wait_secs = -1;
 static void cb_wait_secs(const char *arg)
-{ wait_secs = parsenum(arg, 0); }
+{ wait_secs = (int)parsenum(arg, 0); }
 
 int want_hexdump = 0;
 static void cb_hexdump(const char *arg _unused_) { want_hexdump = 1; }

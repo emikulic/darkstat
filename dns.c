@@ -28,7 +28,7 @@
 #include <string.h>
 #include <unistd.h>
 
-static void dns_main(void); /* this is what the child process runs */
+static void dns_main(void) _noreturn_; /* the child process runs this */
 
 #define CHILD 0 /* child process uses this socket */
 #define PARENT 1

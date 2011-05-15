@@ -136,9 +136,9 @@ str_starts_with(const char *haystack, const char *needle)
  *    num_chunks = 2, chunks = { "one", "two", NULL }
  */
 char **
-split(const char delimiter, const char *str, int *num_chunks)
+split(const char delimiter, const char *str, unsigned int *num_chunks)
 {
-   int num = 0;
+   unsigned int num = 0;
    char **chunks = NULL;
    size_t left, right = 0;
 
@@ -244,7 +244,8 @@ daemonize_start(void)
       verbosef("parent waiting");
       if (close(lifeline[1]) == -1)
          warn("close lifeline in parent");
-      read(lifeline[0], tmp, sizeof(tmp));
+      if (read(lifeline[0], tmp, sizeof(tmp)) != 0) /* expecting EOF */
+         err(1, "lifeline read() failed");
       verbosef("parent done reading, calling waitpid");
       w = waitpid(f, &status, WNOHANG);
       verbosef("waitpid ret %d, status is %d", w, status);
@@ -387,10 +388,8 @@ fd_set_block(const int fd)
  * will be copied.  Always NUL terminates (unless siz == 0).
  * Returns strlen(src); if retval >= siz, truncation occurred.
  */
-size_t strlcpy(dst, src, siz)
-        char *dst;
-        const char *src;
-        size_t siz;
+size_t
+strlcpy(char * restrict dst, const char * restrict src, const size_t siz)
 {
         char *d = dst;
         const char *s = src;
@@ -412,7 +411,7 @@ size_t strlcpy(dst, src, siz)
                         ;
         }
 
-        return(s - src - 1);    /* count does not include NUL */
+        return (size_t)(s - src - 1); /* count does not include NUL */
 }
 #endif
 
@@ -425,10 +424,7 @@ size_t strlcpy(dst, src, siz)
  * If retval >= siz, truncation occurred.
  */
 size_t
-strlcat(dst, src, siz)
-        char *dst;
-        const char *src;
-        size_t siz;
+strlcat(char * restrict dst, const char * restrict src, const size_t siz)
 {
         char *d = dst;
         const char *s = src;
@@ -438,7 +434,7 @@ strlcat(dst, src, siz)
         /* Find the end of dst and adjust bytes left but don't go past end */
         while (n-- != 0 && *d != '\0')
                 d++;
-        dlen = d - dst;
+        dlen = (size_t)(d - dst);
         n = siz - dlen;
 
         if (n == 0)
@@ -452,7 +448,7 @@ strlcat(dst, src, siz)
         }
         *d = '\0';
 
-        return(dlen + (s - src));       /* count does not include NUL */
+        return (dlen + (size_t)(s - src)); /* count does not include NUL */
 }
 #endif
 

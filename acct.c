@@ -46,7 +46,8 @@ void
 acct_init_localnet(const char *spec)
 {
    char **tokens;
-   int num_tokens, isnum, j, ret;
+   unsigned int num_tokens;
+   int isnum, j, ret;
    int pfxlen, octets, remainder;
    struct addr localnet, localmask;
 
@@ -84,8 +85,9 @@ acct_init_localnet(const char *spec)
       localmask.family = localnet.family;
 
       /* Compute the prefix length.  */
-      pfxlen = strtonum(tokens[1], 1,
-                        (localnet.family == IPv6) ? 128 : 32, NULL);
+      pfxlen = (int)strtonum(tokens[1], 1,
+         (localnet.family == IPv6) ? 128 : 32, NULL);
+
       if (pfxlen == 0)
          errx(1, "invalid network prefix length \"%s\"", tokens[1]);
 
@@ -103,7 +105,7 @@ acct_init_localnet(const char *spec)
       for (j = 0; j < octets; ++j)
          p[j] = 0xff;
 
-      frac = 0xff << (8 - remainder);
+      frac = (uint8_t)(0xff << (8 - remainder));
       if (frac)
          p[j] = frac;   /* Have contribution for next position.  */
    }

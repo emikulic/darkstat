@@ -30,6 +30,9 @@
 #include <unistd.h>
 #include <unistd.h>
 
+static void to_syslog(const char *type, const int want_err,
+          const char *format, va_list va) _printflike_(3, 0);
+
 static void
 to_syslog(const char *type, const int want_err,
           const char *format, va_list va)
