@@ -964,7 +964,7 @@ void http_init(const char *base, const char *bindaddr,
             continue;
         }
 
-        verbosef("listening on %s:%u", ipaddr, bindport);
+        verbosef("listening on http://%s:%u%s", ipaddr, bindport, base_url);
 
         /* listen on socket */
         if (listen(sockin, max_conn) >= 0)
