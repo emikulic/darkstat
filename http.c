@@ -896,8 +896,9 @@ static void http_init_base(const char *url)
     /* make sure that the url has leading and trailing slashes */
     urllen = strlen(url);
     slashed_url = xmalloc(urllen+3);
-    memset(slashed_url, '/', urllen+2);
-    memcpy(slashed_url+1, url, urllen); /* don't copy NULL */
+    slashed_url[0] = '/';
+    memcpy(slashed_url+1, url, urllen); /* don't copy NUL */
+    slashed_url[urllen+1] = '/';
     slashed_url[urllen+2] = '\0';
 
     /* clean the url */
