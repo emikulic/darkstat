@@ -186,12 +186,6 @@ dns_get_result(struct addr *ipaddr, char **name)
 
    /* Return successful reply. */
    memcpy(ipaddr, &reply.addr, sizeof(*ipaddr));
-#if DARKSTAT_USES_HOSTENT
-   if (reply.error != 0)
-      xasprintf(name, "(%s)", hstrerror(reply.error));
-   else
-      *name = xstrdup(reply.name);
-#else /* !DARKSTAT_USES_HOSTENT */
    if (reply.error != 0) {
       /* Identify common special cases.  */
       const char *type = "none";
@@ -211,7 +205,6 @@ dns_get_result(struct addr *ipaddr, char **name)
    }
    else  /* Correctly resolved name.  */
       *name = xstrdup(reply.name);
-#endif /* !DARKSTAT_USES_HOSTENT */
 
    dns_unqueue(&reply.addr);
    return (1);
@@ -345,28 +338,6 @@ dns_main(void)
       /* Process queue. */
       if (dequeue(&ip)) {
          struct dns_reply reply;
-#if DARKSTAT_USES_HOSTENT
-         struct hostent *he;
-
-         memcpy(&reply.addr, &ip, sizeof(reply.addr));
-         he = gethostbyaddr((char *)&ip.addr.ip, sizeof(ip.addr.ip), ip.af); /* TODO MEA */
-
-         /* On some platforms (for example Linux with GLIBC 2.3.3), h_errno
-          * will be non-zero here even though the lookup succeeded.
-          */
-         if (he == NULL) {
-            reply.name[0] = '\0';
-            reply.error = h_errno;
-         } else {
-            assert(sizeof(reply.name) > sizeof(char *)); /* not just a ptr */
-            strlcpy(reply.name, he->h_name, sizeof(reply.name));
-            reply.error = 0;
-         }
-         fd_set_block(sock[CHILD]);
-         xwrite(sock[CHILD], &reply, sizeof(reply));
-         verbosef("DNS: %s is %s", addr_to_str(&reply.addr),
-            (h_errno == 0)?reply.name:hstrerror(h_errno));
-#else /* !DARKSTAT_USES_HOSTENT */
          struct sockaddr_in sin;
          struct sockaddr_in6 sin6;
          char host[NI_MAXHOST];
@@ -406,7 +377,6 @@ dns_main(void)
          xwrite(sock[CHILD], &reply, sizeof(reply));
          verbosef("DNS: %s is \"%s\".", addr_to_str(&reply.addr),
             (ret == 0) ? reply.name : gai_strerror(ret));
-#endif /* !DARKSTAT_USES_HOSTENT */
       }
    }
 }
