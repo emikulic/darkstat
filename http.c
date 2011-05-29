@@ -913,6 +913,37 @@ static void http_init_base(const char *url)
         base_url = safe_url;
 }
 
+/* Use getaddrinfo to figure out what type of socket to create and
+ * what to bind it to.  "bindaddr" can be NULL.  Remember to freeaddrinfo()
+ * the result.
+ */
+static struct addrinfo *get_bind_addr(
+    const char *bindaddr, const unsigned short bindport)
+{
+    struct addrinfo hints, *ai;
+    char portstr[6];
+    int ret;
+
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family = AF_UNSPEC;
+    if (bindaddr == NULL)
+        hints.ai_family = AF_INET6; /* dual stack socket */
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags = AI_PASSIVE;
+#ifdef AI_ADDRCONFIG
+    hints.ai_flags |= AI_ADDRCONFIG;
+#endif
+    snprintf(portstr, sizeof(portstr), "%u", bindport);
+    if ((ret = getaddrinfo(bindaddr, portstr, &hints, &ai)))
+        err(1, "getaddrinfo(%s,%s) failed: %s",
+            bindaddr ? bindaddr : "NULL", portstr, gai_strerror(ret));
+    if (ai == NULL)
+        err(1, "getaddrinfo() returned NULL pointer");
+    if (ai->ai_next != NULL)
+        warnx("getaddrinfo() returned multiple addresses");
+    return ai;
+}
+
 /* --------------------------------------------------------------------------
  * Initialize the sockin global.  This is the socket that we accept
  * connections from.  Pass -1 as max_conn for system limit.
@@ -920,65 +951,51 @@ static void http_init_base(const char *url)
 void http_init(const char *base, const char *bindaddr,
     const unsigned short bindport, const int max_conn)
 {
-    struct sockaddr_storage addrin;
-    struct addrinfo hints, *ai, *aiptr;
-    char ipaddr[INET6_ADDRSTRLEN], portstr[12];
+    struct addrinfo *ai;
+    char ipaddr[INET6_ADDRSTRLEN];
     int sockopt, ret;
 
     http_init_base(base);
+    ai = get_bind_addr(bindaddr, bindport);
 
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_PASSIVE;
-#ifdef AI_ADDRCONFIG
-    hints.ai_flags |= AI_ADDRCONFIG;
-#endif
-    snprintf(portstr, sizeof(portstr), "%u", bindport);
+    /* create incoming socket */
+    if ((sockin = socket(ai->ai_family, SOCK_STREAM, 0)) == -1)
+        err(1, "socket() failed");
 
-    if ((ret = getaddrinfo(bindaddr, portstr, &hints, &aiptr)))
-        err(1, "getaddrinfo(): %s", gai_strerror(ret));
+    /* reuse address */
+    sockopt = 1;
+    if (setsockopt(sockin, SOL_SOCKET, SO_REUSEADDR,
+            &sockopt, sizeof(sockopt)) == -1)
+        err(1, "can't set SO_REUSEADDR");
 
-    for (ai = aiptr; ai; ai = ai->ai_next) {
-        /* create incoming socket */
-        sockin = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol);
-        if (sockin == -1)
-            continue;
-
-        /* reuse address */
-        sockopt = 1;
-        if (setsockopt(sockin, SOL_SOCKET, SO_REUSEADDR,
-                &sockopt, sizeof(sockopt)) == -1) {
-            close(sockin);
-            continue;
-        }
-
-        /* Recover address and port strings. */
-        getnameinfo(ai->ai_addr, ai->ai_addrlen, ipaddr, sizeof(ipaddr),
-                NULL, 0, NI_NUMERICHOST);
-
-        /* bind socket */
-        memcpy(&addrin, ai->ai_addr, ai->ai_addrlen);
-        if (bind(sockin, (struct sockaddr *)&addrin, ai->ai_addrlen) == -1) {
-            close(sockin);
-            continue;
-        }
-
-        verbosef("listening on http://%s:%u%s", ipaddr, bindport, base_url);
-
-        /* listen on socket */
-        if (listen(sockin, max_conn) >= 0)
-            /* Successfully bound and now listening. */
-            break;
-
-        /* Next candidate. */
-        continue;
+    /* dual stack socket */
+    if (ai->ai_family == AF_INET6) {
+        sockopt = 0;
+        if (setsockopt(sockin, IPPROTO_IPV6, IPV6_V6ONLY,
+                &sockopt, sizeof(sockopt)) == -1)
+            err(1, "can't unset IPV6_V6ONLY");
     }
 
-    freeaddrinfo(aiptr);
+    /* format address into ipaddr string */
+    if ((ret = getnameinfo(ai->ai_addr, ai->ai_addrlen, ipaddr,
+                           sizeof(ipaddr), NULL, 0, NI_NUMERICHOST)) != 0)
+        err(1, "getnameinfo failed: %s", gai_strerror(ret));
 
-    if (ai == NULL)
-        err(1, "getaddrinfo() unable to locate address");
+    /* bind socket */
+    if (bind(sockin, ai->ai_addr, ai->ai_addrlen) == -1)
+        err(1, "bind(\"%s\") failed", ipaddr);
+
+    verbosef("listening on http://%s%s%s:%u%s",
+        (ai->ai_family == AF_INET6) ? "[" : "",
+        ipaddr,
+        (ai->ai_family == AF_INET6) ? "]" : "",
+        bindport, base_url);
+
+    freeaddrinfo(ai);
+
+    /* listen on socket */
+    if (listen(sockin, max_conn) == -1)
+        err(1, "listen() failed");
 
     /* ignore SIGPIPE */
     if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
