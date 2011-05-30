@@ -13,6 +13,7 @@
 #include "err.h"
 #include "localip.h"
 
+#include <sys/types.h> /* OpenBSD needs this */
 #include <sys/socket.h>
 #include <net/if.h>
 #include <ifaddrs.h>
