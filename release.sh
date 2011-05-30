@@ -11,7 +11,7 @@
 #
 
 if [ $# -ne 1 ]; then
-  echo "usage: $0 version" >&2
+  echo "usage: $0 3.0.0rc0" >&2
   exit 1
 fi
 
