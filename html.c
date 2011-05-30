@@ -8,7 +8,7 @@
  * GNU General Public License version 2. (see COPYING.GPL)
  */
 
-#include "config.h" /* for PACKAGE_STRING */
+#include "config.h" /* for PACKAGE_STRING, PACKAGE_URL */
 #include "str.h"
 #include "html.h"
 #include "http.h" /* for base_url */
@@ -21,10 +21,10 @@ void html_open(struct str *buf, const char *title, const char *interface,
         "<html>\n"
         "<head>\n"
          "<title>%s (darkstat3 %s)</title>\n"
-         "<meta name=\"generator\" content=\"%s\">\n"
+         "<meta name=\"generator\" content=\"" PACKAGE_STRING "\">\n"
          "<meta name=\"robots\" content=\"noindex, noarchive\">\n"
          "<link rel=\"stylesheet\" href=\"%sstyle.css\" type=\"text/css\">\n"
-        , title, interface, PACKAGE_STRING, base_url);
+        , title, interface, base_url);
 
     if (want_graph_js)
         str_appendf(buf,
@@ -36,15 +36,15 @@ void html_open(struct str *buf, const char *title, const char *interface,
         "<body>\n"
         "<div class=\"menu\">\n"
         "<ul class=\"menu\">" /* no whitespace (newlines) in list */
-         "<li class=\"label\">%s</li>"
+         "<li class=\"label\">" PACKAGE_STRING "</li>"
          "<li><a href=\"%s\">graphs</a></li>"
          "<li><a href=\"%shosts/\">hosts</a></li>"
-         "<li><a href=\"http://dmr.ath.cx/net/darkstat/\">homepage</a></li>"
+         "<li><a href=\"" PACKAGE_URL "\">homepage</a></li>"
         "</ul>\n"
         "</div>\n"
         "<div class=\"content\">\n"
          "<h2 class=\"pageheader\">%s</h2>\n"
-        , PACKAGE_STRING, base_url, base_url, title);
+        , base_url, base_url, title);
 }
 
 void html_close(struct str *buf)

@@ -464,4 +464,4 @@ cable Internet provider introducing a 3GB monthly traffic limit.
 Emil Mikulic and others. (see the AUTHORS file)
 .\"
 .SH WEBSITE
-http://dmr.ath.cx/net/darkstat/
+@PACKAGE_URL@

@@ -3,8 +3,6 @@ darkstat is a network statistics gatherer.
 It sniffs packets on a specified interface, accumulates statistics, and
 serves them up over HTTP.
 
-Web: http://dmr.ath.cx/net/darkstat/
-
 See the "AUTHORS" file for credits, and who to e-mail when things break.
 See the "LICENSE" file for an explanation of the source code licensing.
 See the "INSTALL" file for installation instructions.
