@@ -201,9 +201,18 @@ END
 
 # Check for Solaris.
 # Must do at least socket and nsl before checking for libpcap.
-AC_CHECK_LIB(nsl, gethostbyname)
-AC_CHECK_LIB(socket, socket)
-AC_CHECK_LIB(resolv, inet_aton)
+AC_SEARCH_LIBS(gethostbyname, [nsl], [],
+  [AC_MSG_ERROR([gethostbyname() not found])])
+AC_SEARCH_LIBS(socket, [socket], [],
+  [AC_MSG_ERROR([socket() not found])])
+AC_SEARCH_LIBS(inet_aton, [resolv], [],
+  [AC_MSG_ERROR([inet_aton() not found])])
+
+# Solaris need sys/filio.h for FIONBIO
+AC_CHECK_HEADERS(sys/filio.h)
+
+# GNU/kfreebsd needs net/if_ether.h for ETH_P_IPV6
+AC_CHECK_HEADERS(net/if_ether.h)
 
 
 
@@ -281,14 +290,6 @@ AC_SEARCH_LIBS(strtonum, [bsd],
  AC_DEFINE(HAVE_STRTONUM, 1,
   [Define to 1 if you have strtonum(3).]))
 
-# Some OSes (Solaris) need sys/sockio.h for SIOCGIFADDR
-AC_CHECK_HEADERS(sys/sockio.h)
-
-# Some OSes (Solaris) need sys/filio.h for FIONBIO
-AC_CHECK_HEADERS(sys/filio.h)
-
-# GNU/kfreebsd needs net/if_ether.h for ETH_P_IPV6
-AC_CHECK_HEADERS(net/if_ether.h)
 
 AC_CONFIG_FILES([Makefile darkstat.8])
 AC_OUTPUT
