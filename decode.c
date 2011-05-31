@@ -64,8 +64,6 @@
 #include <netinet/tcp.h> /* struct tcphdr */
 #include <netinet/udp.h> /* struct udphdr */
 
-extern int want_pppoe;
-
 static void decode_ether(u_char *, const struct pcap_pkthdr *,
    const u_char *);
 static void decode_loop(u_char *, const struct pcap_pkthdr *,
@@ -159,7 +157,7 @@ decode_ether(u_char *user _unused_,
    switch (type) {
    case ETHERTYPE_IP:
    case ETHERTYPE_IPV6:
-      if (!want_pppoe) {
+      if (!opt_want_pppoe) {
          decode_ip(pdata + ETHER_HDR_LEN,
                    pheader->caplen - ETHER_HDR_LEN, &sm);
          acct_for(&sm);
@@ -170,7 +168,7 @@ decode_ether(u_char *user _unused_,
       /* known protocol, don't complain about it. */
       break;
    case ETHERTYPE_PPPOE:
-      if (want_pppoe)
+      if (opt_want_pppoe)
          decode_pppoe_real(pdata + ETHER_HDR_LEN,
                            pheader->caplen - ETHER_HDR_LEN, &sm);
       else

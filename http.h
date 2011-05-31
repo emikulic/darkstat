@@ -8,7 +8,7 @@
 #include <sys/select.h>
 #include <netinet/in.h>
 
-extern char *base_url;
+extern char *http_base_url;
 
 void http_init(const char *base, const char * bindaddr,
    const unsigned short bindport, const int max_conn);

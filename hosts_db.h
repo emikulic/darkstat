@@ -49,13 +49,7 @@ struct bucket {
 
 enum sort_dir { IN, OUT, TOTAL, LASTSEEN };
 
-extern int show_mac_addrs;
-
-/*
- * Table reduction - when the number of entries is about to exceed <max>, we
- * reduce the table to the top <keep> entries.
- */
-extern unsigned int hosts_max, hosts_keep, ports_max, ports_keep;
+extern int hosts_db_show_macs;
 
 void hosts_db_init(void);
 void hosts_db_reduce(void);

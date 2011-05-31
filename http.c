@@ -35,7 +35,7 @@
 #include <unistd.h>
 #include <zlib.h>
 
-char *base_url = NULL;
+char *http_base_url = NULL;
 
 static const char mime_type_xml[] = "text/xml";
 static const char mime_type_html[] = "text/html; charset=us-ascii";
@@ -620,14 +620,14 @@ static void process_get(struct connection *conn)
 
     /* make relative (or fail) */
     decoded_url = safe_url;
-    if (!str_starts_with(decoded_url, base_url))
+    if (!str_starts_with(decoded_url, http_base_url))
     {
         default_reply(conn, 404, "Not Found",
             "The page you requested could not be found.");
         free(decoded_url);
         return;
     }
-    safe_url = decoded_url + strlen(base_url) - 1;
+    safe_url = decoded_url + strlen(http_base_url) - 1;
 
     if (strcmp(safe_url, "/") == 0) {
         struct str *buf = html_front_page();
@@ -889,7 +889,7 @@ static void http_init_base(const char *url)
     size_t urllen;
 
     if (url == NULL) {
-        base_url = strdup("/");
+        http_base_url = strdup("/");
         return;
     }
 
@@ -906,11 +906,11 @@ static void http_init_base(const char *url)
     free(slashed_url);
     if (safe_url == NULL) {
         verbosef("invalid base \"%s\", ignored", url);
-        base_url = strdup("/"); /* set to default */
+        http_base_url = strdup("/"); /* set to default */
         return;
     }
     else
-        base_url = safe_url;
+        http_base_url = safe_url;
 }
 
 /* Use getaddrinfo to figure out what type of socket to create and
@@ -989,7 +989,7 @@ void http_init(const char *base, const char *bindaddr,
         (ai->ai_family == AF_INET6) ? "[" : "",
         ipaddr,
         (ai->ai_family == AF_INET6) ? "]" : "",
-        bindport, base_url);
+        bindport, http_base_url);
 
     freeaddrinfo(ai);
 
@@ -1111,7 +1111,7 @@ void http_poll(fd_set *recv_set, fd_set *send_set)
 }
 
 void http_stop(void) {
-    free(base_url);
+    free(http_base_url);
     close(sockin);
 }
 

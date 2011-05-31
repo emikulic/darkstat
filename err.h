@@ -26,7 +26,6 @@ void errx(const int code, const char *format, ...)
 void warn(const char *format, ...) _printflike_(1, 2);
 void warnx(const char *format, ...) _printflike_(1, 2);
 
-extern int want_verbose, want_syslog;
 void verbosef(const char *format, ...) _printflike_(1, 2);
 void dverbosef(const char *format _unused_, ...);
 

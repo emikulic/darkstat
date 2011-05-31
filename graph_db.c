@@ -28,8 +28,6 @@
 #define GRAPH_WIDTH "320"
 #define GRAPH_HEIGHT "200"
 
-extern const char *interface;
-
 struct graph {
    uint64_t *in, *out;
    unsigned int offset; /* i.e. seconds start at 0, days start at 1 */
@@ -313,7 +311,7 @@ html_front_page(void)
    char start_when[100];
 
    buf = str_make();
-   html_open(buf, "Graphs", interface, /*want_graph_js=*/1);
+   html_open(buf, "Graphs", opt_interface, /*want_graph_js=*/1);
 
    str_append(buf, "<p>\n");
    str_append(buf, "<b>Running for</b> <span id=\"rf\">");
@@ -333,9 +331,9 @@ html_front_page(void)
       "(<span id=\"pc\">%'u</span> <b>captured,</b> "
       "<span id=\"pd\">%'u</span> <b>dropped)</b><br>\n"
       "</p>\n",
-      total_bytes,
-      total_packets,
-      pkts_recv, pkts_drop);
+      acct_total_bytes,
+      acct_total_packets,
+      cap_pkts_recv, cap_pkts_drop);
 
    str_append(buf,
       "<div id=\"graphs\">\n"
@@ -382,7 +380,7 @@ xml_graphs(void)
    struct str *buf = str_make(), *rf;
 
    str_appendf(buf, "<graphs tp=\"%qu\" tb=\"%qu\" pc=\"%u\" pd=\"%u\" rf=\"",
-      total_packets, total_bytes, pkts_recv, pkts_drop);
+      acct_total_packets, acct_total_bytes, cap_pkts_recv, cap_pkts_drop);
    rf = length_of_time(now - start_time);
    str_appendstr(buf, rf);
    str_free(rf);

@@ -36,7 +36,7 @@
 #include <stdlib.h> /* for free */
 #include <string.h> /* for memcpy */
 
-uint64_t total_packets = 0, total_bytes = 0;
+uint64_t acct_total_packets = 0, acct_total_bytes = 0;
 
 static int using_localnet4 = 0, using_localnet6 = 0;
 static struct addr localnet4, localmask4, localnet6, localmask6;
@@ -182,8 +182,8 @@ acct_for(const struct pktsummary * const sm)
 #endif
 
    /* Totals. */
-   total_packets++;
-   total_bytes += sm->len;
+   acct_total_packets++;
+   acct_total_bytes += sm->len;
 
    /* Graphs. */
    dir_out = addr_is_local(&(sm->src));
@@ -202,7 +202,7 @@ acct_for(const struct pktsummary * const sm)
       graph_acct((uint64_t)sm->len, GRAPH_IN);
    }
 
-   if (hosts_max == 0) return; /* skip per-host accounting */
+   if (opt_hosts_max == 0) return; /* skip per-host accounting */
 
    /* Hosts. */
    hosts_db_reduce();
@@ -229,18 +229,18 @@ acct_for(const struct pktsummary * const sm)
       pd->total += sm->len;
    }
 
-   if (ports_max == 0) return; /* skip ports accounting */
+   if (opt_ports_max == 0) return; /* skip ports accounting */
 
    /* Ports. */
    switch (sm->proto) {
    case IPPROTO_TCP:
-      if (sm->src_port <= highest_port) {
+      if (sm->src_port <= opt_highest_port) {
          ps = host_get_port_tcp(hs, sm->src_port);
          ps->out   += sm->len;
          ps->total += sm->len;
       }
 
-      if (sm->dst_port <= highest_port) {
+      if (sm->dst_port <= opt_highest_port) {
          pd = host_get_port_tcp(hd, sm->dst_port);
          pd->in    += sm->len;
          pd->total += sm->len;
@@ -250,13 +250,13 @@ acct_for(const struct pktsummary * const sm)
       break;
 
    case IPPROTO_UDP:
-      if (sm->src_port <= highest_port) {
+      if (sm->src_port <= opt_highest_port) {
          ps = host_get_port_udp(hs, sm->src_port);
          ps->out   += sm->len;
          ps->total += sm->len;
       }
 
-      if (sm->dst_port <= highest_port) {
+      if (sm->dst_port <= opt_highest_port) {
          pd = host_get_port_udp(hd, sm->dst_port);
          pd->in    += sm->len;
          pd->total += sm->len;

@@ -72,43 +72,45 @@ parsenum(const char *str, unsigned long max /* 0 for no max */)
    return n;
 }
 
-const char *interface = NULL;
-static void cb_interface(const char *arg) { interface = arg; }
+const char *opt_interface = NULL;
+static void cb_interface(const char *arg) { opt_interface = arg; }
 
-const char *capfile = NULL;
-static void cb_capfile(const char *arg) { capfile = arg; }
+const char *opt_capfile = NULL;
+static void cb_capfile(const char *arg) { opt_capfile = arg; }
 
-int want_snaplen = -1;
+int opt_want_snaplen = -1;
 static void cb_snaplen(const char *arg)
-{ want_snaplen = (int)parsenum(arg, 0); }
+{ opt_want_snaplen = (int)parsenum(arg, 0); }
 
-int want_pppoe = 0;
-static void cb_pppoe(const char *arg _unused_) { want_pppoe = 1; }
+int opt_want_pppoe = 0;
+static void cb_pppoe(const char *arg _unused_) { opt_want_pppoe = 1; }
 
-static void cb_syslog(const char *arg _unused_) { want_syslog = 1; }
+int opt_want_syslog = 0;
+static void cb_syslog(const char *arg _unused_) { opt_want_syslog = 1; }
 
-static void cb_verbose(const char *arg _unused_) { want_verbose = 1; }
+int opt_want_verbose = 0;
+static void cb_verbose(const char *arg _unused_) { opt_want_verbose = 1; }
 
-int want_daemonize = 1;
-static void cb_no_daemon(const char *arg _unused_) { want_daemonize = 0; }
+int opt_want_daemonize = 1;
+static void cb_no_daemon(const char *arg _unused_) { opt_want_daemonize = 0; }
 
-int want_promisc = 1;
-static void cb_no_promisc(const char *arg _unused_) { want_promisc = 0; }
+int opt_want_promisc = 1;
+static void cb_no_promisc(const char *arg _unused_) { opt_want_promisc = 0; }
 
-int want_dns = 1;
-static void cb_no_dns(const char *arg _unused_) { want_dns = 0; }
+int opt_want_dns = 1;
+static void cb_no_dns(const char *arg _unused_) { opt_want_dns = 0; }
 
-int want_macs = 1;
-static void cb_no_macs(const char *arg _unused_) { want_macs = 0; }
+int opt_want_macs = 1;
+static void cb_no_macs(const char *arg _unused_) { opt_want_macs = 0; }
 
-int want_lastseen = 1;
-static void cb_no_lastseen(const char *arg _unused_) { want_lastseen = 0; }
+int opt_want_lastseen = 1;
+static void cb_no_lastseen(const char *arg _unused_) { opt_want_lastseen = 0; }
 
-unsigned short bindport = 667;
+unsigned short opt_bindport = 667;
 static void cb_port(const char *arg)
-{ bindport = (unsigned short)parsenum(arg, 65536); }
+{ opt_bindport = (unsigned short)parsenum(arg, 65536); }
 
-const char *bindaddr = NULL;
+const char *opt_bindaddr = NULL;
 static void cb_bindaddr(const char *arg)
 {
    struct addrinfo hints, *ai;
@@ -125,27 +127,27 @@ static void cb_bindaddr(const char *arg)
       errx(1, "malformed address \"%s\"", arg);
 
    freeaddrinfo(ai);
-   bindaddr = arg;
+   opt_bindaddr = arg;
 }
 
-const char *filter = NULL;
-static void cb_filter(const char *arg) { filter = arg; }
+const char *opt_filter = NULL;
+static void cb_filter(const char *arg) { opt_filter = arg; }
 
 static void cb_local(const char *arg) { acct_init_localnet(arg); }
 
-const char *chroot_dir = NULL;
-static void cb_chroot(const char *arg) { chroot_dir = arg; }
+const char *opt_chroot_dir = NULL;
+static void cb_chroot(const char *arg) { opt_chroot_dir = arg; }
 
-const char *base = NULL;
-static void cb_base(const char *arg) { base = arg; }
+const char *opt_base = NULL;
+static void cb_base(const char *arg) { opt_base = arg; }
 
-const char *privdrop_user = NULL;
-static void cb_user(const char *arg) { privdrop_user = arg; }
+const char *opt_privdrop_user = NULL;
+static void cb_user(const char *arg) { opt_privdrop_user = arg; }
 
 const char *daylog_fn = NULL;
 static void cb_daylog(const char *arg)
 {
-   if (chroot_dir == NULL)
+   if (opt_chroot_dir == NULL)
       errx(1, "the daylog file is relative to the chroot.\n"
       "You must specify a --chroot dir before you can use --daylog.");
    else
@@ -155,7 +157,7 @@ static void cb_daylog(const char *arg)
 const char *import_fn = NULL;
 static void cb_import(const char *arg)
 {
-   if (chroot_dir == NULL)
+   if (opt_chroot_dir == NULL)
       errx(1, "the import file is relative to the chroot.\n"
       "You must specify a --chroot dir before you can use --import.");
    else
@@ -165,7 +167,7 @@ static void cb_import(const char *arg)
 const char *export_fn = NULL;
 static void cb_export(const char *arg)
 {
-   if ((chroot_dir == NULL) && (capfile == NULL))
+   if ((opt_chroot_dir == NULL) && (opt_capfile == NULL))
       errx(1, "the export file is relative to the chroot.\n"
       "You must specify a --chroot dir before you can use --export.");
    else
@@ -175,39 +177,39 @@ static void cb_export(const char *arg)
 static const char *pid_fn = NULL;
 static void cb_pidfile(const char *arg)
 {
-   if (chroot_dir == NULL)
+   if (opt_chroot_dir == NULL)
       errx(1, "the pidfile is relative to the chroot.\n"
       "You must specify a --chroot dir before you can use --pidfile.");
    else
       pid_fn = arg;
 }
 
-unsigned int hosts_max = 1000;
+unsigned int opt_hosts_max = 1000;
 static void cb_hosts_max(const char *arg)
-{ hosts_max = parsenum(arg, 0); }
+{ opt_hosts_max = parsenum(arg, 0); }
 
-unsigned int hosts_keep = 500;
+unsigned int opt_hosts_keep = 500;
 static void cb_hosts_keep(const char *arg)
-{ hosts_keep = parsenum(arg, 0); }
+{ opt_hosts_keep = parsenum(arg, 0); }
 
-unsigned int ports_max = 200;
+unsigned int opt_ports_max = 200;
 static void cb_ports_max(const char *arg)
-{ ports_max = parsenum(arg, 65536); }
+{ opt_ports_max = parsenum(arg, 65536); }
 
-unsigned int ports_keep = 30;
+unsigned int opt_ports_keep = 30;
 static void cb_ports_keep(const char *arg)
-{ ports_keep = parsenum(arg, 65536); }
+{ opt_ports_keep = parsenum(arg, 65536); }
 
-unsigned int highest_port = 65535;
+unsigned int opt_highest_port = 65535;
 static void cb_highest_port(const char *arg)
-{ highest_port = parsenum(arg, 65535); }
+{ opt_highest_port = parsenum(arg, 65535); }
 
-int wait_secs = -1;
+int opt_wait_secs = -1;
 static void cb_wait_secs(const char *arg)
-{ wait_secs = (int)parsenum(arg, 0); }
+{ opt_wait_secs = (int)parsenum(arg, 0); }
 
-int want_hexdump = 0;
-static void cb_hexdump(const char *arg _unused_) { want_hexdump = 1; }
+int opt_want_hexdump = 0;
+static void cb_hexdump(const char *arg _unused_) { opt_want_hexdump = 1; }
 
 /* --- */
 
@@ -334,42 +336,42 @@ parse_cmdline(const int argc, char * const *argv)
    parse_sub_cmdline(argc, argv);
 
    /* start syslogging as early as possible */
-   if (want_syslog) openlog("darkstat", LOG_NDELAY | LOG_PID, LOG_DAEMON);
+   if (opt_want_syslog) openlog("darkstat", LOG_NDELAY | LOG_PID, LOG_DAEMON);
 
    /* some default values */
-   if (chroot_dir == NULL) chroot_dir = CHROOT_DIR;
-   if (privdrop_user == NULL) privdrop_user = PRIVDROP_USER;
+   if (opt_chroot_dir == NULL) opt_chroot_dir = CHROOT_DIR;
+   if (opt_privdrop_user == NULL) opt_privdrop_user = PRIVDROP_USER;
 
    /* sanity check args */
-   if ((interface == NULL) && (capfile == NULL))
+   if ((opt_interface == NULL) && (opt_capfile == NULL))
       errx(1, "must specify either interface (-i) or capture file (-r)");
 
-   if ((interface != NULL) && (capfile != NULL))
+   if ((opt_interface != NULL) && (opt_capfile != NULL))
       errx(1, "can't specify both interface (-i) and capture file (-r)");
 
-   if ((hosts_max != 0) && (hosts_keep >= hosts_max)) {
-      hosts_keep = hosts_max / 2;
+   if ((opt_hosts_max != 0) && (opt_hosts_keep >= opt_hosts_max)) {
+      opt_hosts_keep = opt_hosts_max / 2;
       warnx("reducing --hosts-keep to %u, to be under --hosts-max (%u)",
-         hosts_keep, hosts_max);
+         opt_hosts_keep, opt_hosts_max);
    }
    verbosef("max %u hosts, cutting down to %u when exceeded",
-      hosts_max, hosts_keep);
+      opt_hosts_max, opt_hosts_keep);
 
-   if ((ports_max != 0) && (ports_keep >= ports_max)) {
-      ports_keep = ports_max / 2;
+   if ((opt_ports_max != 0) && (opt_ports_keep >= opt_ports_max)) {
+      opt_ports_keep = opt_ports_max / 2;
       warnx("reducing --ports-keep to %u, to be under --ports-max (%u)",
-         ports_keep, ports_max);
+         opt_ports_keep, opt_ports_max);
    }
    verbosef("max %u ports per host, cutting down to %u when exceeded",
-      ports_max, ports_keep);
+      opt_ports_max, opt_ports_keep);
 
-   if (want_hexdump && !want_verbose) {
-      want_verbose = 1;
+   if (opt_want_hexdump && !opt_want_verbose) {
+      opt_want_verbose = 1;
       verbosef("--hexdump implies --verbose");
    }
 
-   if (want_hexdump && want_daemonize) {
-      want_daemonize = 0;
+   if (opt_want_hexdump && opt_want_daemonize) {
+      opt_want_daemonize = 0;
       verbosef("--hexdump implies --no-daemon");
    }
 }
@@ -379,12 +381,13 @@ run_from_capfile(void)
 {
    graph_init();
    hosts_db_init();
-   cap_from_file(capfile, filter);
+   cap_from_file(opt_capfile, opt_filter);
    cap_stop();
    if (export_fn != NULL) db_export(export_fn);
    hosts_db_free();
    graph_free();
-   verbosef("Total packets: %qu, bytes: %qu", total_packets, total_bytes);
+   verbosef("Total packets: %qu, bytes: %qu",
+      acct_total_packets, acct_total_bytes);
 }
 
 /* --- Program body --- */
@@ -394,7 +397,7 @@ main(int argc, char **argv)
    test_64order();
    parse_cmdline(argc-1, argv+1);
 
-   if (capfile) {
+   if (opt_capfile) {
       /*
        * This is very different from a regular run against a network
        * interface.
@@ -405,9 +408,9 @@ main(int argc, char **argv)
 
    /* must verbosef() before first fork to init lock */
    verbosef("starting up");
-   if (pid_fn) pidfile_create(chroot_dir, pid_fn, privdrop_user);
+   if (pid_fn) pidfile_create(opt_chroot_dir, pid_fn, opt_privdrop_user);
 
-   if (want_daemonize) {
+   if (opt_want_daemonize) {
       verbosef("daemonizing to run in the background!");
       daemonize_start();
       verbosef("I am the main process");
@@ -415,12 +418,12 @@ main(int argc, char **argv)
    if (pid_fn) pidfile_write_close();
 
    /* do this first as it forks - minimize memory use */
-   if (want_dns) dns_init(privdrop_user);
-   cap_init(interface, filter, want_promisc); /* needs root */
-   http_init(base, bindaddr, bindport, /*maxconn=*/-1);
+   if (opt_want_dns) dns_init(opt_privdrop_user);
+   cap_init(opt_interface, opt_filter, opt_want_promisc); /* needs root */
+   http_init(opt_base, opt_bindaddr, opt_bindport, /*maxconn=*/-1);
    ncache_init(); /* must do before chroot() */
 
-   privdrop(chroot_dir, privdrop_user);
+   privdrop(opt_chroot_dir, opt_privdrop_user);
 
    /* Don't need root privs for these: */
    now = time(NULL);
@@ -428,7 +431,7 @@ main(int argc, char **argv)
    graph_init();
    hosts_db_init();
    if (import_fn != NULL) db_import(import_fn);
-   localip_init(interface);
+   localip_init(opt_interface);
 
    if (signal(SIGTERM, sig_shutdown) == SIG_ERR)
       errx(1, "signal(SIGTERM) failed");
@@ -489,7 +492,7 @@ main(int argc, char **argv)
 
    verbosef("shutting down");
    verbosef("pcap stats: %u packets received, %u packets dropped",
-      pkts_recv, pkts_drop);
+      cap_pkts_recv, cap_pkts_drop);
    http_stop();
    cap_stop();
    dns_stop();

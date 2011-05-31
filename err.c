@@ -59,7 +59,7 @@ err(const int code, const char *format, ...)
    va_list va;
 
    va_start(va, format);
-   if (want_syslog)
+   if (opt_want_syslog)
       to_syslog("ERROR: ", 1, format, va);
    else {
       fprintf(stderr, "%5d: error: ", (int)getpid());
@@ -77,7 +77,7 @@ errx(const int code, const char *format, ...)
    va_list va;
 
    va_start(va, format);
-   if (want_syslog)
+   if (opt_want_syslog)
       to_syslog("ERROR: ", 0, format, va);
    else {
       fprintf(stderr, "%5d: error: ", (int)getpid());
@@ -95,7 +95,7 @@ warn(const char *format, ...)
    va_list va;
 
    va_start(va, format);
-   if (want_syslog)
+   if (opt_want_syslog)
       to_syslog("WARNING: ", 1, format, va);
    else {
       fprintf(stderr, "%5d: warning: ", (int)getpid());
@@ -111,7 +111,7 @@ warnx(const char *format, ...)
    va_list va;
 
    va_start(va, format);
-   if (want_syslog)
+   if (opt_want_syslog)
       to_syslog("WARNING: ", 0, format, va);
    else {
       fprintf(stderr, "%5d: warning: ", (int)getpid());
@@ -168,16 +168,14 @@ unlock(void)
    }
 }
 
-int want_verbose = 0, want_syslog = 0;
-
 void
 verbosef(const char *format, ...)
 {
    va_list va;
 
-   if (!want_verbose) return;
+   if (!opt_want_verbose) return;
    va_start(va, format);
-   if (want_syslog)
+   if (opt_want_syslog)
       to_syslog(NULL, 0, format, va);
    else {
       lock();

@@ -11,7 +11,7 @@
 #include "config.h" /* for PACKAGE_STRING, PACKAGE_URL */
 #include "str.h"
 #include "html.h"
-#include "http.h" /* for base_url */
+#include "http.h" /* for http_base_url */
 
 void html_open(struct str *buf, const char *title, const char *interface,
     const int want_graph_js)
@@ -24,12 +24,12 @@ void html_open(struct str *buf, const char *title, const char *interface,
          "<meta name=\"generator\" content=\"" PACKAGE_STRING "\">\n"
          "<meta name=\"robots\" content=\"noindex, noarchive\">\n"
          "<link rel=\"stylesheet\" href=\"%sstyle.css\" type=\"text/css\">\n"
-        , title, interface, base_url);
+        , title, interface, http_base_url);
 
     if (want_graph_js)
         str_appendf(buf,
             "<script src=\"%sgraph.js\" type=\"text/javascript\"></script>\n"
-            , base_url);
+            , http_base_url);
 
     str_appendf(buf,
         "</head>\n"
@@ -44,7 +44,7 @@ void html_open(struct str *buf, const char *title, const char *interface,
         "</div>\n"
         "<div class=\"content\">\n"
          "<h2 class=\"pageheader\">%s</h2>\n"
-        , base_url, base_url, title);
+        , http_base_url, http_base_url, title);
 }
 
 void html_close(struct str *buf)

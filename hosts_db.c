@@ -15,7 +15,7 @@
 #include "hosts_db.h"
 #include "db.h"
 #include "html.h"
-#include "http.h" /* for base_url */
+#include "http.h" /* for http_base_url */
 #include "ncache.h"
 #include "now.h"
 #include "str.h"
@@ -29,9 +29,7 @@
 #include <string.h> /* memset(), strcmp() */
 #include <unistd.h>
 
-extern int want_lastseen;
-int show_mac_addrs = 0;
-extern const char *interface;
+int hosts_db_show_macs = 0;
 
 /* FIXME: specify somewhere more sane/tunable */
 #define MAX_ENTRIES 30 /* in an HTML table rendered from a hashtable */
@@ -297,13 +295,13 @@ format_cols_host(struct str *buf)
       "<tr>\n"
       " <th>IP</th>\n"
       " <th>Hostname</th>\n");
-   if (show_mac_addrs) str_append(buf,
+   if (hosts_db_show_macs) str_append(buf,
       " <th>MAC Address</th>\n");
    str_append(buf,
       " <th><a href=\"?sort=in\">In</a></th>\n"
       " <th><a href=\"?sort=out\">Out</a></th>\n"
       " <th><a href=\"?sort=total\">Total</a></th>\n");
-   if (want_lastseen) str_append(buf,
+   if (opt_want_lastseen) str_append(buf,
       " <th><a href=\"?sort=lastseen\">Last seen</a></th>\n");
    str_append(buf,
       "</tr>\n");
@@ -320,10 +318,10 @@ format_row_host(struct str *buf, const struct bucket *b,
       " <td><a href=\"%shosts/%s/\">%s</a></td>\n"
       " <td>%s</td>\n",
       css_class,
-      base_url, ip, ip,
+      http_base_url, ip, ip,
       (b->u.host.dns == NULL) ? "" : b->u.host.dns);
 
-   if (show_mac_addrs)
+   if (hosts_db_show_macs)
       str_appendf(buf,
          " <td><tt>%x:%x:%x:%x:%x:%x</tt></td>\n",
          b->u.host.mac_addr[0],
@@ -339,7 +337,7 @@ format_row_host(struct str *buf, const struct bucket *b,
       " <td class=\"num\">%'qu</td>\n",
       b->in, b->out, b->total);
 
-   if (want_lastseen) {
+   if (opt_want_lastseen) {
       time_t last_t = b->u.host.last_seen;
       struct str *lastseen = NULL;
 
@@ -516,7 +514,7 @@ void
 hosts_db_init(void)
 {
    assert(hosts_db == NULL);
-   hosts_db = hashtable_make(HOST_BITS, hosts_max, hosts_keep,
+   hosts_db = hashtable_make(HOST_BITS, opt_hosts_max, opt_hosts_keep,
       hash_func_host, free_func_host, key_func_host, find_func_host,
       make_func_host, format_cols_host, format_row_host);
 }
@@ -807,7 +805,7 @@ host_get_port_tcp(struct bucket *host, const uint16_t port)
    struct host *h = &host->u.host;
    assert(h != NULL);
    if (h->ports_tcp == NULL)
-      h->ports_tcp = hashtable_make(PORT_BITS, ports_max, ports_keep,
+      h->ports_tcp = hashtable_make(PORT_BITS, opt_ports_max, opt_ports_keep,
          hash_func_short, free_func_simple, key_func_port_tcp,
          find_func_port_tcp, make_func_port_tcp,
          format_cols_port_tcp, format_row_port_tcp);
@@ -823,7 +821,7 @@ host_get_port_udp(struct bucket *host, const uint16_t port)
    struct host *h = &host->u.host;
    assert(h != NULL);
    if (h->ports_udp == NULL)
-      h->ports_udp = hashtable_make(PORT_BITS, ports_max, ports_keep,
+      h->ports_udp = hashtable_make(PORT_BITS, opt_ports_max, opt_ports_keep,
          hash_func_short, free_func_simple, key_func_port_udp,
          find_func_port_udp, make_func_port_udp,
          format_cols_port_udp, format_row_port_udp);
@@ -975,7 +973,7 @@ html_hosts_main(const char *qs)
 #define NEXT "next page &gt;&gt;&gt;"
 #define FULL "full table"
 
-   html_open(buf, "Hosts", interface, /*want_graph_js=*/0);
+   html_open(buf, "Hosts", opt_interface, /*want_graph_js=*/0);
    format_table(buf, hosts_db, start, sort, full);
 
    /* <prev | full | stats | next> */
@@ -1034,7 +1032,7 @@ html_hosts_detail(const char *ip)
 
    /* Overview. */
    buf = str_make();
-   html_open(buf, ip, interface, /*want_graph_js=*/0);
+   html_open(buf, ip, opt_interface, /*want_graph_js=*/0);
    if (strcmp(ip, canonical) != 0)
       str_appendf(buf, "(canonically <b>%s</b>)\n", canonical);
    str_appendf(buf,
@@ -1046,7 +1044,7 @@ html_hosts_detail(const char *ip)
    if (h->u.host.dns == NULL)
       dns_queue(&(h->u.host.addr));
 
-   if (show_mac_addrs)
+   if (hosts_db_show_macs)
       str_appendf(buf,
          "<b>MAC Address:</b> "
          "<tt>%x:%x:%x:%x:%x:%x</tt><br>\n",

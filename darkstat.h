@@ -11,6 +11,7 @@
  * - PACKAGE_STRING
  */
 #include "config.h"
+#include "opt.h"
 
 #ifdef __GNUC__
 # define _unused_ __attribute__((__unused__))

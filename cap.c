@@ -28,8 +28,6 @@
 #include <string.h>
 #include <unistd.h>
 
-extern int want_pppoe, want_macs, want_hexdump, want_snaplen, wait_secs;
-
 /* The cap process life-cycle:
  *
  * Init           - cap_init()
@@ -69,8 +67,8 @@ cap_init(const char *device, const char *filter, int promisc)
          errbuf);
       if (pcap != NULL) break; /* success! */
 
-      if ((wait_secs != -1) && strstr(errbuf, "device is not up")) {
-         if ((wait_secs > 0) && (waited >= wait_secs))
+      if ((opt_wait_secs != -1) && strstr(errbuf, "device is not up")) {
+         if ((opt_wait_secs > 0) && (waited >= opt_wait_secs))
             errx(1, "waited %d secs, giving up: pcap_open_live(): %s",
                waited, errbuf);
 
@@ -84,15 +82,15 @@ cap_init(const char *device, const char *filter, int promisc)
    /* Work out the linktype and what snaplen we need. */
    linktype = pcap_datalink(pcap);
    verbosef("linktype is %d", linktype);
-   if ((linktype == DLT_EN10MB) && want_macs)
-      show_mac_addrs = 1;
+   if ((linktype == DLT_EN10MB) && opt_want_macs)
+      hosts_db_show_macs = 1;
    linkhdr = getlinkhdr(linktype);
    if (linkhdr == NULL)
       errx(1, "unknown linktype %d", linktype);
    if (linkhdr->handler == NULL)
       errx(1, "no handler for linktype %d", linktype);
    snaplen = getsnaplen(linkhdr);
-   if (want_pppoe) {
+   if (opt_want_pppoe) {
       snaplen += PPPOE_HDR_LEN;
       if (linktype != DLT_EN10MB)
          errx(1, "can't do PPPoE decoding on a non-Ethernet linktype");
@@ -106,8 +104,8 @@ cap_init(const char *device, const char *filter, int promisc)
     */
    snaplen = max(snaplen, 96);
 #endif
-   if (want_snaplen > -1)
-      snaplen = want_snaplen;
+   if (opt_want_snaplen > -1)
+      snaplen = opt_want_snaplen;
    verbosef("using snaplen %d", snaplen);
 
    /* Close and re-open pcap to use the new snaplen. */
@@ -222,7 +220,7 @@ cap_fd_set(
 #endif
 }
 
-unsigned int pkts_recv = 0, pkts_drop = 0;
+unsigned int cap_pkts_recv = 0, cap_pkts_drop = 0;
 
 static void
 cap_stats_update(void)
@@ -234,8 +232,8 @@ cap_stats_update(void)
       return;
    }
 
-   pkts_recv = ps.ps_recv;
-   pkts_drop = ps.ps_drop;
+   cap_pkts_recv = ps.ps_recv;
+   cap_pkts_drop = ps.ps_drop;
 }
 
 /*
@@ -272,7 +270,7 @@ hexdump(const u_char *buf, const uint32_t len)
 static void
 callback(u_char *user, const struct pcap_pkthdr *h, const u_char *bytes)
 {
-   if (want_hexdump) hexdump(bytes, h->caplen);
+   if (opt_want_hexdump) hexdump(bytes, h->caplen);
    linkhdr->handler(user, h, bytes);
 }
 
@@ -376,7 +374,7 @@ cap_from_file(const char *capfile, const char *filter)
    if (linkhdr->handler == NULL)
       errx(1, "no handler for linktype %d", linktype);
    if (linktype == DLT_EN10MB) /* FIXME: impossible with capfile? */
-      show_mac_addrs = 1;
+      hosts_db_show_macs = 1;
 
    /* Set filter expression, if any. */ /* FIXME: factor! */
    if (filter != NULL)
