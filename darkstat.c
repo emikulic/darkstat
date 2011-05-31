@@ -24,6 +24,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <inttypes.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -364,7 +365,11 @@ run_from_capfile(void)
    if (export_fn != NULL) db_export(export_fn);
    hosts_db_free();
    graph_free();
-   verbosef("Total packets: %qu, bytes: %qu",
+#ifndef PRIu64
+#warning "PRIu64 is not defined, using qu instead"
+#define PRIu64 "qu"
+#endif
+   verbosef("Total packets: %"PRIu64", bytes: %"PRIu64,
       acct_total_packets, acct_total_bytes);
 }
 
