@@ -8,12 +8,12 @@
  * GNU General Public License version 2. (see COPYING.GPL)
  */
 
-#include "config.h" /* for PACKAGE_STRING, PACKAGE_URL */
+#include "darkstat.h"
 #include "str.h"
 #include "html.h"
 #include "http.h" /* for http_base_url */
 
-void html_open(struct str *buf, const char *title, const char *interface,
+void html_open(struct str *buf, const char *title,
     const int want_graph_js)
 {
     str_appendf(buf,
@@ -24,7 +24,7 @@ void html_open(struct str *buf, const char *title, const char *interface,
          "<meta name=\"generator\" content=\"" PACKAGE_STRING "\">\n"
          "<meta name=\"robots\" content=\"noindex, noarchive\">\n"
          "<link rel=\"stylesheet\" href=\"%sstyle.css\" type=\"text/css\">\n"
-        , title, interface, http_base_url);
+        , title, opt_interface, http_base_url);
 
     if (want_graph_js)
         str_appendf(buf,
