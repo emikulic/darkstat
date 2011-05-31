@@ -47,6 +47,10 @@ str.c
 
 OBJS = $(SRCS:%.c=%.o)
 
+STATICHS = \
+stylecss.h	\
+graphjs.h
+
 all: darkstat
 
 darkstat: $(OBJS)
@@ -58,9 +62,12 @@ darkstat: $(OBJS)
 	@$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 clean:
-	rm -f darkstat $(OBJS) c-ify graphjs.h stylecss.h
+	rm -f darkstat
+	rm -f $(OBJS)
+	rm -f $(STATICHS)
+	rm -f c-ify
 
-depend: stylecss.h graphjs.h config.status
+depend: config.status $(STATICHS)
 	cp Makefile.in Makefile.in.old
 	sed '/^# Automatically generated dependencies$$/,$$d' \
 		<Makefile.in.old >Makefile.in
@@ -88,6 +95,8 @@ install: darkstat
 	$(INSTALL) -m 555 darkstat $(DESTDIR)$(sbindir)
 	$(INSTALL) -d $(DESTDIR)$(mandir)/man8
 	$(INSTALL) -m 444 darkstat.8 $(DESTDIR)$(mandir)/man8
+
+.PHONY: all install clean depend show-dep
 
 # Automatically generated dependencies
 acct.o: acct.c acct.h decode.h addr.h conv.h config.h daylog.h graph_db.h \
