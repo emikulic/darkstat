@@ -264,7 +264,7 @@ fi
 
 
 # A real OS will have setproctitle()
-AC_CHECK_LIB(c, setproctitle,
+AC_SEARCH_LIBS(setproctitle, [bsd],
  AC_DEFINE(HAVE_SETPROCTITLE, 1,
   [Define to 1 if you have setproctitle().]))
 
