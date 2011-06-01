@@ -66,6 +66,7 @@ localip.h \
 ncache.c \
 ncache.h \
 now.h \
+opt.h \
 pidfile.c \
 pidfile.h \
 queue.h \
