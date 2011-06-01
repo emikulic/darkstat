@@ -139,9 +139,6 @@ static void cb_local(const char *arg) { acct_init_localnet(arg); }
 const char *opt_chroot_dir = NULL;
 static void cb_chroot(const char *arg) { opt_chroot_dir = arg; }
 
-const char *opt_base = NULL;
-static void cb_base(const char *arg) { opt_base = arg; }
-
 const char *opt_privdrop_user = NULL;
 static void cb_user(const char *arg) { opt_privdrop_user = arg; }
 
@@ -234,7 +231,6 @@ static struct cmdline_arg cmdline_args[] = {
    {"--no-lastseen",  NULL,              cb_no_lastseen,  0},
    {"-p",             "port",            cb_port,         0},
    {"-b",             "bindaddr",        cb_bindaddr,     0},
-   {"--base",         "path",            cb_base,         0},
    {"-f",             "filter",          cb_filter,       0},
    {"-l",             "network/netmask", cb_local,        0},
    {"--chroot",       "dir",             cb_chroot,       0},
@@ -421,7 +417,7 @@ main(int argc, char **argv)
    /* do this first as it forks - minimize memory use */
    if (opt_want_dns) dns_init(opt_privdrop_user);
    cap_init(opt_interface, opt_filter, opt_want_promisc); /* needs root */
-   http_init(opt_base, opt_bindaddr, opt_bindport, /*maxconn=*/-1);
+   http_init(opt_bindaddr, opt_bindport, /*maxconn=*/-1);
    ncache_init(); /* must do before chroot() */
 
    privdrop(opt_chroot_dir, opt_privdrop_user);

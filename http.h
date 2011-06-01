@@ -8,10 +8,8 @@
 #include <sys/select.h>
 #include <netinet/in.h>
 
-extern char *http_base_url;
-
-void http_init(const char *base, const char * bindaddr,
-   const unsigned short bindport, const int max_conn);
+void http_init(const char * bindaddr, const unsigned short bindport,
+   const int max_conn);
 void http_fd_set(fd_set *recv_set, fd_set *send_set, int *max_fd,
    struct timeval *timeout, int *need_timeout);
 void http_poll(fd_set *read_set, fd_set *write_set);

@@ -36,8 +36,6 @@
 #include <unistd.h>
 #include <zlib.h>
 
-char *http_base_url = NULL;
-
 static const char mime_type_xml[] = "text/xml";
 static const char mime_type_html[] = "text/html; charset=us-ascii";
 static const char mime_type_css[] = "text/css";
@@ -619,17 +617,6 @@ static void process_get(struct connection *conn)
         return;
     }
 
-    /* make relative (or fail) */
-    decoded_url = safe_url;
-    if (!str_starts_with(decoded_url, http_base_url))
-    {
-        default_reply(conn, 404, "Not Found",
-            "The page you requested could not be found.");
-        free(decoded_url);
-        return;
-    }
-    safe_url = decoded_url + strlen(http_base_url) - 1;
-
     if (strcmp(safe_url, "/") == 0) {
         struct str *buf = html_front_page();
         str_extract(buf, &(conn->reply_length), &(conn->reply));
@@ -641,7 +628,7 @@ static void process_get(struct connection *conn)
         if (buf == NULL) {
             default_reply(conn, 404, "Not Found",
                 "The page you requested could not be found.");
-            free(decoded_url);
+            free(safe_url);
             return;
         }
         str_extract(buf, &(conn->reply_length), &(conn->reply));
@@ -661,10 +648,10 @@ static void process_get(struct connection *conn)
     else {
         default_reply(conn, 404, "Not Found",
             "The page you requested could not be found.");
-        free(decoded_url);
+        free(safe_url);
         return;
     }
-    free(decoded_url);
+    free(safe_url);
 
     process_gzip(conn);
     assert(conn->mime_type != NULL);
@@ -879,41 +866,6 @@ static void poll_send_reply(struct connection *conn)
     if (conn->reply_sent == conn->reply_length) conn->state = DONE;
 }
 
-
-
-/* --------------------------------------------------------------------------
- * Initialize the base path.
- */
-static void http_init_base(const char *url)
-{
-    char *slashed_url, *safe_url;
-    size_t urllen;
-
-    if (url == NULL) {
-        http_base_url = strdup("/");
-        return;
-    }
-
-    /* make sure that the url has leading and trailing slashes */
-    urllen = strlen(url);
-    slashed_url = xmalloc(urllen+3);
-    slashed_url[0] = '/';
-    memcpy(slashed_url+1, url, urllen); /* don't copy NUL */
-    slashed_url[urllen+1] = '/';
-    slashed_url[urllen+2] = '\0';
-
-    /* clean the url */
-    safe_url = make_safe_uri(slashed_url);
-    free(slashed_url);
-    if (safe_url == NULL) {
-        verbosef("invalid base \"%s\", ignored", url);
-        http_base_url = strdup("/"); /* set to default */
-        return;
-    }
-    else
-        http_base_url = safe_url;
-}
-
 /* Use getaddrinfo to figure out what type of socket to create and
  * what to bind it to.  "bindaddr" can be NULL.  Remember to freeaddrinfo()
  * the result.
@@ -949,14 +901,13 @@ static struct addrinfo *get_bind_addr(
  * Initialize the sockin global.  This is the socket that we accept
  * connections from.  Pass -1 as max_conn for system limit.
  */
-void http_init(const char *base, const char *bindaddr,
-    const unsigned short bindport, const int max_conn)
+void http_init(const char *bindaddr, const unsigned short bindport,
+    const int max_conn)
 {
     struct addrinfo *ai;
     char ipaddr[INET6_ADDRSTRLEN];
     int sockopt, ret;
 
-    http_init_base(base);
     ai = get_bind_addr(bindaddr, bindport);
 
     /* create incoming socket */
@@ -986,11 +937,11 @@ void http_init(const char *base, const char *bindaddr,
     if (bind(sockin, ai->ai_addr, ai->ai_addrlen) == -1)
         err(1, "bind(\"%s\") failed", ipaddr);
 
-    verbosef("listening on http://%s%s%s:%u%s",
+    verbosef("listening on http://%s%s%s:%u/",
         (ai->ai_family == AF_INET6) ? "[" : "",
         ipaddr,
         (ai->ai_family == AF_INET6) ? "]" : "",
-        bindport, http_base_url);
+        bindport);
 
     freeaddrinfo(ai);
 
@@ -1112,7 +1063,6 @@ void http_poll(fd_set *recv_set, fd_set *send_set)
 }
 
 void http_stop(void) {
-    free(http_base_url);
     close(sockin);
 }
 

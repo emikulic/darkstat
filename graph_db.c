@@ -17,7 +17,6 @@
 #include "err.h"
 #include "str.h"
 #include "html.h"
-#include "http.h"
 #include "graph_db.h"
 #include "now.h"
 #include "opt.h"
@@ -312,7 +311,7 @@ html_front_page(void)
    char start_when[100];
 
    buf = str_make();
-   html_open(buf, "Graphs", /*want_graph_js=*/1);
+   html_open(buf, "Graphs", /*path_depth=*/0, /*want_graph_js=*/1);
 
    str_append(buf, "<p>\n");
    str_append(buf, "<b>Running for</b> <span id=\"rf\">");

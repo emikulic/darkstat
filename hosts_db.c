@@ -15,7 +15,6 @@
 #include "hosts_db.h"
 #include "db.h"
 #include "html.h"
-#include "http.h" /* for http_base_url */
 #include "ncache.h"
 #include "now.h"
 #include "opt.h"
@@ -316,10 +315,10 @@ format_row_host(struct str *buf, const struct bucket *b,
 
    str_appendf(buf,
       "<tr class=\"%s\">\n"
-      " <td><a href=\"%shosts/%s/\">%s</a></td>\n"
+      " <td><a href=\"%s/\">%s</a></td>\n"
       " <td>%s</td>\n",
       css_class,
-      http_base_url, ip, ip,
+      ip, ip,
       (b->u.host.dns == NULL) ? "" : b->u.host.dns);
 
    if (hosts_db_show_macs)
@@ -974,7 +973,7 @@ html_hosts_main(const char *qs)
 #define NEXT "next page &gt;&gt;&gt;"
 #define FULL "full table"
 
-   html_open(buf, "Hosts", /*want_graph_js=*/0);
+   html_open(buf, "Hosts", /*path_depth=*/1, /*want_graph_js=*/0);
    format_table(buf, hosts_db, start, sort, full);
 
    /* <prev | full | stats | next> */
@@ -1033,7 +1032,7 @@ html_hosts_detail(const char *ip)
 
    /* Overview. */
    buf = str_make();
-   html_open(buf, ip, /*want_graph_js=*/0);
+   html_open(buf, ip, /*path_depth=*/2, /*want_graph_js=*/0);
    if (strcmp(ip, canonical) != 0)
       str_appendf(buf, "(canonically <b>%s</b>)\n", canonical);
    str_appendf(buf,

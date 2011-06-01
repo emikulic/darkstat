@@ -7,7 +7,7 @@
 #ifndef __DARKSTAT_HTML_H
 #define __DARKSTAT_HTML_H
 
-void html_open(struct str *buf, const char *title,
+void html_open(struct str *buf, const char *title, const int path_depth,
     const int want_graph_js);
 void html_close(struct str *buf);
 
