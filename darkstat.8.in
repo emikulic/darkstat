@@ -1,11 +1,11 @@
 .\"
 .\" darkstat 3
-.\" Copyright 2001-2010, Emil Mikulic.
+.\" Copyright 2001-2011, Emil Mikulic.
 .\"
 .\" You may use, modify and redistribute this file under the terms of the
 .\" GNU General Public License version 2. (see COPYING.GPL)
 .\"
-.TH darkstat 8 "September 2010" "@PACKAGE_STRING@"
+.TH darkstat 8 "June 2011" "@PACKAGE_STRING@"
 .SH NAME
 darkstat \- network statistics gatherer
 .\"
