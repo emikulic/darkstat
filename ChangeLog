@@ -1,3 +1,13 @@
+v3.0.714 (June 2011)
+	- IPv6 support!  Big ups to Mats Erik Andersson who did most
+	  of this work!
+	- Allow sort on last-seen, thanks to Dirk Koopman.
+	- Support multiple bind addresses.
+	- Add --disable-debug configure flag, thanks to Malte S. Stretz.
+	- Make it possible to save the DB without resetting it (SIGUSR2).
+	- Web: Use relative URLs, so darkstat works properly behind mod_proxy,
+	  thanks to Malte S. Stretz.
+
 v3.0.713 (March 2010)
 	- Don't require --verbose for pcap_stats.
 	- Survive interface going down on Linux.
