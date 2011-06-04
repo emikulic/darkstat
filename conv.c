@@ -16,7 +16,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "darkstat.h"
+#include "cdefs.h"
 #include "config.h"
 #include "conv.h"
 

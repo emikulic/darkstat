@@ -7,7 +7,6 @@
  * GNU General Public License version 2. (see COPYING.GPL)
  */
 
-#include "darkstat.h"
 #include "addr.h"
 #include "conv.h" /* for strlcpy */
 #include "err.h"

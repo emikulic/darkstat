@@ -7,9 +7,9 @@
  * GNU General Public License version 2. (see COPYING.GPL)
  */
 
-#include "darkstat.h"
-#include "hosts_db.h"
+#include "cdefs.h"
 #include "err.h"
+#include "hosts_db.h"
 
 /* ---------------------------------------------------------------------------
  * comparator for sorting (biggest first)

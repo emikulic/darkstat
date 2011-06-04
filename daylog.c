@@ -16,7 +16,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "darkstat.h"
 #include "err.h"
 #include "daylog.h"
 #include "str.h"

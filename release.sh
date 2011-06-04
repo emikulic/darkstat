@@ -33,12 +33,12 @@ addr.c \
 addr.h \
 cap.c \
 cap.h \
+cdefs.h \
 contrib \
 conv.c \
 conv.h \
 darkstat.8.in \
 darkstat.c \
-darkstat.h \
 daylog.c \
 daylog.h \
 db.c \

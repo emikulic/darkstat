@@ -16,7 +16,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "darkstat.h"
+#include "cdefs.h"
 
 void err(const int code, const char *format, ...)
    _noreturn_ _printflike_(2, 3);

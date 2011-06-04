@@ -10,7 +10,7 @@
  * GNU General Public License version 2. (see COPYING.GPL)
  */
 
-#include "darkstat.h"
+#include "cdefs.h"
 #include "acct.h"
 #include "cap.h"
 #include "config.h"

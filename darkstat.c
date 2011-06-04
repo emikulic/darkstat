@@ -7,9 +7,9 @@
  * GNU General Public License version 2. (see COPYING.GPL)
  */
 
-#include "darkstat.h"
 #include "acct.h"
 #include "cap.h"
+#include "cdefs.h"
 #include "config.h"
 #include "conv.h"
 #include "daylog.h"

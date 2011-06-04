@@ -8,7 +8,6 @@
  * GNU General Public License version 2. (see COPYING.GPL)
  */
 
-#include "darkstat.h"
 #include "config.h"
 #include "str.h"
 #include "html.h"

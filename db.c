@@ -10,18 +10,17 @@
 #define _GNU_SOURCE 1 /* for O_NOFOLLOW in Linux */
 
 #include <sys/types.h>
-
-#include "darkstat.h"
-#include "err.h"
-#include "hosts_db.h"
-#include "graph_db.h"
-#include "db.h"
-
 #include <netinet/in.h> /* for ntohs() and friends */
 #include <assert.h>
 #include <fcntl.h>
 #include <string.h>
 #include <unistd.h>
+
+#include "cdefs.h"
+#include "err.h"
+#include "hosts_db.h"
+#include "graph_db.h"
+#include "db.h"
 
 static const unsigned char export_file_header[] = {0xDA, 0x31, 0x41, 0x59};
 static const unsigned char export_tag_hosts_ver1[] = {0xDA, 'H', 'S', 0x01};

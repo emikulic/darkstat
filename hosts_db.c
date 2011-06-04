@@ -7,7 +7,7 @@
  * GNU General Public License version 2. (see COPYING.GPL)
  */
 
-#include "darkstat.h"
+#include "cdefs.h"
 #include "conv.h"
 #include "decode.h"
 #include "dns.h"

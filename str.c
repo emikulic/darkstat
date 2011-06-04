@@ -21,7 +21,6 @@
 #include <string.h>
 #include <stdint.h> /* for uint32_t on Linux and OS X */
 
-#include "darkstat.h"
 #include "conv.h"
 #include "err.h"
 #include "str.h"

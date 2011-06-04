@@ -7,7 +7,6 @@
  * GNU General Public License version 2. (see COPYING.GPL)
  */
 
-#include "darkstat.h"
 #include "conv.h"
 #include "err.h"
 #include "ncache.h"

@@ -16,7 +16,7 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "darkstat.h"
+#include "cdefs.h"
 #include "conv.h"
 #include "err.h"
 #include "opt.h"

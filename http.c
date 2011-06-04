@@ -8,16 +8,16 @@
  * GNU General Public License version 2. (see COPYING.GPL)
  */
 
-#include "darkstat.h"
-#include "http.h"
+#include "cdefs.h"
 #include "config.h"
 #include "conv.h"
-#include "hosts_db.h"
-#include "graph_db.h"
 #include "err.h"
+#include "graph_db.h"
+#include "hosts_db.h"
+#include "http.h"
+#include "now.h"
 #include "queue.h"
 #include "str.h"
-#include "now.h"
 
 #include <sys/uio.h>
 #include <sys/socket.h>

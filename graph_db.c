@@ -11,7 +11,6 @@
 
 #include "cap.h"
 #include "conv.h"
-#include "darkstat.h"
 #include "db.h"
 #include "acct.h"
 #include "err.h"

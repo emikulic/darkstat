@@ -1,7 +1,9 @@
 /* darkstat 3
  * copyright (c) 2001-2008 Emil Mikulic.
  *
- * darkstat.h: general macros
+ * cdefs.h: compiler-specific defines
+ *
+ * This file borrows from FreeBSD's sys/cdefs.h
  */
 
 #ifdef __GNUC__

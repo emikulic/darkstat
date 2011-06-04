@@ -16,7 +16,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "darkstat.h"
 #include "err.h"
 #include "str.h"
 #include "pidfile.h"
