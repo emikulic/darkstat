@@ -6,10 +6,6 @@
 # This is for developer use only and lives in the repo but
 # shouldn't end up in a tarball.
 #
-# Remember to run "./test_headers.sh"
-# Remember to run "make depend" to update deps in Makefile.in
-#
-
 if [ $# -ne 1 ]; then
   echo "usage: $0 3.0.0rc0" >&2
   exit 1
@@ -82,14 +78,17 @@ say() {
   echo ==\> "$@" >&2
 }
 
-PKG=$NAME-$VERSION
-say releasing $PKG
-
 run() {
   say "$@"
   "$@" || { say ERROR!; exit 1; }
 }
 
+PKG=$NAME-$VERSION
+say releasing $PKG
+
+run ./test_headers.sh
+run make depend
+run make graphjs.h stylecss.h
 run mkdir $PKG
 run cp -r $files $PKG/.
 
@@ -105,7 +104,7 @@ say set version: `grep '^AC_INIT' $PKG/configure.ac`
 )
 
 # package it up
-run tar -cf $PKG.tar $PKG
+run tar chof $PKG.tar $PKG
 run bzip2 -9vv $PKG.tar
 say output:
 ls -l $PKG.tar.bz2
