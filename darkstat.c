@@ -15,16 +15,13 @@
 #include "daylog.h"
 #include "db.h"
 #include "dns.h"
+#include "err.h"
 #include "http.h"
 #include "hosts_db.h"
 #include "localip.h"
 #include "ncache.h"
 #include "pidfile.h"
 
-#include "err.h"
-#include <arpa/inet.h>
-#include <sys/socket.h>
-#include <netdb.h>
 #include <assert.h>
 #include <errno.h>
 #include <signal.h>
@@ -111,25 +108,7 @@ unsigned short opt_bindport = 667;
 static void cb_port(const char *arg)
 { opt_bindport = (unsigned short)parsenum(arg, 65536); }
 
-const char *opt_bindaddr = NULL;
-static void cb_bindaddr(const char *arg)
-{
-   struct addrinfo hints, *ai;
-
-   memset(&hints, 0, sizeof(hints));
-   hints.ai_flags = AI_PASSIVE;
-#ifdef AI_ADDRCONFIG
-   hints.ai_flags |= AI_ADDRCONFIG;
-#endif
-   hints.ai_family = AF_UNSPEC;
-   hints.ai_socktype = SOCK_STREAM;
-
-   if (getaddrinfo(arg, NULL, &hints, &ai))
-      errx(1, "malformed address \"%s\"", arg);
-
-   freeaddrinfo(ai);
-   opt_bindaddr = arg;
-}
+static void cb_bindaddr(const char *arg) { http_add_bindaddr(arg); }
 
 const char *opt_filter = NULL;
 static void cb_filter(const char *arg) { opt_filter = arg; }
@@ -230,7 +209,7 @@ static struct cmdline_arg cmdline_args[] = {
    {"--no-macs",      NULL,              cb_no_macs,      0},
    {"--no-lastseen",  NULL,              cb_no_lastseen,  0},
    {"-p",             "port",            cb_port,         0},
-   {"-b",             "bindaddr",        cb_bindaddr,     0},
+   {"-b",             "bindaddr",        cb_bindaddr,     -1},
    {"-f",             "filter",          cb_filter,       0},
    {"-l",             "network/netmask", cb_local,        0},
    {"--chroot",       "dir",             cb_chroot,       0},
@@ -305,7 +284,9 @@ parse_sub_cmdline(const int argc, char * const *argv)
             exit(EXIT_FAILURE);
          }
 
-         arg->num_seen++;
+         if (arg->num_seen != -1) /* accept more than one */
+            arg->num_seen++;
+
          if (arg->arg_name == NULL) {
             arg->callback(NULL);
             parse_sub_cmdline(argc-1, argv+1);
@@ -417,7 +398,7 @@ main(int argc, char **argv)
    /* do this first as it forks - minimize memory use */
    if (opt_want_dns) dns_init(opt_privdrop_user);
    cap_init(opt_interface, opt_filter, opt_want_promisc); /* needs root */
-   http_init(opt_bindaddr, opt_bindport, /*maxconn=*/-1);
+   http_listen(opt_bindport);
    ncache_init(); /* must do before chroot() */
 
    privdrop(opt_chroot_dir, opt_privdrop_user);

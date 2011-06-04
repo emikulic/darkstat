@@ -45,8 +45,10 @@ static const char encoding_gzip[] = "gzip";
 
 static const char server[] = PACKAGE_NAME "/" PACKAGE_VERSION;
 static int idletime = 60;
-static int sockin = -1;             /* socket to accept connections from */
 #define MAX_REQUEST_LENGTH 4000
+
+static int *insocks = NULL;
+static unsigned int insock_num = 0;
 
 #ifndef min
 #define min(a,b) (((a) < (b)) ? (a) : (b))
@@ -88,6 +90,13 @@ struct connection {
 
 static LIST_HEAD(conn_list_head, connection) connlist =
     LIST_HEAD_INITIALIZER(conn_list_head);
+
+struct bindaddr_entry {
+    STAILQ_ENTRY(bindaddr_entry) entries;
+    const char *s;
+};
+static STAILQ_HEAD(bindaddrs_head, bindaddr_entry) bindaddrs =
+    STAILQ_HEAD_INITIALIZER(bindaddrs);
 
 /* ---------------------------------------------------------------------------
  * Decode URL by converting %XX (where XX are hexadecimal digits) to the
@@ -296,7 +305,7 @@ static struct connection *new_connection(void)
 /* ---------------------------------------------------------------------------
  * Accept a connection from sockin and add it to the connection queue.
  */
-static void accept_connection(void)
+static void accept_connection(const int sockin)
 {
     struct sockaddr_storage addrin;
     socklen_t sin_size;
@@ -879,8 +888,10 @@ static struct addrinfo *get_bind_addr(
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
+#ifdef linux
     if (bindaddr == NULL)
         hints.ai_family = AF_INET6; /* dual stack socket */
+#endif
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
 #ifdef AI_ADDRCONFIG
@@ -892,23 +903,23 @@ static struct addrinfo *get_bind_addr(
             bindaddr ? bindaddr : "NULL", portstr, gai_strerror(ret));
     if (ai == NULL)
         err(1, "getaddrinfo() returned NULL pointer");
-    if (ai->ai_next != NULL)
-        warnx("getaddrinfo() returned multiple addresses");
     return ai;
 }
 
-/* --------------------------------------------------------------------------
- * Initialize the sockin global.  This is the socket that we accept
- * connections from.  Pass -1 as max_conn for system limit.
- */
-void http_init(const char *bindaddr, const unsigned short bindport,
-    const int max_conn)
+void http_add_bindaddr(const char *bindaddr)
 {
-    struct addrinfo *ai;
-    char ipaddr[INET6_ADDRSTRLEN];
-    int sockopt, ret;
+    struct bindaddr_entry *ent;
 
-    ai = get_bind_addr(bindaddr, bindport);
+    ent = xmalloc(sizeof(*ent));
+    ent->s = bindaddr;
+    STAILQ_INSERT_TAIL(&bindaddrs, ent, entries);
+}
+
+static void http_listen_one(struct addrinfo *ai,
+    const unsigned short bindport)
+{
+    char ipaddr[INET6_ADDRSTRLEN];
+    int sockin, sockopt, ret;
 
     /* create incoming socket */
     if ((sockin = socket(ai->ai_family, SOCK_STREAM, 0)) == -1)
@@ -920,14 +931,6 @@ void http_init(const char *bindaddr, const unsigned short bindport,
             &sockopt, sizeof(sockopt)) == -1)
         err(1, "can't set SO_REUSEADDR");
 
-    /* dual stack socket */
-    if (ai->ai_family == AF_INET6) {
-        sockopt = 0;
-        if (setsockopt(sockin, IPPROTO_IPV6, IPV6_V6ONLY,
-                &sockopt, sizeof(sockopt)) == -1)
-            err(1, "can't unset IPV6_V6ONLY");
-    }
-
     /* format address into ipaddr string */
     if ((ret = getnameinfo(ai->ai_addr, ai->ai_addrlen, ipaddr,
                            sizeof(ipaddr), NULL, 0, NI_NUMERICHOST)) != 0)
@@ -937,17 +940,44 @@ void http_init(const char *bindaddr, const unsigned short bindport,
     if (bind(sockin, ai->ai_addr, ai->ai_addrlen) == -1)
         err(1, "bind(\"%s\") failed", ipaddr);
 
+    /* listen on socket */
+    if (listen(sockin, -1) == -1)
+        err(1, "listen() failed");
+
     verbosef("listening on http://%s%s%s:%u/",
         (ai->ai_family == AF_INET6) ? "[" : "",
         ipaddr,
         (ai->ai_family == AF_INET6) ? "]" : "",
         bindport);
 
-    freeaddrinfo(ai);
+    /* add to insocks */
+    insocks = xrealloc(insocks, sizeof(*insocks) * (insock_num + 1));
+    insocks[insock_num++] = sockin;
+}
 
-    /* listen on socket */
-    if (listen(sockin, max_conn) == -1)
-        err(1, "listen() failed");
+/* Initialize the http sockets and listen on them. */
+void http_listen(const unsigned short bindport)
+{
+    /* If the user didn't specify any bind addresses, add a NULL.
+     * This will become a wildcard.
+     */
+    if (STAILQ_EMPTY(&bindaddrs))
+        http_add_bindaddr(NULL);
+
+    /* Listen on every specified interface. */
+    while (!STAILQ_EMPTY(&bindaddrs)) {
+        struct bindaddr_entry *bindaddr = STAILQ_FIRST(&bindaddrs);
+        struct addrinfo *ai, *ais = get_bind_addr(bindaddr->s, bindport);
+
+        /* There could be multiple addresses returned, handle them all. */
+        for (ai = ais; ai; ai = ai->ai_next)
+            http_listen_one(ai, bindport);
+
+        freeaddrinfo(ais);
+
+        STAILQ_REMOVE_HEAD(&bindaddrs, entries);
+        free(bindaddr);
+    }
 
     /* ignore SIGPIPE */
     if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
@@ -965,11 +995,13 @@ http_fd_set(fd_set *recv_set, fd_set *send_set, int *max_fd,
 {
     struct connection *conn, *next;
     int minidle = idletime + 1;
+    unsigned int i;
 
     #define MAX_FD_SET(sock, fdset) do { \
         FD_SET(sock, fdset); *max_fd = max(*max_fd, sock); } while(0)
 
-    MAX_FD_SET(sockin, recv_set);
+    for (i=0; i<insock_num; i++)
+        MAX_FD_SET(insocks[i], recv_set);
 
     LIST_FOREACH_SAFE(conn, &connlist, entries, next)
     {
@@ -1035,8 +1067,11 @@ http_fd_set(fd_set *recv_set, fd_set *send_set, int *max_fd,
 void http_poll(fd_set *recv_set, fd_set *send_set)
 {
     struct connection *conn;
+    unsigned int i;
 
-    if (FD_ISSET(sockin, recv_set)) accept_connection();
+    for (i=0; i<insock_num; i++)
+        if (FD_ISSET(insocks[i], recv_set))
+            accept_connection(insocks[i]);
 
     LIST_FOREACH(conn, &connlist, entries)
     switch (conn->state)
@@ -1063,7 +1098,21 @@ void http_poll(fd_set *recv_set, fd_set *send_set)
 }
 
 void http_stop(void) {
-    close(sockin);
+    struct connection *conn;
+    unsigned int i;
+
+    /* Close listening sockets. */
+    for (i=0; i<insock_num; i++)
+        close(insocks[i]);
+    free(insocks);
+    insocks = NULL;
+
+    /* Close in-flight connections. */
+    LIST_FOREACH(conn, &connlist, entries) {
+        LIST_REMOVE(conn, entries);
+        free_connection(conn);
+        free(conn);
+    }
 }
 
 /* vim:set ts=4 sw=4 et tw=78: */
