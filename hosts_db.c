@@ -18,6 +18,7 @@
 #include "http.h" /* for http_base_url */
 #include "ncache.h"
 #include "now.h"
+#include "opt.h"
 #include "str.h"
 
 #include <arpa/inet.h> /* inet_aton() */

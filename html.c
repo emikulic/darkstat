@@ -12,6 +12,7 @@
 #include "str.h"
 #include "html.h"
 #include "http.h" /* for http_base_url */
+#include "opt.h"
 
 void html_open(struct str *buf, const char *title,
     const int want_graph_js)

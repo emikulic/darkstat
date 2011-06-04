@@ -19,6 +19,7 @@
 #include "darkstat.h"
 #include "conv.h"
 #include "err.h"
+#include "opt.h"
 #include "pidfile.h"
 
 #include <errno.h>

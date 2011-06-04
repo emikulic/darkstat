@@ -13,6 +13,7 @@
 #include "decode.h"
 #include "hosts_db.h"
 #include "localip.h"
+#include "opt.h"
 
 #include <sys/ioctl.h>
 #include <sys/types.h>

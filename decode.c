@@ -15,6 +15,7 @@
 #include "cap.h"
 #include "decode.h"
 #include "err.h"
+#include "opt.h"
 
 #include <sys/ioctl.h>
 #include <sys/socket.h>

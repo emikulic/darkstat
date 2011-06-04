@@ -25,6 +25,7 @@
 #include "hosts_db.h"
 #include "localip.h"
 #include "now.h"
+#include "opt.h"
 
 #include <arpa/inet.h> /* for inet_aton() */
 #define __FAVOR_BSD

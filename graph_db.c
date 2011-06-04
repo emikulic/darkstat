@@ -20,6 +20,7 @@
 #include "http.h"
 #include "graph_db.h"
 #include "now.h"
+#include "opt.h"
 
 #include <assert.h>
 #include <stdlib.h>
