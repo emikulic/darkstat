@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # release.sh: script to roll a release tarball of darkstat.
-# copyright (c) 2006-2009 Emil Mikulic.
+# copyright (c) 2006-2011 Emil Mikulic.
 #
 # This is for developer use only and lives in the repo but
 # shouldn't end up in a tarball.

@@ -1,5 +1,5 @@
 /* darkstat 3
- * copyright (c) 2007 Emil Mikulic.
+ * copyright (c) 2007-2011 Emil Mikulic.
  *
  * daylog.c: daily usage log
  *

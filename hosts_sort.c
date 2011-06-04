@@ -1,5 +1,5 @@
 /* darkstat 3
- * copyright (c) 2001-2006 Emil Mikulic.
+ * copyright (c) 2001-2011 Emil Mikulic.
  *
  * hosts_sort.c: quicksort a table of buckets.
  *

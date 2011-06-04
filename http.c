@@ -1,5 +1,5 @@
 /* darkstat 3
- * copyright (c) 2001-2008 Emil Mikulic.
+ * copyright (c) 2001-2011 Emil Mikulic.
  *
  * http.c: embedded webserver.
  * This borrows a lot of code from darkhttpd.

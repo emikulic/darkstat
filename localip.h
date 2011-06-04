@@ -1,5 +1,5 @@
 /* darkstat 3
- * copyright (c) 2001-2006 Emil Mikulic.
+ * copyright (c) 2001-2011 Emil Mikulic.
  *
  * localip.h: determine local IP of our capture interface
  *

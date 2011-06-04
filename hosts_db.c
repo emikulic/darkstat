@@ -1,5 +1,5 @@
 /* darkstat 3
- * copyright (c) 2001-2009 Emil Mikulic.
+ * copyright (c) 2001-2011 Emil Mikulic.
  *
  * hosts_db.c: database of hosts, ports, protocols.
  *
@@ -1100,7 +1100,7 @@ html_hosts_detail(const char *ip)
 /* ---------------------------------------------------------------------------
  * Database import and export code:
  * Initially written and contributed by Ben Stewart.
- * copyright (c) 2007 Ben Stewart, Emil Mikulic.
+ * copyright (c) 2007-2011 Ben Stewart, Emil Mikulic.
  */
 static int hosts_db_export_ip(const struct hashtable *h, const int fd);
 static int hosts_db_export_tcp(const struct hashtable *h, const int fd);
