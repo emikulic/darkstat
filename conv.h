@@ -5,6 +5,7 @@
  */
 
 #include <sys/types.h>
+#include "config.h"
 
 void *xmalloc(const size_t size);
 void *xcalloc(const size_t num, const size_t size);

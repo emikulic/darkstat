@@ -10,6 +10,7 @@
 #include "darkstat.h"
 #include "acct.h"
 #include "cap.h"
+#include "config.h"
 #include "conv.h"
 #include "daylog.h"
 #include "db.h"

@@ -7,8 +7,6 @@
 #ifndef __DARKSTAT_HTML_H
 #define __DARKSTAT_HTML_H
 
-#include "config.h" /* for PACKAGE_STRING */
-
 void html_open(struct str *buf, const char *title,
     const int want_graph_js);
 void html_close(struct str *buf);

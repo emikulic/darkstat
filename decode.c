@@ -13,6 +13,7 @@
 #include "darkstat.h"
 #include "acct.h"
 #include "cap.h"
+#include "config.h"
 #include "decode.h"
 #include "err.h"
 #include "opt.h"

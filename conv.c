@@ -17,6 +17,7 @@
  */
 
 #include "darkstat.h"
+#include "config.h"
 #include "conv.h"
 
 #include <sys/wait.h>

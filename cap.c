@@ -9,6 +9,7 @@
 
 #include "darkstat.h"
 #include "cap.h"
+#include "config.h"
 #include "conv.h"
 #include "decode.h"
 #include "hosts_db.h"

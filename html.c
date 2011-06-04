@@ -9,6 +9,7 @@
  */
 
 #include "darkstat.h"
+#include "config.h"
 #include "str.h"
 #include "html.h"
 #include "http.h" /* for http_base_url */

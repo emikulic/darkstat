@@ -10,6 +10,7 @@
 
 #include "darkstat.h"
 #include "http.h"
+#include "config.h"
 #include "conv.h"
 #include "hosts_db.h"
 #include "graph_db.h"

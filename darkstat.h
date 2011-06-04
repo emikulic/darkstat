@@ -4,14 +4,6 @@
  * darkstat.h: general macros
  */
 
-/*
- * We only care about the following from config.h:
- * - PACKAGE_NAME
- * - PACKAGE_VERSION
- * - PACKAGE_STRING
- */
-#include "config.h"
-
 #ifdef __GNUC__
 # define _unused_ __attribute__((__unused__))
 # define _noreturn_ __attribute__((__noreturn__))
