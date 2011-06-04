@@ -6,7 +6,7 @@
 # This is for developer use only and lives in the repo but
 # shouldn't end up in a tarball.
 #
-# Remember to run "./test_headers.sh *.h"
+# Remember to run "./test_headers.sh"
 # Remember to run "make depend" to update deps in Makefile.in
 #
 
