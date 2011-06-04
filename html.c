@@ -22,11 +22,12 @@ static const char *relpaths[] = {
     "../.."
 };
 
-void html_open(struct str *buf, const char *title, const int path_depth,
-    const int want_graph_js)
+void html_open(struct str *buf, const char *title,
+    const unsigned int path_depth, const int want_graph_js)
 {
-    assert(path_depth < (sizeof(relpaths)/sizeof(char *)));
-    const char *root = relpaths[path_depth];
+    const char *root;
+    assert(path_depth < (sizeof(relpaths)/sizeof(*relpaths)));
+    root = relpaths[path_depth];
 
     str_appendf(buf,
         "<!DOCTYPE html>\n"
