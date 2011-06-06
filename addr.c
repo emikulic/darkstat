@@ -10,7 +10,6 @@
 #include "addr.h"
 
 #include <arpa/inet.h> /* for inet_ntop */
-#include <sys/types.h> /* OpenBSD needs this */
 #include <assert.h>
 #include <string.h> /* for memcmp */
 #include <netdb.h> /* for getaddrinfo */

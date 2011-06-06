@@ -10,6 +10,7 @@
 #ifndef __DARKSTAT_ADDR_H
 #define __DARKSTAT_ADDR_H
 
+#include <sys/types.h> /* for in_addr_t, at least on OpenBSD */
 #include <sys/socket.h> /* for AF_INET6 */
 #include <netinet/in.h> /* for in6_addr */
 
