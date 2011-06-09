@@ -286,10 +286,6 @@ AC_SEARCH_LIBS(strlcat, [bsd],
  AC_DEFINE(HAVE_STRLCAT, 1,
   [Define to 1 if you have strlcat().]))
 
-AC_SEARCH_LIBS(strtonum, [bsd],
- AC_DEFINE(HAVE_STRTONUM, 1,
-  [Define to 1 if you have strtonum(3).]))
-
 
 AC_CONFIG_FILES([Makefile darkstat.8])
 AC_OUTPUT

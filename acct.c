@@ -81,14 +81,18 @@ acct_init_localnet(const char *spec)
          errx(1, "family mismatch between net and mask");
    } else {
       uint8_t frac, *p;
+      char *endptr;
 
       localmask.family = localnet.family;
 
       /* Compute the prefix length.  */
-      pfxlen = (int)strtonum(tokens[1], 1,
-         (localnet.family == IPv6) ? 128 : 32, NULL);
+      pfxlen = (unsigned int)strtol(tokens[1], &endptr, 10);
 
-      if (pfxlen == 0)
+      if ((pfxlen < 0) ||
+          ((localnet.family == IPv6) && (pfxlen > 128)) ||
+          ((localnet.family == IPv4) && (pfxlen > 32)) ||
+          (tokens[1][0] == '\0') ||
+          (*endptr != '\0'))
          errx(1, "invalid network prefix length \"%s\"", tokens[1]);
 
       /* Construct the network mask.  */
