@@ -894,9 +894,6 @@ static struct addrinfo *get_bind_addr(
 #endif
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
-#ifdef AI_ADDRCONFIG
-    hints.ai_flags |= AI_ADDRCONFIG;
-#endif
     snprintf(portstr, sizeof(portstr), "%u", bindport);
     if ((ret = getaddrinfo(bindaddr, portstr, &hints, &ai)))
         err(1, "getaddrinfo(%s,%s) failed: %s",
