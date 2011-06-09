@@ -183,9 +183,9 @@ loop:
 	}
 
 	pn = a + n;
-	r = min(pa - a, pb - pa);
+	r = MIN(pa - a, pb - pa);
 	vecswap(a, pb - r, r);
-	r = min(pd - pc, pn - pd - 1);
+	r = MIN(pd - pc, pn - pd - 1);
 	vecswap(pb, pn - r, r);
 	if (((r = pb - pa) > 1) && ((unsigned)r >= left))
 		qsort_buckets(a, r, left, right, dir);

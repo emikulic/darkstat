@@ -127,7 +127,7 @@ getlinkhdr(const int linktype)
 int
 getsnaplen(const struct linkhdr *lh)
 {
-   return (int)(lh->hdrlen + IPV6_HDR_LEN + max(TCP_HDR_LEN, UDP_HDR_LEN));
+   return (int)(lh->hdrlen + IPV6_HDR_LEN + MAX(TCP_HDR_LEN, UDP_HDR_LEN));
 }
 
 /* Decoding functions. */

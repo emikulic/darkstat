@@ -914,7 +914,7 @@ format_table(struct str *buf, struct hashtable *ht, unsigned int start,
       start = 0;
       end = ht->count;
    } else
-      end = min(ht->count, (uint32_t)start+MAX_ENTRIES);
+      end = MIN(ht->count, (uint32_t)start+MAX_ENTRIES);
 
    str_appendf(buf, "(%u-%u of %u)<br>\n", start+1, end, ht->count);
    qsort_buckets(table, ht->count, start, end, sort);

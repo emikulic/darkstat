@@ -50,10 +50,6 @@ static int idletime = 60;
 static int *insocks = NULL;
 static unsigned int insock_num = 0;
 
-#ifndef min
-#define min(a,b) (((a) < (b)) ? (a) : (b))
-#endif
-
 struct connection {
     LIST_ENTRY(connection) entries;
 
@@ -1002,7 +998,7 @@ http_fd_set(fd_set *recv_set, fd_set *send_set, int *max_fd,
     unsigned int i;
 
     #define MAX_FD_SET(sock, fdset) do { \
-        FD_SET(sock, fdset); *max_fd = max(*max_fd, sock); } while(0)
+        FD_SET(sock, fdset); *max_fd = MAX(*max_fd, sock); } while(0)
 
     for (i=0; i<insock_num; i++)
         MAX_FD_SET(insocks[i], recv_set);
@@ -1029,7 +1025,7 @@ http_fd_set(fd_set *recv_set, fd_set *send_set, int *max_fd,
 
         /* Connections that need a timeout. */
         if (conn->state != DONE)
-            minidle = min(minidle, (idletime - idlefor));
+            minidle = MIN(minidle, (idletime - idlefor));
 
         switch (conn->state)
         {
