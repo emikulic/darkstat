@@ -39,7 +39,7 @@ static pid_t pid = -1;
 struct dns_reply {
    struct addr addr;
    int error; /* for gai_strerror(), or 0 if no error */
-   char name[MAXHOSTNAMELEN];
+   char name[256]; /* http://tools.ietf.org/html/rfc1034#section-3.1 */
 };
 
 void
