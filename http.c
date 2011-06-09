@@ -884,19 +884,9 @@ static struct addrinfo *get_bind_addr(
 
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
-#ifdef linux
-    /* Special case for Linux: with bindaddr=NULL and ai_family=AF_UNSPEC,
-     * we successfully bind to 0.0.0.0 and then fail to bind to ::, resulting
-     * in a v4-only http socket.
-     *
-     * Conversely, if we specify AF_INET6, we bind to just :: which is able to
-     * accept v4 as well as v6 connections.
-     */
-    if (bindaddr == NULL)
-        hints.ai_family = AF_INET6; /* we'll get a dual stack socket */
-#endif
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
+
     snprintf(portstr, sizeof(portstr), "%u", bindport);
     if ((ret = getaddrinfo(bindaddr, portstr, &hints, &ai)))
         err(1, "getaddrinfo(%s,%s) failed: %s",
@@ -922,7 +912,7 @@ static void http_listen_one(struct addrinfo *ai,
     int sockin, sockopt, ret;
 
     /* create incoming socket */
-    if ((sockin = socket(ai->ai_family, SOCK_STREAM, 0)) == -1)
+    if ((sockin = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) == -1)
         err(1, "socket() failed");
 
     /* reuse address */
@@ -931,10 +921,17 @@ static void http_listen_one(struct addrinfo *ai,
             &sockopt, sizeof(sockopt)) == -1)
         err(1, "can't set SO_REUSEADDR");
 
-    /* format address into ipaddr string */
-    if ((ret = getnameinfo(ai->ai_addr, ai->ai_addrlen, ipaddr,
-                           sizeof(ipaddr), NULL, 0, NI_NUMERICHOST)) != 0)
-        err(1, "getnameinfo failed: %s", gai_strerror(ret));
+    /* explicitly disallow IPv4 mapped addresses since OpenBSD doesn't allow
+     * dual stack sockets under any circumstances
+     */
+#ifdef IPV6_V6ONLY
+    if (ai->ai_family == AF_INET6) {
+        sockopt = 1;
+        if (setsockopt(sockin, IPPROTO_IPV6, IPV6_V6ONLY,
+                &sockopt, sizeof(sockopt)) == -1)
+            err(1, "can't set IPV6_V6ONLY");
+    }
+#endif
 
     /* bind socket */
     if (bind(sockin, ai->ai_addr, ai->ai_addrlen) == -1)
@@ -944,6 +941,10 @@ static void http_listen_one(struct addrinfo *ai,
     if (listen(sockin, -1) == -1)
         err(1, "listen() failed");
 
+    /* format address into ipaddr string */
+    if ((ret = getnameinfo(ai->ai_addr, ai->ai_addrlen, ipaddr,
+                           sizeof(ipaddr), NULL, 0, NI_NUMERICHOST)) != 0)
+        err(1, "getnameinfo failed: %s", gai_strerror(ret));
     verbosef("listening on http://%s%s%s:%u/",
         (ai->ai_family == AF_INET6) ? "[" : "",
         ipaddr,
