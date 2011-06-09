@@ -187,7 +187,14 @@ static void cb_wait_secs(const char *arg)
 { opt_wait_secs = (int)parsenum(arg, 0); }
 
 int opt_want_hexdump = 0;
-static void cb_hexdump(const char *arg _unused_) { opt_want_hexdump = 1; }
+static void cb_hexdump(const char *arg _unused_)
+{ opt_want_hexdump = 1; }
+
+int opt_want_help = 0;
+static void cb_help(const char *arg _unused_)
+{ opt_want_help = 1; }
+static void cb_version(const char *arg _unused_)
+{ opt_want_help = -1; }
 
 /* --- */
 
@@ -200,6 +207,10 @@ struct cmdline_arg {
 static struct cmdline_arg cmdline_args[] = {
    {"-i",             "interface",       cb_interface,    0},
    {"-r",             "file",            cb_capfile,      0},
+   {"-p",             "port",            cb_port,         0},
+   {"-b",             "bindaddr",        cb_bindaddr,    -1},
+   {"-f",             "filter",          cb_filter,       0},
+   {"-l",             "network/netmask", cb_local,        0},
    {"--snaplen",      "bytes",           cb_snaplen,      0},
    {"--pppoe",        NULL,              cb_pppoe,        0},
    {"--syslog",       NULL,              cb_syslog,       0},
@@ -209,10 +220,6 @@ static struct cmdline_arg cmdline_args[] = {
    {"--no-dns",       NULL,              cb_no_dns,       0},
    {"--no-macs",      NULL,              cb_no_macs,      0},
    {"--no-lastseen",  NULL,              cb_no_lastseen,  0},
-   {"-p",             "port",            cb_port,         0},
-   {"-b",             "bindaddr",        cb_bindaddr,     -1},
-   {"-f",             "filter",          cb_filter,       0},
-   {"-l",             "network/netmask", cb_local,        0},
    {"--chroot",       "dir",             cb_chroot,       0},
    {"--user",         "username",        cb_user,         0},
    {"--daylog",       "filename",        cb_daylog,       0},
@@ -226,15 +233,10 @@ static struct cmdline_arg cmdline_args[] = {
    {"--highest-port", "port",            cb_highest_port, 0},
    {"--wait",         "secs",            cb_wait_secs,    0},
    {"--hexdump",      NULL,              cb_hexdump,      0},
+   {"--version",      NULL,              cb_version,      0},
+   {"--help",         NULL,              cb_help,         0},
    {NULL,             NULL,              NULL,            0}
 };
-
-static void
-pad(const int width)
-{
-   int i;
-   for (i=0; i<width; i++) printf(" ");
-}
 
 /*
  * We autogenerate the usage statement from the cmdline_args data structure.
@@ -242,20 +244,24 @@ pad(const int width)
 static void
 usage(void)
 {
-   int width, first;
+   static char intro[] = "usage: darkstat ";
+   char indent[sizeof(intro)];
    struct cmdline_arg *arg;
 
-   printf(PACKAGE_STRING " (built with libpcap %d.%d)\n\n",
-      PCAP_VERSION_MAJOR, PCAP_VERSION_MINOR);
+   printf(PACKAGE_STRING " (using %s)\n", pcap_lib_version());
+   if (opt_want_help == -1) return;
 
-   width = printf("usage: darkstat ");
-   first = 1;
+   memset(indent, ' ', sizeof(indent));
+   indent[0] = indent[sizeof(indent) - 1] = 0;
 
+   printf("\n%s", intro);
    for (arg = cmdline_args; arg->name != NULL; arg++) {
-      if (first) first = 0; else pad(width);
-      printf("[ %s", arg->name);
-      if (arg->arg_name != NULL) printf(" %s", arg->arg_name);
-      printf(" ]\n");
+      printf("%s[ %s%s%s ]\n",
+          indent,
+          arg->name,
+          arg->arg_name != NULL ? " " : "",
+          arg->arg_name != NULL ? arg->arg_name : "");
+      indent[0] = ' ';
    }
    printf("\n"
 "Please refer to the darkstat(8) manual page for further\n"
@@ -313,6 +319,11 @@ parse_cmdline(const int argc, char * const *argv)
    }
 
    parse_sub_cmdline(argc, argv);
+
+   if (opt_want_help) {
+     usage();
+     exit(EXIT_SUCCESS);
+   }
 
    /* start syslogging as early as possible */
    if (opt_want_syslog) openlog("darkstat", LOG_NDELAY | LOG_PID, LOG_DAEMON);
