@@ -889,8 +889,15 @@ static struct addrinfo *get_bind_addr(
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_UNSPEC;
 #ifdef linux
+    /* Special case for Linux: with bindaddr=NULL and ai_family=AF_UNSPEC,
+     * we successfully bind to 0.0.0.0 and then fail to bind to ::, resulting
+     * in a v4-only http socket.
+     *
+     * Conversely, if we specify AF_INET6, we bind to just :: which is able to
+     * accept v4 as well as v6 connections.
+     */
     if (bindaddr == NULL)
-        hints.ai_family = AF_INET6; /* dual stack socket */
+        hints.ai_family = AF_INET6; /* we'll get a dual stack socket */
 #endif
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
