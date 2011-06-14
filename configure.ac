@@ -68,6 +68,20 @@ else
  CFLAGS="$save_cflags"
 fi
 
+AC_MSG_CHECKING(if your C compiler has a link-time optimizer)
+if test x$GCC = xyes; then
+ save_cflags="$CFLAGS"
+ CFLAGS="-flto $CFLAGS"
+ if (eval $ac_link) 2>/dev/null; then
+  AC_MSG_RESULT(sure does)
+ else
+  AC_MSG_RESULT(no)
+  CFLAGS="$save_cflags"
+ fi
+else
+ AC_MSG_RESULT(skipped)
+fi
+
 AC_ARG_ENABLE(mad-warnings, AS_HELP_STRING([--enable-mad-warnings],
  [turn on lots of compile-time warnings, this needs GCC and is only
  really useful for development]),
