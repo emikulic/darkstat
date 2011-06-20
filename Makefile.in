@@ -132,7 +132,7 @@ hosts_sort.o: hosts_sort.c cdefs.h err.h hosts_db.h addr.h
 html.o: html.c config.h str.h html.h opt.h
 http.o: http.c cdefs.h config.h conv.h err.h graph_db.h hosts_db.h addr.h \
  http.h now.h queue.h str.h stylecss.h graphjs.h
-localip.o: localip.c addr.h conv.h config.h err.h cdefs.h localip.h
+localip.o: localip.c addr.h config.h conv.h err.h cdefs.h localip.h
 ncache.o: ncache.c conv.h config.h err.h cdefs.h ncache.h tree.h
 pidfile.o: pidfile.c err.h cdefs.h str.h pidfile.h
 str.o: str.c conv.h config.h err.h cdefs.h str.h

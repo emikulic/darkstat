@@ -8,16 +8,25 @@
  */
 
 #include "addr.h"
+#include "config.h" /* for HAVE_IFADDRS_H */
 #include "conv.h" /* for strlcpy */
 #include "err.h"
 #include "localip.h"
 
 #include <sys/socket.h>
 #include <net/if.h>
-#include <ifaddrs.h>
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
+
+#ifdef HAVE_IFADDRS_H
+# include <ifaddrs.h>
+#else
+# ifdef HAVE_SYS_SOCKIO_H
+#  include <sys/sockio.h> /* for SIOCGIFADDR, especially on Solaris */
+# endif
+# include <sys/ioctl.h>
+#endif
 
 static const char *iface = NULL;
 struct addr localip4, localip6;
@@ -33,58 +42,81 @@ localip_init(const char *interface)
 void
 localip_update(void)
 {
-   struct ifaddrs *ifas, *ifa;
-   int got_v4 = 0, got_v6 = 0;
-
+   /* defaults */
    localip4.family = IPv4;
+   localip4.ip.v4 = 0;
+
    localip6.family = IPv6;
+   memset(&(localip6.ip.v6), 0, sizeof(localip6.ip.v6));
 
-   if (iface == NULL) {
-      /* reading from capfile */
-      localip4.ip.v4 = 0;
-      memset(&(localip6.ip.v6), 0, sizeof(localip6.ip.v6));
-      return;
-   }
+   if (iface != NULL) {
+      /* not reading from capfile */
+#ifdef HAVE_IFADDRS_H
+      int got_v4 = 0, got_v6 = 0;
+      struct ifaddrs *ifas, *ifa;
 
-   if (getifaddrs(&ifas) < 0)
-      err(1, "can't get own IP address on interface \"%s\"", iface);
+      if (getifaddrs(&ifas) < 0)
+         err(1, "can't get own IP address on interface \"%s\"", iface);
 
-   for (ifa = ifas; ifa; ifa = ifa->ifa_next) {
-      if (got_v4 && got_v6)
-         break;   /* Task is already complete. */
+      for (ifa = ifas; ifa; ifa = ifa->ifa_next) {
+         if (got_v4 && got_v6)
+            break;   /* Task is already complete. */
 
-      if (strncmp(ifa->ifa_name, iface, IFNAMSIZ))
-         continue;   /* Wrong interface. */
+         if (strncmp(ifa->ifa_name, iface, IFNAMSIZ))
+            continue;   /* Wrong interface. */
 
-      /* The first IPv4 name is always functional. */
-      if ((ifa->ifa_addr->sa_family == AF_INET) && !got_v4)
-      {
-         /* Good IPv4 address. */
-         localip4.ip.v4 =
-            ((struct sockaddr_in *)ifa->ifa_addr)->sin_addr.s_addr;
-         got_v4 = 1;
-         continue;
-      }
-
-      /* IPv6 needs some obvious exceptions. */
-      if ( ifa->ifa_addr->sa_family == AF_INET6 ) {
-         struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *) ifa->ifa_addr;
-
-         if ( IN6_IS_ADDR_LINKLOCAL(&(sa6->sin6_addr))
-              || IN6_IS_ADDR_SITELOCAL(&(sa6->sin6_addr)) )
+         /* The first IPv4 name is always functional. */
+         if ((ifa->ifa_addr->sa_family == AF_INET) && !got_v4)
+         {
+            /* Good IPv4 address. */
+            localip4.ip.v4 =
+               ((struct sockaddr_in *)ifa->ifa_addr)->sin_addr.s_addr;
+            got_v4 = 1;
             continue;
+         }
 
-         /* Only standard IPv6 can reach this point. */
-         memcpy(&(localip6.ip.v6), &sa6->sin6_addr, sizeof(localip6.ip.v6));
-         got_v6 = 1;
+         /* IPv6 needs some obvious exceptions. */
+         if ( ifa->ifa_addr->sa_family == AF_INET6 ) {
+            struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *) ifa->ifa_addr;
+
+            if ( IN6_IS_ADDR_LINKLOCAL(&(sa6->sin6_addr))
+                 || IN6_IS_ADDR_SITELOCAL(&(sa6->sin6_addr)) )
+               continue;
+
+            /* Only standard IPv6 can reach this point. */
+            memcpy(&(localip6.ip.v6), &sa6->sin6_addr, sizeof(localip6.ip.v6));
+            got_v6 = 1;
+         }
       }
+
+      freeifaddrs(ifas);
+
+      /* Report an error if IPv4 address could not be found. */
+      if (!got_v4)
+          err(1, "can't get own IPv4 address on interface \"%s\"", iface);
+
+#else /* don't HAVE_IFADDRS_H */
+
+      int tmp = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
+      struct ifreq ifr;
+      struct sockaddr sa;
+
+      strlcpy(ifr.ifr_name, iface, IFNAMSIZ);
+      ifr.ifr_addr.sa_family = AF_INET;
+      if (ioctl(tmp, SIOCGIFADDR, &ifr) == -1) {
+         if (errno == EADDRNOTAVAIL) {
+            verbosef("lost local IP");
+         } else
+            err(1, "can't get own IP address on interface \"%s\"", iface);
+      } else {
+         /* success! */
+         sa = ifr.ifr_addr;
+         localip4.ip.v4 = ((struct sockaddr_in*)&sa)->sin_addr.s_addr;
+      }
+      close(tmp);
+
+#endif
    }
-
-   freeifaddrs(ifas);
-
-   /* Report an error if IPv4 address could not be found. */
-   if (!got_v4)
-       err(1, "can't get own IPv4 address on interface \"%s\"", iface);
 
    if (!addr_equal(&last_localip4, &localip4)) {
       verbosef("localip4 update(%s) = %s", iface, addr_to_str(&localip4));
