@@ -4,6 +4,15 @@
 # You may use, modify and redistribute this file under the terms of the
 # GNU General Public License version 2. (see COPYING.GPL)
 
+# silent-rules
+AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
+AM_V_CC = $(am__v_CC_$(V))
+am__v_CC_ = $(am__v_CC_$(AM_DEFAULT_VERBOSITY))
+am__v_CC_0 = @echo "  CC    " $@;
+AM_V_at = $(am__v_at_$(V))
+am__v_at_ = $(am__v_at_$(AM_DEFAULT_VERBOSITY))
+am__v_at_0 = @
+
 CC = @CC@
 CFLAGS = @CFLAGS@
 CPP = @CPP@
@@ -54,12 +63,12 @@ graphjs.h
 all: darkstat
 
 darkstat: $(OBJS)
-	@echo "===> Linking $@"
-	@$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) $(LIBS) -o $@
+	$(AM_V_CC)
+	$(AM_V_at)$(CC) $(CFLAGS) $(OBJS) $(LDFLAGS) $(LIBS) -o $@
 
 .c.o:
-	@echo "===> Compiling $@"
-	@$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+	$(AM_V_CC)
+	$(AM_V_at)$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
 clean:
 	rm -f darkstat
@@ -87,8 +96,8 @@ stylecss.h: static/style.css c-ify
 	./c-ify style_css <static/style.css >$@
 
 c-ify: static/c-ify.c
-	@echo "==> Compiling $@"
-	@$(HOSTCC) $(HOSTCFLAGS) static/c-ify.c -o $@
+	$(AM_V_CC)
+	$(AM_V_at)$(HOSTCC) $(HOSTCFLAGS) static/c-ify.c -o $@
 
 install: darkstat
 	$(INSTALL) -d $(DESTDIR)$(sbindir)

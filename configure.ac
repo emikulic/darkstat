@@ -40,6 +40,16 @@ AC_DEFINE_UNQUOTED(PRIVDROP_USER, "$_pdu", [User to privdrop to.])
 AC_PROG_INSTALL
 AC_PROG_CC
 
+m4_pattern_allow([^AM_DEFAULT_VERBOSITY$])
+AC_ARG_ENABLE([silent-rules],
+[  --enable-silent-rules          less verbose build output (undo: 'make V=1')
+  --disable-silent-rules         verbose build output (undo: 'make V=0')])
+case $enable_silent_rules in
+no)  AM_DEFAULT_VERBOSITY=1;;
+*)   AM_DEFAULT_VERBOSITY=0;;
+esac
+AC_SUBST([AM_DEFAULT_VERBOSITY])
+
 # Let user disable debugging symbols so we create smaller binaries.
 AC_MSG_CHECKING(if we want debug code)
 AC_ARG_ENABLE(debug, AS_HELP_STRING([--disable-debug],
