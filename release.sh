@@ -27,6 +27,8 @@ acct.c \
 acct.h \
 addr.c \
 addr.h \
+bsd.c \
+bsd.h \
 cap.c \
 cap.h \
 cdefs.h \

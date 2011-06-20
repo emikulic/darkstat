@@ -17,10 +17,10 @@
  */
 
 #include "cdefs.h"
-#include "conv.h"
 #include "err.h"
 #include "opt.h"
 #include "pidfile.h"
+#include "bsd.h" /* for strlcpy */
 
 #include <errno.h>
 #include <stdarg.h>

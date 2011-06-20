@@ -17,6 +17,7 @@
 #include "queue.h"
 #include "str.h"
 #include "tree.h"
+#include "bsd.h" /* for setproctitle, strlcpy */
 
 #include <sys/param.h>
 #include <sys/socket.h>
@@ -295,9 +296,7 @@ dns_main(void)
 {
    struct addr ip;
 
-#ifdef HAVE_SETPROCTITLE
    setproctitle("DNS child");
-#endif
    fd_set_nonblock(sock[CHILD]);
    verbosef("DNS child entering main DNS loop");
    for (;;) {

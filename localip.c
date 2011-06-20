@@ -9,9 +9,9 @@
 
 #include "addr.h"
 #include "config.h" /* for HAVE_IFADDRS_H */
-#include "conv.h" /* for strlcpy */
 #include "err.h"
 #include "localip.h"
+#include "bsd.h" /* for strlcpy */
 
 #include <sys/socket.h>
 #include <net/if.h>

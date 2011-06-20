@@ -299,17 +299,24 @@ END_MSG
 fi
 
 
+# Check for BSD routines.
+AC_CHECK_FUNC(setproctitle,
+ AC_DEFINE(HAVE_REAL_SETPROCTITLE, 1,
+  [Define to 1 if your C lib has setproctitle().]))
+AC_CHECK_FUNC(strlcpy,
+ AC_DEFINE(HAVE_REAL_STRLCPY, 1,
+  [Define to 1 if your C lib has strlcpy().]))
+AC_CHECK_FUNC(strlcat,
+ AC_DEFINE(HAVE_REAL_STRLCAT, 1,
+  [Define to 1 if your C lib has strlcat().]))
 
-# A real OS will have setproctitle()
+# We might find these in libbsd.
 AC_SEARCH_LIBS(setproctitle, [bsd],
  AC_DEFINE(HAVE_SETPROCTITLE, 1,
   [Define to 1 if you have setproctitle().]))
-
-# A real OS will have safe string functions
 AC_SEARCH_LIBS(strlcpy, [bsd],
  AC_DEFINE(HAVE_STRLCPY, 1,
   [Define to 1 if you have strlcpy().]))
-
 AC_SEARCH_LIBS(strlcat, [bsd],
  AC_DEFINE(HAVE_STRLCAT, 1,
   [Define to 1 if you have strlcat().]))

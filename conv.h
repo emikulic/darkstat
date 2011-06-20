@@ -5,7 +5,6 @@
  */
 
 #include <sys/types.h>
-#include "config.h"
 
 void *xmalloc(const size_t size);
 void *xcalloc(const size_t num, const size_t size);
@@ -22,13 +21,5 @@ void  daemonize_finish(void);
 void  privdrop(const char *chroot_dir, const char *privdrop_user);
 void  fd_set_nonblock(const int fd);
 void  fd_set_block(const int fd);
-
-#ifndef HAVE_STRLCPY
-size_t strlcpy(char *dst, const char *src, size_t siz);
-#endif
-
-#ifndef HAVE_STRLCAT
-size_t strlcat(char *dst, const char *src, size_t siz);
-#endif
 
 /* vim:set ts=3 sw=3 tw=78 expandtab: */

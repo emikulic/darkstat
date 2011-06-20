@@ -11,6 +11,7 @@
 #include "err.h"
 #include "ncache.h"
 #include "tree.h"
+#include "bsd.h" /* for strlcpy */
 
 #include <netinet/in.h> /* ntohs */
 #include <netdb.h>
