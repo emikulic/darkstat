@@ -38,7 +38,7 @@ EOF
 
 check_defines() {
   header=$1
-  defines=$2
+  defines="(^|[^a-zA-Z_])($2)"
   files=$3
 
   echo checking $header users...
