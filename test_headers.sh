@@ -3,6 +3,7 @@
 
 a="\033[33;1m"
 z="\033[m"
+problem=0
 
 check_deps() {
   echo checking header dependencies...
@@ -19,6 +20,7 @@ void test_hdr_do_nothing(void) { }
 EOF
     if ! gcc -c $src 2>/dev/null; then
       echo "${a}===> $f can't be included by itself${z}"
+      problem=1
       gcc -c $src
     else
       cat >$src <<EOF
@@ -28,6 +30,7 @@ void test_hdr_do_nothing(void) { }
 EOF
       if ! gcc -c $src 2>/dev/null; then
         echo "${a}===> $f can't be included twice${z}"
+        problem=1
         gcc -c $src
       fi
     fi
@@ -47,6 +50,7 @@ check_defines() {
   for file in `egrep -l "$defines" $files`; do
     if ! fgrep -q '#include "'$header'"' $file; then
       echo "${a}===> $file should include $header${z}"
+      problem=1
       egrep --color=always "$defines" $file
     fi
   done
@@ -55,6 +59,7 @@ check_defines() {
   for file in `fgrep -l '#include "'$header'"' *.[ch]`; do
    if ! egrep -q "$defines" $file; then
     echo "${a}===> $file should not include $header${z}"
+    problem=1
    fi
   done
 }
@@ -72,5 +77,7 @@ defines=`sed -e 's/# \+/#/;' < cdefs.h | grep '#define' | cut -d' ' -f2 |
   sed -e 's/(.\+/\\\\(/' | tr '\n' '|' | sed -e 's/|$//'`
 files=`ls *.[ch] | fgrep -v -e cdefs.h -e graphjs.h -e stylecss.h`
 check_defines cdefs.h "$defines" "$files"
+
+exit $problem
 
 # vim:set ts=2 sw=2 et:
