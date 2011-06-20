@@ -85,23 +85,21 @@ run() {
 
 PKG=$NAME-$VERSION
 say releasing $PKG
-
-run ./test_headers.sh
 run make depend
 run make graphjs.h stylecss.h
+run autoconf
+run autoheader
+run ./config.status
+run ./test_headers.sh
 run mkdir $PKG
 run cp -r $files $PKG/.
-
-# set the version number
 run sed -e "/AC_INIT/s/darkstat, [^,)]*/darkstat, $VERSION/" configure.ac > $PKG/configure.ac
-
 say set version: `grep '^AC_INIT' $PKG/configure.ac`
-(
- cd $PKG
+(cd $PKG
  run autoconf
  run autoheader
  run rm -r autom4te.cache
-)
+) || exit 1
 
 # package it up
 run tar chof $PKG.tar $PKG
