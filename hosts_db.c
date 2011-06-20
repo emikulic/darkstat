@@ -109,9 +109,16 @@ ipv4_hash(const struct addr *const a)
 }
 
 #ifndef s6_addr32
+# ifdef sun
+/*
+ * http://src.opensolaris.org/source/xref/onnv/onnv-gate/usr/src/uts/common/netinet/in.h#130
+ */
+#  define s6_addr32 _S6_un._S6_u32
+# else
 /* Covers OpenBSD and FreeBSD.  The macro __USE_GNU has
  * taken care of GNU/Linux and GNU/kfreebsd.  */
-# define s6_addr32 __u6_addr.__u6_addr32
+#  define s6_addr32 __u6_addr.__u6_addr32
+# endif
 #endif
 
 /*
