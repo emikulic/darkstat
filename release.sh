@@ -91,6 +91,11 @@ run autoconf
 run autoheader
 run ./config.status
 run ./test_headers.sh
+if git status --porcelain | egrep -v '^\?\?' -q; then
+  say ERROR: uncommitted changes:
+  git status
+  exit 1
+fi
 run mkdir $PKG
 run cp -r $files $PKG/.
 run sed -e "/AC_INIT/s/darkstat, [^,)]*/darkstat, $VERSION/" configure.ac > $PKG/configure.ac
