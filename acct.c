@@ -220,7 +220,10 @@ acct_for(const struct pktsummary * const sm)
    hd->in    += sm->len;
    hd->total += sm->len;
    memcpy(hd->u.host.mac_addr, sm->dst_mac, sizeof(sm->dst_mac));
-   hd->u.host.lastseen = now;
+   /*
+    * Don't update recipient's last seen time, we don't know that
+    * they received successfully.
+    */
 
    /* Protocols. */
    if (sm->proto != IPPROTO_INVALID) {

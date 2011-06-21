@@ -237,7 +237,7 @@ make_func_host(const void *key)
    MAKE_BUCKET(b, h, host);
    h->addr = CASTKEY(struct addr);
    h->dns = NULL;
-   h->lastseen = now;
+   h->lastseen = 0;
    memset(&h->mac_addr, 0, sizeof(h->mac_addr));
    h->ports_tcp = NULL;
    h->ports_udp = NULL;
@@ -346,18 +346,21 @@ format_row_host(struct str *buf, const struct bucket *b,
 
    if (opt_want_lastseen) {
       time_t last_t = b->u.host.lastseen;
-      struct str *lastseen = NULL;
+      struct str *last_str = NULL;
 
-      if (now >= last_t)
-         lastseen = length_of_time(now - last_t);
+      if ((now >= last_t) && (last_t > 0))
+         last_str = length_of_time(now - last_t);
 
       str_append(buf,
          " <td class=\"num\">");
-      if (lastseen == NULL)
-         str_append(buf, "(clock error)");
-      else {
-         str_appendstr(buf, lastseen);
-         str_free(lastseen);
+      if (last_str == NULL) {
+         if (last_t == 0)
+            str_append(buf, "(never)");
+         else
+            str_append(buf, "(clock error)");
+      } else {
+         str_appendstr(buf, last_str);
+         str_free(last_str);
       }
       str_append(buf,
          "</td>");
