@@ -214,13 +214,13 @@ acct_for(const struct pktsummary * const sm)
    hs->out   += sm->len;
    hs->total += sm->len;
    memcpy(hs->u.host.mac_addr, sm->src_mac, sizeof(sm->src_mac));
-   hs->u.host.last_seen = now;
+   hs->u.host.lastseen = now;
 
    hd = host_get(&(sm->dst));
    hd->in    += sm->len;
    hd->total += sm->len;
    memcpy(hd->u.host.mac_addr, sm->dst_mac, sizeof(sm->dst_mac));
-   hd->u.host.last_seen = now;
+   hd->u.host.lastseen = now;
 
    /* Protocols. */
    if (sm->proto != IPPROTO_INVALID) {

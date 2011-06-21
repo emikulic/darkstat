@@ -12,7 +12,7 @@ FILE HEADER 0xDA314159                              darkstat export format
               IPv6 ADDR 0x0000 0000 0000 0000 0000 0000 0000 0001
                                                     meaning IPv6 ::1
             MACADDR 0x001122334455                  00:11:22:33:44:55
-            LAST_SEEN 0x0000000048000123 (time_t)   2008-04-12 00:24:03 UTC
+            LASTSEEN 0x0000000048000123 (time_t)    2008-04-12 00:24:03 UTC
             HOSTNAME 0x09 "localhost"               9 is the string length
             IN 0x0000000000123456                   Bytes in: 1193046
             OUT 0x0000000000789ABC                  Bytes out: 7903932
@@ -47,7 +47,7 @@ FILE HEADER 0xDA314159                              darkstat export format
                 64 bits - bytes in
                 64 bits - bytes out
 
-Host header version 1 is just version 2 without the last_seen time.
+Host header version 1 is just version 2 without the lastseen time.
 
 Host header version 2 is just version 3 without the address family
 byte (or the possibility of an IPv6 address).

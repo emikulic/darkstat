@@ -237,7 +237,7 @@ make_func_host(const void *key)
    MAKE_BUCKET(b, h, host);
    h->addr = CASTKEY(struct addr);
    h->dns = NULL;
-   h->last_seen = now;
+   h->lastseen = now;
    memset(&h->mac_addr, 0, sizeof(h->mac_addr));
    h->ports_tcp = NULL;
    h->ports_udp = NULL;
@@ -345,7 +345,7 @@ format_row_host(struct str *buf, const struct bucket *b,
       b->in, b->out, b->total);
 
    if (opt_want_lastseen) {
-      time_t last_t = b->u.host.last_seen;
+      time_t last_t = b->u.host.lastseen;
       struct str *lastseen = NULL;
 
       if (now >= last_t)
@@ -1067,13 +1067,13 @@ html_hosts_detail(const char *ip)
       "<p>\n"
       "<b>Last seen:</b> ");
 
-   ls = h->u.host.last_seen;
+   ls = h->u.host.lastseen;
    if (strftime(ls_when, sizeof(ls_when),
       "%Y-%m-%d %H:%M:%S %Z%z", localtime(&ls)) != 0)
          str_append(buf, ls_when);
 
-   if (h->u.host.last_seen <= now) {
-      ls_len = length_of_time(now - h->u.host.last_seen);
+   if (h->u.host.lastseen <= now) {
+      ls_len = length_of_time(now - h->u.host.lastseen);
       str_append(buf, " (");
       str_appendstr(buf, ls_len);
       str_free(ls_len);
@@ -1261,7 +1261,7 @@ hosts_db_import_host(const int fd)
    if (ver > 1) {
       uint64_t t;
       if (!read64(fd, &t)) return 0;
-      host->u.host.last_seen = (time_t)t;
+      host->u.host.lastseen = (time_t)t;
    }
 
    assert(sizeof(host->u.host.mac_addr) == 6);
@@ -1336,7 +1336,7 @@ int hosts_db_export(const int fd)
 
       if (!writeaddr(fd, &(b->u.host.addr))) return 0;
 
-      if (!write64(fd, (uint64_t)(b->u.host.last_seen))) return 0;
+      if (!write64(fd, (uint64_t)(b->u.host.lastseen))) return 0;
 
       assert(sizeof(b->u.host.mac_addr) == 6);
       if (!writen(fd, b->u.host.mac_addr, sizeof(b->u.host.mac_addr)))

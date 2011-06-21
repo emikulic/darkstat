@@ -34,8 +34,8 @@ cmp(const struct bucket * const *x, const struct bucket * const *y,
       b = (*y)->total;
       break;
    case LASTSEEN:
-      a = (*x)->u.host.last_seen;
-      b = (*y)->u.host.last_seen;
+      a = (*x)->u.host.lastseen;
+      b = (*y)->u.host.lastseen;
       break;
    default:
       errx(1, "cmp: unknown direction: %d", dir);
