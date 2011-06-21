@@ -912,7 +912,8 @@ static void http_listen_one(struct addrinfo *ai,
     int sockin, sockopt, ret;
 
     /* create incoming socket */
-    if ((sockin = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) == -1)
+    if ((sockin = socket(ai->ai_family, ai->ai_socktype,
+            ai->ai_protocol)) == -1)
         err(1, "socket() failed");
 
     /* reuse address */
@@ -921,10 +922,10 @@ static void http_listen_one(struct addrinfo *ai,
             &sockopt, sizeof(sockopt)) == -1)
         err(1, "can't set SO_REUSEADDR");
 
+#ifdef IPV6_V6ONLY
     /* explicitly disallow IPv4 mapped addresses since OpenBSD doesn't allow
      * dual stack sockets under any circumstances
      */
-#ifdef IPV6_V6ONLY
     if (ai->ai_family == AF_INET6) {
         sockopt = 1;
         if (setsockopt(sockin, IPPROTO_IPV6, IPV6_V6ONLY,
@@ -933,18 +934,21 @@ static void http_listen_one(struct addrinfo *ai,
     }
 #endif
 
+    /* format address into ipaddr string */
+    if ((ret = getnameinfo(ai->ai_addr, ai->ai_addrlen, ipaddr,
+                           sizeof(ipaddr), NULL, 0, NI_NUMERICHOST)) != 0)
+        err(1, "getnameinfo failed: %s", gai_strerror(ret));
+
     /* bind socket */
-    if (bind(sockin, ai->ai_addr, ai->ai_addrlen) == -1)
-        err(1, "bind(\"%s\") failed", ipaddr);
+    if (bind(sockin, ai->ai_addr, ai->ai_addrlen) == -1) {
+        warn("bind(\"%s\") failed", ipaddr);
+        return;
+    }
 
     /* listen on socket */
     if (listen(sockin, -1) == -1)
         err(1, "listen() failed");
 
-    /* format address into ipaddr string */
-    if ((ret = getnameinfo(ai->ai_addr, ai->ai_addrlen, ipaddr,
-                           sizeof(ipaddr), NULL, 0, NI_NUMERICHOST)) != 0)
-        err(1, "getnameinfo failed: %s", gai_strerror(ret));
     verbosef("listening on http://%s%s%s:%u/",
         (ai->ai_family == AF_INET6) ? "[" : "",
         ipaddr,
@@ -979,6 +983,9 @@ void http_listen(const unsigned short bindport)
         STAILQ_REMOVE_HEAD(&bindaddrs, entries);
         free(bindaddr);
     }
+
+    if (insocks == 0)
+        errx(1, "was not able to bind any ports for http interface");
 
     /* ignore SIGPIPE */
     if (signal(SIGPIPE, SIG_IGN) == SIG_ERR)
