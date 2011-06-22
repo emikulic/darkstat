@@ -707,11 +707,10 @@ static void process_request(struct connection *conn)
  */
 static void poll_recv_request(struct connection *conn)
 {
-    #define BUFSIZE 65536
-    char buf[BUFSIZE];
+    char buf[65536];
     ssize_t recvd;
 
-    recvd = recv(conn->socket, buf, BUFSIZE, 0);
+    recvd = recv(conn->socket, buf, sizeof(buf), 0);
     dverbosef("poll_recv_request(%d) got %d bytes", conn->socket, (int)recvd);
     if (recvd <= 0)
     {
@@ -721,7 +720,6 @@ static void poll_recv_request(struct connection *conn)
         return;
     }
     conn->last_active = now;
-    #undef BUFSIZE
 
     /* append to conn->request */
     conn->request = xrealloc(conn->request, conn->request_length+recvd+1);
