@@ -727,6 +727,15 @@ static void poll_recv_request(struct connection *conn)
     conn->request_length += recvd;
     conn->request[conn->request_length] = 0;
 
+    /* die if it's too long */
+    if (conn->request_length > MAX_REQUEST_LENGTH)
+    {
+        default_reply(conn, 413, "Request Entity Too Large",
+            "Your request was dropped because it was too long.");
+        conn->state = SEND_HEADER;
+        return;
+    }
+
     /* process request if we have all of it */
     if (conn->request_length > 4 &&
         memcmp(conn->request+conn->request_length-4, "\r\n\r\n", 4) == 0)
@@ -736,14 +745,6 @@ static void poll_recv_request(struct connection *conn)
         /* request not needed anymore */
         free(conn->request);
         conn->request = NULL; /* important: don't free it again later */
-    }
-
-    /* die if it's too long */
-    if (conn->request_length > MAX_REQUEST_LENGTH)
-    {
-        default_reply(conn, 413, "Request Entity Too Large",
-            "Your request was dropped because it was too long.");
-        conn->state = SEND_HEADER;
     }
 }
 
