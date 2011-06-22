@@ -344,13 +344,16 @@ static void accept_connection(const int sockin)
 static void free_connection(struct connection *conn)
 {
     dverbosef("free_connection(%d)", conn->socket);
-    if (conn->socket != -1) close(conn->socket);
-    if (conn->request != NULL) free(conn->request);
-    if (conn->method != NULL) free(conn->method);
-    if (conn->uri != NULL) free(conn->uri);
-    if (conn->query != NULL) free(conn->query);
-    if (conn->header != NULL && !conn->header_dont_free) free(conn->header);
-    if (conn->reply != NULL && !conn->reply_dont_free) free(conn->reply);
+    if (conn->socket != -1)
+        close(conn->socket);
+    free(conn->request);
+    free(conn->method);
+    free(conn->uri);
+    free(conn->query);
+    if (!conn->header_dont_free)
+        free(conn->header);
+    if (!conn->reply_dont_free)
+        free(conn->reply);
 }
 
 
@@ -592,7 +595,6 @@ process_gzip(struct connection *conn)
         conn->reply_dont_free = 0;
     else
         free(conn->reply);
-
     conn->reply = buf;
     conn->reply_length -= zs.avail_out;
     conn->encoding = encoding_gzip;
@@ -696,10 +698,6 @@ static void process_request(struct connection *conn)
         conn->state = SEND_HEADER;
     else
         conn->state = SEND_HEADER_AND_REPLY;
-
-    /* request not needed anymore */
-    free(conn->request);
-    conn->request = NULL; /* important: don't free it again later */
 }
 
 
@@ -734,7 +732,13 @@ static void poll_recv_request(struct connection *conn)
     /* process request if we have all of it */
     if (conn->request_length > 4 &&
         memcmp(conn->request+conn->request_length-4, "\r\n\r\n", 4) == 0)
+    {
         process_request(conn);
+
+        /* request not needed anymore */
+        free(conn->request);
+        conn->request = NULL; /* important: don't free it again later */
+    }
 
     /* die if it's too long */
     if (conn->request_length > MAX_REQUEST_LENGTH)
