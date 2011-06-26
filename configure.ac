@@ -93,27 +93,22 @@ else
 fi
 
 AC_ARG_ENABLE(mad-warnings, AS_HELP_STRING([--enable-mad-warnings],
- [turn on lots of compile-time warnings, this needs GCC and is only
+ [turn on lots of compile-time warnings, these are GCC-specific and only
  really useful for development]),
  [if test "x$enableval" = "xyes" ; then
-   AC_MSG_CHECKING(if your C compiler throws mad warnings)
+   AC_MSG_CHECKING(if your C compiler can emit certain warnings)
    save_cflags="$CFLAGS"
    CFLAGS="$CFLAGS -fdiagnostics-show-option \
--Wabi \
 -Waddress \
 -Waggregate-return \
 -Wall \
--Warray-bounds \
 -Wbad-function-cast \
 -Wcast-align \
 -Wcast-qual \
 -Wchar-subscripts \
--Wclobbered \
 -Wcomment \
--Wcoverage-mismatch \
 -Wdeclaration-after-statement \
 -Wdisabled-optimization \
--Wempty-body \
 -Wextra \
 -Wfloat-equal \
 -Wformat \
@@ -121,14 +116,12 @@ AC_ARG_ENABLE(mad-warnings, AS_HELP_STRING([--enable-mad-warnings],
 -Wformat-nonliteral \
 -Wformat-security \
 -Wformat-y2k \
--Wignored-qualifiers \
 -Wimplicit \
 -Wimplicit-function-declaration \
 -Wimplicit-int \
 -Winit-self \
 -Winline \
 -Winvalid-pch \
--Wlogical-op \
 -Wlong-long \
 -Wmain \
 -Wmissing-braces \
@@ -137,14 +130,11 @@ AC_ARG_ENABLE(mad-warnings, AS_HELP_STRING([--enable-mad-warnings],
 -Wmissing-format-attribute \
 -Wmissing-include-dirs \
 -Wmissing-noreturn \
--Wmissing-parameter-type \
 -Wmissing-prototypes \
 -Wnested-externs \
 -Wnonnull \
--Wold-style-declaration \
 -Wold-style-definition \
 -Wpacked \
--Wpacked-bitfield-compat \
 -Wparentheses \
 -Wpointer-arith \
 -Wpointer-sign \
@@ -159,9 +149,7 @@ AC_ARG_ENABLE(mad-warnings, AS_HELP_STRING([--enable-mad-warnings],
 -Wswitch \
 -Wswitch-default \
 -Wswitch-enum \
--Wsync-nand \
 -Wtrigraphs \
--Wtype-limits \
 -Wundef \
 -Wuninitialized \
 -Wunknown-pragmas \
@@ -173,14 +161,34 @@ AC_ARG_ENABLE(mad-warnings, AS_HELP_STRING([--enable-mad-warnings],
 -Wunused-value \
 -Wunused-variable \
 -Wvariadic-macros \
--Wvla \
 -Wvolatile-register-var \
 -Wwrite-strings \
 "
+# The above are valid for gcc version 4.2.1.
 
-# the above are valid for gcc version 4.4.3
-# we skip:
+   if (eval $ac_link) 2>/dev/null; then
+    AC_MSG_RESULT(yes)
+
+    AC_MSG_CHECKING(if your C compiler can emit certain other warnings)
+    save_cflags="$CFLAGS"
+    CFLAGS="$CFLAGS \
+-Warray-bounds \
+-Wclobbered \
+-Wcoverage-mismatch \
+-Wempty-body \
+-Wignored-qualifiers \
+-Wlogical-op \
+-Wmissing-parameter-type \
+-Wold-style-declaration \
+-Wpacked-bitfield-compat \
+-Wsync-nand \
+-Wtype-limits \
+-Wvla \
+"
+# The above are valid for gcc version 4.4.3.
+# We skip the following entirely:
 #-pedantic
+#-Wabi
 #-Wc++-compat
 #-Wconversion
 #-Wfatal-errors
@@ -192,8 +200,13 @@ AC_ARG_ENABLE(mad-warnings, AS_HELP_STRING([--enable-mad-warnings],
 #-Wtraditional-conversion
 #-Wunreachable-code
 
-   if (eval $ac_link) 2>/dev/null; then
-    AC_MSG_RESULT(sure does)
+    if (eval $ac_link) 2>/dev/null; then
+     AC_MSG_RESULT(yes)
+    else
+     AC_MSG_RESULT(no)
+     CFLAGS="$save_cflags"
+    fi
+
    else
     AC_MSG_RESULT(no)
     CFLAGS="$save_cflags"
