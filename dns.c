@@ -9,7 +9,6 @@
 
 #include "cdefs.h"
 #include "conv.h"
-#include "config.h"
 #include "decode.h"
 #include "dns.h"
 #include "err.h"

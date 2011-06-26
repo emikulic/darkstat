@@ -17,6 +17,10 @@
  */
 
 #include "bsd.h"
+#include "cdefs.h"
+#include "config.h"
+
+#include <string.h> /* for strlen */
 
 /* strlcpy() and strlcat() are derived from:
  *

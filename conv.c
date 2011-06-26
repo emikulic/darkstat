@@ -16,8 +16,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include "cdefs.h"
-#include "config.h"
 #include "conv.h"
 
 #include <sys/wait.h>
