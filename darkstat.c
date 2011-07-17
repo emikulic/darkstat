@@ -466,6 +466,8 @@ main(int argc, char **argv)
       }
 
       if (reset_pending) {
+         if (export_pending)
+            continue; /* export before reset */
          hosts_db_reset();
          graph_reset();
          reset_pending = 0;
