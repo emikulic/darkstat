@@ -114,7 +114,16 @@ static void cb_bindaddr(const char *arg) { http_add_bindaddr(arg); }
 const char *opt_filter = NULL;
 static void cb_filter(const char *arg) { opt_filter = arg; }
 
-static void cb_local(const char *arg) { acct_init_localnet(arg); }
+static int is_localnet_specified = 0;
+static void cb_local(const char *arg)
+{
+   acct_init_localnet(arg);
+   is_localnet_specified = 1;
+}
+
+int opt_want_local_only = 0;
+static void cb_local_only(const char *arg _unused_)
+{ opt_want_local_only = 1; }
 
 const char *opt_chroot_dir = NULL;
 static void cb_chroot(const char *arg) { opt_chroot_dir = arg; }
@@ -211,6 +220,7 @@ static struct cmdline_arg cmdline_args[] = {
    {"-b",             "bindaddr",        cb_bindaddr,    -1},
    {"-f",             "filter",          cb_filter,       0},
    {"-l",             "network/netmask", cb_local,        0},
+   {"--local-only",   NULL,              cb_local_only,   0},
    {"--snaplen",      "bytes",           cb_snaplen,      0},
    {"--pppoe",        NULL,              cb_pppoe,        0},
    {"--syslog",       NULL,              cb_syslog,       0},
@@ -364,6 +374,9 @@ parse_cmdline(const int argc, char * const *argv)
       opt_want_daemonize = 0;
       verbosef("--hexdump implies --no-daemon");
    }
+
+   if (opt_want_local_only && !is_localnet_specified)
+      verbosef("WARNING: --local-only without -l only matches the local host");
 }
 
 static void

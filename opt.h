@@ -23,6 +23,7 @@ extern int opt_want_syslog;
  * Accounting options.
  */
 extern unsigned int opt_highest_port;
+extern int opt_want_local_only;
 
 /*
  * Hosts table reduction - when the number of entries is about to exceed
@@ -39,4 +40,4 @@ extern unsigned int opt_ports_keep;
 extern int opt_want_lastseen;
 extern const char *opt_interface;
 
-
+/* vim:set ts=3 sw=3 tw=78 expandtab: */

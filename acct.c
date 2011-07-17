@@ -210,30 +210,37 @@ acct_for(const struct pktsummary * const sm)
 
    /* Hosts. */
    hosts_db_reduce();
-   hs = host_get(&(sm->src));
-   hs->out   += sm->len;
-   hs->total += sm->len;
-   memcpy(hs->u.host.mac_addr, sm->src_mac, sizeof(sm->src_mac));
-   hs->u.host.lastseen = now;
+   if (!opt_want_local_only || addr_is_local(&sm->src)) {
+      hs = host_get(&(sm->src));
+      hs->out   += sm->len;
+      hs->total += sm->len;
+      memcpy(hs->u.host.mac_addr, sm->src_mac, sizeof(sm->src_mac));
+      hs->u.host.lastseen = now;
+   }
 
-   hd = host_get(&(sm->dst));
-   hd->in    += sm->len;
-   hd->total += sm->len;
-   memcpy(hd->u.host.mac_addr, sm->dst_mac, sizeof(sm->dst_mac));
-   /*
-    * Don't update recipient's last seen time, we don't know that
-    * they received successfully.
-    */
+   if (!opt_want_local_only || addr_is_local(&sm->dst)) {
+      hd = host_get(&(sm->dst));
+      hd->in    += sm->len;
+      hd->total += sm->len;
+      memcpy(hd->u.host.mac_addr, sm->dst_mac, sizeof(sm->dst_mac));
+      /*
+       * Don't update recipient's last seen time, we don't know that
+       * they received successfully.
+       */
+   }
 
    /* Protocols. */
    if (sm->proto != IPPROTO_INVALID) {
-      ps = host_get_ip_proto(hs, sm->proto);
-      ps->out   += sm->len;
-      ps->total += sm->len;
-
-      pd = host_get_ip_proto(hd, sm->proto);
-      pd->in    += sm->len;
-      pd->total += sm->len;
+      if (hs) {
+         ps = host_get_ip_proto(hs, sm->proto);
+         ps->out   += sm->len;
+         ps->total += sm->len;
+      }
+      if (hd) {
+         pd = host_get_ip_proto(hd, sm->proto);
+         pd->in    += sm->len;
+         pd->total += sm->len;
+      }
    }
 
    if (opt_ports_max == 0) return; /* skip ports accounting */
@@ -241,13 +248,12 @@ acct_for(const struct pktsummary * const sm)
    /* Ports. */
    switch (sm->proto) {
    case IPPROTO_TCP:
-      if (sm->src_port <= opt_highest_port) {
+      if ((sm->src_port <= opt_highest_port) && hs) {
          ps = host_get_port_tcp(hs, sm->src_port);
          ps->out   += sm->len;
          ps->total += sm->len;
       }
-
-      if (sm->dst_port <= opt_highest_port) {
+      if ((sm->dst_port <= opt_highest_port) && hd) {
          pd = host_get_port_tcp(hd, sm->dst_port);
          pd->in    += sm->len;
          pd->total += sm->len;
@@ -257,13 +263,12 @@ acct_for(const struct pktsummary * const sm)
       break;
 
    case IPPROTO_UDP:
-      if (sm->src_port <= opt_highest_port) {
+      if ((sm->src_port <= opt_highest_port) && hs) {
          ps = host_get_port_udp(hs, sm->src_port);
          ps->out   += sm->len;
          ps->total += sm->len;
       }
-
-      if (sm->dst_port <= opt_highest_port) {
+      if ((sm->dst_port <= opt_highest_port) && hd) {
          pd = host_get_port_udp(hd, sm->dst_port);
          pd->in    += sm->len;
          pd->total += sm->len;
