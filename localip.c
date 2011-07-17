@@ -36,11 +36,23 @@ void
 localip_init(const char *interface)
 {
    iface = interface;
+
+   /* defaults */
+   localip4.family = IPv4;
+   localip4.ip.v4 = 0;
+
+   localip6.family = IPv6;
+   memset(&(localip6.ip.v6), 0, sizeof(localip6.ip.v6));
+
+   last_localip4 = localip4;
+   last_localip6 = localip6;
+
+   /* initial update */
    localip_update();
 }
 
-void
-localip_update(void)
+static void
+localip_update_helper(void)
 {
    /* defaults */
    localip4.family = IPv4;
@@ -49,14 +61,18 @@ localip_update(void)
    localip6.family = IPv6;
    memset(&(localip6.ip.v6), 0, sizeof(localip6.ip.v6));
 
-   if (iface != NULL) {
-      /* not reading from capfile */
+   if (iface == NULL)
+      return; /* reading from capfile */
+
 #ifdef HAVE_IFADDRS_H
+   {
       int got_v4 = 0, got_v6 = 0;
       struct ifaddrs *ifas, *ifa;
 
-      if (getifaddrs(&ifas) < 0)
-         err(1, "can't get own IP address on interface \"%s\"", iface);
+      if (getifaddrs(&ifas) < 0) {
+         warn("can't getifaddrs() on interface \"%s\"", iface);
+         return;
+      }
 
       for (ifa = ifas; ifa; ifa = ifa->ifa_next) {
          if (got_v4 && got_v6)
@@ -94,12 +110,11 @@ localip_update(void)
 
       freeifaddrs(ifas);
 
-      /* Report an error if IPv4 address could not be found. */
       if (!got_v4)
-          err(1, "can't get own IPv4 address on interface \"%s\"", iface);
-
+          warnx("can't get own IPv4 address on interface \"%s\"", iface);
+   }
 #else /* don't HAVE_IFADDRS_H */
-
+   {
       int tmp = socket(AF_INET, SOCK_DGRAM, IPPROTO_IP);
       struct ifreq ifr;
       struct sockaddr sa;
@@ -110,23 +125,28 @@ localip_update(void)
          if (errno == EADDRNOTAVAIL) {
             verbosef("lost local IP");
          } else
-            err(1, "can't get own IP address on interface \"%s\"", iface);
+            warn("can't get own IP address on interface \"%s\"", iface);
       } else {
          /* success! */
          sa = ifr.ifr_addr;
          localip4.ip.v4 = ((struct sockaddr_in*)&sa)->sin_addr.s_addr;
       }
       close(tmp);
-
-#endif
    }
+#endif
+}
+
+void
+localip_update(void)
+{
+   localip_update_helper();
 
    if (!addr_equal(&last_localip4, &localip4)) {
-      verbosef("localip4 update(%s) = %s", iface, addr_to_str(&localip4));
+      verbosef("%s ip4 update: %s", iface, addr_to_str(&localip4));
       last_localip4 = localip4;
    }
    if (!addr_equal(&last_localip6, &localip6)) {
-      verbosef("localip6 update(%s) = %s", iface, addr_to_str(&localip6));
+      verbosef("%s ip6 update: %s", iface, addr_to_str(&localip6));
       last_localip6 = localip6;
    }
 }
