@@ -65,6 +65,9 @@ localip_update(void)
          if (strncmp(ifa->ifa_name, iface, IFNAMSIZ))
             continue;   /* Wrong interface. */
 
+         if (!ifa->ifa_addr)
+            continue;   /* This can be NULL, e.g. for ppp0. */
+
          /* The first IPv4 name is always functional. */
          if ((ifa->ifa_addr->sa_family == AF_INET) && !got_v4)
          {
