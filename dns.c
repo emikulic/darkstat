@@ -339,6 +339,7 @@ dns_main(void)
          struct dns_reply reply;
          struct sockaddr_in sin;
          struct sockaddr_in6 sin6;
+         struct hostent *he;
          char host[NI_MAXHOST];
          int ret, flags;
 
@@ -353,6 +354,19 @@ dns_main(void)
                sin.sin_addr.s_addr = ip.ip.v4;
                ret = getnameinfo((struct sockaddr *) &sin, sizeof(sin),
                                  host, sizeof(host), NULL, 0, flags);
+               if (ret == EAI_FAMILY) {
+                  verbosef("getnameinfo error %s, trying gethostbyname",
+                     gai_strerror(ret));
+                  he = gethostbyaddr(&sin.sin_addr.s_addr,
+                     sizeof(sin.sin_addr.s_addr), sin.sin_family);
+                  if (he == NULL) {
+                     ret = EAI_FAIL;
+                     verbosef("gethostbyname error %s", hstrerror(h_errno));
+                  } else {
+                     ret = 0;
+                     strlcpy(host, he->h_name, sizeof(host));
+                  }
+               }
                break;
             case IPv6:
                sin6.sin6_family = AF_INET6;
