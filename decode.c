@@ -66,9 +66,19 @@
 #include <netinet/tcp.h> /* struct tcphdr */
 #include <netinet/udp.h> /* struct udphdr */
 
+#ifndef IPV6_VERSION
+#define IPV6_VERSION 0x60
+#endif
+
+#ifndef IPV6_VERSION_MASK
+#define IPV6_VERSION_MASK 0xf0
+#endif
+
 static void decode_ether(u_char *, const struct pcap_pkthdr *,
    const u_char *);
 static void decode_loop(u_char *, const struct pcap_pkthdr *,
+   const u_char *);
+static void decode_null(u_char *, const struct pcap_pkthdr *,
    const u_char *);
 static void decode_ppp(u_char *, const struct pcap_pkthdr *,
    const u_char *);
@@ -88,9 +98,9 @@ static void decode_ipv6(const u_char *pdata, const uint32_t len,
 /* Link-type header information */
 static const struct linkhdr linkhdrs[] = {
   /* linktype       hdrlen         handler       */
-   { DLT_EN10MB,    ETHER_HDR_LEN, decode_ether  },
-   { DLT_LOOP,      NULL_HDR_LEN,  decode_loop  },
-   { DLT_NULL,      NULL_HDR_LEN,  decode_loop  },
+   { DLT_EN10MB,    ETHER_HDR_LEN, decode_ether },
+   { DLT_LOOP,      NULL_HDR_LEN,  decode_loop },
+   { DLT_NULL,      NULL_HDR_LEN,  decode_null },
    { DLT_PPP,       PPP_HDR_LEN,   decode_ppp },
 #if defined(__NetBSD__)
    { DLT_PPP_SERIAL, PPP_HDR_LEN,  decode_ppp },
@@ -181,6 +191,9 @@ decode_ether(u_char *user _unused_,
    }
 }
 
+/* Very similar to decode_null, except on OpenBSD we need to think
+ * about family endianness.
+ */
 static void
 decode_loop(u_char *user _unused_,
       const struct pcap_pkthdr *pheader,
@@ -199,19 +212,45 @@ decode_loop(u_char *user _unused_,
    family = ntohl(family);
 #endif
    if (family == AF_INET) {
-      /* OpenBSD tun or FreeBSD tun or FreeBSD lo */
       decode_ip(pdata + NULL_HDR_LEN, pheader->caplen - NULL_HDR_LEN, &sm);
       sm.time = pheader->ts.tv_sec;
       acct_for(&sm);
    }
    else if (family == AF_INET6) {
-      /* XXX: Check this! */
-      decode_ip(pdata + NULL_HDR_LEN, pheader->caplen - NULL_HDR_LEN, &sm);
+      decode_ipv6(pdata + NULL_HDR_LEN, pheader->caplen - NULL_HDR_LEN, &sm);
       sm.time = pheader->ts.tv_sec;
       acct_for(&sm);
    }
    else
       verbosef("loop: unknown family (%x)", family);
+}
+
+static void
+decode_null(u_char *user _unused_,
+      const struct pcap_pkthdr *pheader,
+      const u_char *pdata)
+{
+   uint32_t family;
+   struct pktsummary sm;
+   memset(&sm, 0, sizeof(sm));
+
+   if (pheader->caplen < NULL_HDR_LEN) {
+      verbosef("null: packet too short (%u bytes)", pheader->caplen);
+      return;
+   }
+   family = *(const uint32_t *)pdata;
+   if (family == AF_INET) {
+      decode_ip(pdata + NULL_HDR_LEN, pheader->caplen - NULL_HDR_LEN, &sm);
+      sm.time = pheader->ts.tv_sec;
+      acct_for(&sm);
+   }
+   else if (family == AF_INET6) {
+      decode_ipv6(pdata + NULL_HDR_LEN, pheader->caplen - NULL_HDR_LEN, &sm);
+      sm.time = pheader->ts.tv_sec;
+      acct_for(&sm);
+   }
+   else
+      verbosef("null: unknown family (%x)", family);
 }
 
 static void
@@ -364,6 +403,13 @@ decode_ipv6(const u_char *pdata, const uint32_t len, struct pktsummary *sm)
 
    if (len < IPV6_HDR_LEN) {
       verbosef("ipv6: packet too short (%u bytes)", len);
+      return;
+   }
+
+   if ((hdr->ip6_vfc & IPV6_VERSION_MASK) != IPV6_VERSION) {
+      verbosef("ipv6: bad version (%02x, expecting %02x)",
+         hdr->ip6_vfc & IPV6_VERSION_MASK,
+         IPV6_VERSION);
       return;
    }
 

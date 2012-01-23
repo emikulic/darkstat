@@ -33,7 +33,7 @@
 #endif
 
 #ifndef IPPROTO_OSPF
-#  define IPPROTO_OSPF 89
+#define IPPROTO_OSPF 89
 #endif
 
 #define IPPROTO_INVALID 254 /* don't do proto accounting */
