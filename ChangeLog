@@ -1,3 +1,16 @@
+v3.0.715 (January 2012)
+	- Compatibility fixes for Hurd and Solaris.
+	- Use link-time optimization and automake-like silent rules.
+	- Support systems without ifaddrs.h again.
+	- Continuing fixes for IPv6 support.
+	- Only update lastseen time for sender, not recipient.
+	- Implement --local-only: accounting for hosts on the local net.
+        - Make failure to bind() a socket non-fatal.
+	- Make failure to get local IP non-fatal.
+	- Fall back to gethostbyaddr() if getnameinfo() fails.
+	- Fix detection of IPv4 multicast addresses.
+	- Fix decoding on OpenBSD DLT_NULL interfaces (e.g. gif(4))
+
 v3.0.714 (June 2011)
 	- IPv6 support!  Big ups to Mats Erik Andersson who did most
 	  of this work!
