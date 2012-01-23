@@ -917,7 +917,8 @@ static void http_listen_one(struct addrinfo *ai,
     /* create incoming socket */
     if ((sockin = socket(ai->ai_family, ai->ai_socktype,
             ai->ai_protocol)) == -1)
-        err(1, "socket() failed");
+        err(1, "socket(%d, %d, %d) failed",
+          ai->ai_family, ai->ai_socktype,  ai->ai_protocol);
 
     /* reuse address */
     sockopt = 1;
