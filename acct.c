@@ -26,7 +26,6 @@
 #include "now.h"
 #include "opt.h"
 
-#include <arpa/inet.h> /* for inet_aton() */
 #define __FAVOR_BSD
 #include <netinet/tcp.h>
 #include <sys/socket.h>

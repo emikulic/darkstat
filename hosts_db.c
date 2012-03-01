@@ -20,7 +20,6 @@
 #include "opt.h"
 #include "str.h"
 
-#include <arpa/inet.h> /* inet_aton() */
 #include <netdb.h>     /* struct addrinfo */
 #include <assert.h>
 #include <errno.h>
