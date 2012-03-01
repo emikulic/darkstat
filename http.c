@@ -892,7 +892,7 @@ static struct addrinfo *get_bind_addr(
 
     snprintf(portstr, sizeof(portstr), "%u", bindport);
     if ((ret = getaddrinfo(bindaddr, portstr, &hints, &ai)))
-        err(1, "getaddrinfo(%s,%s) failed: %s",
+        err(1, "getaddrinfo(%s, %s) failed: %s",
             bindaddr ? bindaddr : "NULL", portstr, gai_strerror(ret));
     if (ai == NULL)
         err(1, "getaddrinfo() returned NULL pointer");
@@ -914,11 +914,21 @@ static void http_listen_one(struct addrinfo *ai,
     char ipaddr[INET6_ADDRSTRLEN];
     int sockin, sockopt, ret;
 
+    /* format address into ipaddr string */
+    if ((ret = getnameinfo(ai->ai_addr, ai->ai_addrlen, ipaddr,
+                           sizeof(ipaddr), NULL, 0, NI_NUMERICHOST)) != 0)
+        err(1, "getnameinfo failed: %s", gai_strerror(ret));
+
     /* create incoming socket */
     if ((sockin = socket(ai->ai_family, ai->ai_socktype,
             ai->ai_protocol)) == -1)
-        err(1, "socket(%d, %d, %d) failed",
-          ai->ai_family, ai->ai_socktype,  ai->ai_protocol);
+        err(1, "http_listen_one(%s, %u): socket(%d (%s), %d, %d) failed",
+          ipaddr, (unsigned int)bindport,
+          ai->ai_family,
+          (ai->ai_family == AF_INET6) ? "AF_INET6" :
+          (ai->ai_family == AF_INET) ? "AF_INET" :
+          "?",
+          ai->ai_socktype,  ai->ai_protocol);
 
     /* reuse address */
     sockopt = 1;
@@ -937,11 +947,6 @@ static void http_listen_one(struct addrinfo *ai,
             err(1, "can't set IPV6_V6ONLY");
     }
 #endif
-
-    /* format address into ipaddr string */
-    if ((ret = getnameinfo(ai->ai_addr, ai->ai_addrlen, ipaddr,
-                           sizeof(ipaddr), NULL, 0, NI_NUMERICHOST)) != 0)
-        err(1, "getnameinfo failed: %s", gai_strerror(ret));
 
     /* bind socket */
     if (bind(sockin, ai->ai_addr, ai->ai_addrlen) == -1) {
