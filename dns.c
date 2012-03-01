@@ -191,16 +191,15 @@ dns_get_result(struct addr *ipaddr, char **name)
       /* Identify common special cases.  */
       const char *type = "none";
 
-      switch (reply.addr.family) {
-      case IPv6:
+      if (reply.addr.family == IPv6) {
          if (IN6_IS_ADDR_LINKLOCAL(&reply.addr.ip.v6))
             type = "link-local";
          else if (IN6_IS_ADDR_SITELOCAL(&reply.addr.ip.v6))
             type = "site-local";
          else if (IN6_IS_ADDR_MULTICAST(&reply.addr.ip.v6))
             type = "multicast";
-         break;
-      case IPv4:
+      } else {
+         assert(reply.addr.family == IPv4);
          if (IN_MULTICAST(htonl(reply.addr.ip.v4)))
             type = "multicast";
       }
