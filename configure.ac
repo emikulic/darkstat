@@ -242,8 +242,8 @@ AC_SEARCH_LIBS(gethostbyname, [nsl], [],
   [AC_MSG_ERROR([gethostbyname() not found])])
 AC_SEARCH_LIBS(socket, [socket], [],
   [AC_MSG_ERROR([socket() not found])])
-AC_SEARCH_LIBS(inet_aton, [resolv], [],
-  [AC_MSG_ERROR([inet_aton() not found])])
+AC_SEARCH_LIBS(hstrerror, [resolv], [],
+  [AC_MSG_ERROR([hstrerror() not found])])
 
 # Solaris need sys/filio.h for FIONBIO
 AC_CHECK_HEADERS(sys/filio.h)
