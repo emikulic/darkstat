@@ -322,5 +322,8 @@ AC_SEARCH_LIBS(strlcat, [bsd],
  AC_DEFINE(HAVE_STRLCAT, 1,
   [Define to 1 if you have strlcat().]))
 
+AC_CHECK_HEADERS(bsd/string.h)
+AC_CHECK_HEADERS(bsd/unistd.h)
+
 AC_CONFIG_FILES([Makefile darkstat.8])
 AC_OUTPUT
