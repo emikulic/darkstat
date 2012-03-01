@@ -248,7 +248,7 @@ AC_SEARCH_LIBS(hstrerror, [resolv], [],
 # Solaris need sys/filio.h for FIONBIO
 AC_CHECK_HEADERS(sys/filio.h)
 
-# GNU/kfreebsd needs net/if_ether.h for ETH_P_IPV6
+# Debian GNU/kFreeBSD needs net/if_ether.h for ETH_P_IPV6
 AC_CHECK_HEADERS(net/if_ether.h)
 
 # This is the modern way.  Older systems use the ioctl method.
