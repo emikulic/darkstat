@@ -122,7 +122,6 @@ AC_ARG_ENABLE(mad-warnings, AS_HELP_STRING([--enable-mad-warnings],
 -Winit-self \
 -Winline \
 -Winvalid-pch \
--Wlong-long \
 -Wmain \
 -Wmissing-braces \
 -Wmissing-declarations \
@@ -192,6 +191,7 @@ AC_ARG_ENABLE(mad-warnings, AS_HELP_STRING([--enable-mad-warnings],
 #-Wc++-compat
 #-Wconversion
 #-Wfatal-errors
+#-Wlong-long
 #-Wpadded
 #-Wsign-conversion
 #-Wstack-protector
