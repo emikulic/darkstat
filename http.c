@@ -382,7 +382,7 @@ static void generate_header(struct connection *conn,
     if (conn->encoding == NULL)
         conn->encoding = encoding_identity;
 
-    verbosef("http: %d %s (%s: %d bytes)", code, text,
+    verbosef("http: %d %s (%s: %zu bytes)", code, text,
         conn->encoding, conn->reply_length);
     conn->header_length = xasprintf(&(conn->header),
         "HTTP/1.1 %d %s\r\n"
