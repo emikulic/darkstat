@@ -1,5 +1,5 @@
 /* darkstat 3
- * copyright (c) 2001-2011 Emil Mikulic.
+ * copyright (c) 2001-2012 Emil Mikulic.
  *
  * http.c: embedded webserver.
  * This borrows a lot of code from darkhttpd.
@@ -921,14 +921,16 @@ static void http_listen_one(struct addrinfo *ai,
 
     /* create incoming socket */
     if ((sockin = socket(ai->ai_family, ai->ai_socktype,
-            ai->ai_protocol)) == -1)
-        err(1, "http_listen_one(%s, %u): socket(%d (%s), %d, %d) failed",
+            ai->ai_protocol)) == -1) {
+        warn("http_listen_one(%s, %u): socket(%d (%s), %d, %d) failed",
           ipaddr, (unsigned int)bindport,
           ai->ai_family,
           (ai->ai_family == AF_INET6) ? "AF_INET6" :
           (ai->ai_family == AF_INET) ? "AF_INET" :
           "?",
           ai->ai_socktype,  ai->ai_protocol);
+        return;
+    }
 
     /* reuse address */
     sockopt = 1;
@@ -951,6 +953,7 @@ static void http_listen_one(struct addrinfo *ai,
     /* bind socket */
     if (bind(sockin, ai->ai_addr, ai->ai_addrlen) == -1) {
         warn("bind(\"%s\") failed", ipaddr);
+        close(sockin);
         return;
     }
 
@@ -993,7 +996,7 @@ void http_listen(const unsigned short bindport)
         free(bindaddr);
     }
 
-    if (insocks == 0)
+    if (insocks == NULL)
         errx(1, "was not able to bind any ports for http interface");
 
     /* ignore SIGPIPE */
