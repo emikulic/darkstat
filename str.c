@@ -105,7 +105,8 @@ static void
 str_append_u32(struct str *s, const uint32_t i, const int mod_sep)
 {
    char out[I32_MAXLEN];
-   int pos, len;
+   int pos;
+   unsigned int len;
    uint32_t rem, next;
 
    if (i == 0) {
@@ -148,7 +149,8 @@ static void
 str_append_u64(struct str *s, const uint64_t i, const int mod_sep)
 {
    char out[I64_MAXLEN];
-   int pos, len;
+   int pos;
+   unsigned int len;
    uint64_t rem, next;
    uint32_t rem32, next32;
 
