@@ -13,7 +13,6 @@
 #include "cdefs.h"
 #include "acct.h"
 #include "cap.h"
-#include "config.h"
 #include "decode.h"
 #include "err.h"
 #include "opt.h"
@@ -49,17 +48,12 @@
 #  endif
 # endif
 #endif
-#ifndef ETHERTYPE_PPPOE
-#define ETHERTYPE_PPPOE 0x8864
-#endif
 
+#ifndef ETHERTYPE_PPPOE
+# define ETHERTYPE_PPPOE 0x8864
+#endif
 #ifndef ETHERTYPE_IPV6
-# ifdef HAVE_NET_IF_ETHER_H
-#  include <net/if_ether.h>	/* ETH_P_IPV6 for GNU/kfreebsd */
-# endif
-# ifdef ETH_P_IPV6
-#  define ETHERTYPE_IPV6 ETH_P_IPV6
-# endif
+# define ETHERTYPE_IPV6 0x86DD
 #endif
 
 #include <netinet/in_systm.h> /* n_long */
