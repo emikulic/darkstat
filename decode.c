@@ -25,23 +25,27 @@
 #include <string.h>
 #include <unistd.h>
 #include <arpa/inet.h> /* inet_ntoa() */
+#include <net/if.h> /* struct ifreq */
 
 /* need struct ether_header */
-#if defined(__NetBSD__) || defined(__OpenBSD__)
-# include <sys/queue.h>
-# include <net/if.h>
-# include <net/if_arp.h>
+#ifdef __NetBSD__ /* works for NetBSD 5.1.2 */
 # include <netinet/if_ether.h>
 #else
-# ifdef __sun
-#  include <sys/ethernet.h>
-#  define ETHER_HDR_LEN 14
+# ifdef __OpenBSD__
+#  include <sys/queue.h>
+#  include <net/if_arp.h>
+#  include <netinet/if_ether.h>
 # else
-#  ifdef _AIX
-#   include <netinet/if_ether.h>
+#  ifdef __sun
+#   include <sys/ethernet.h>
 #   define ETHER_HDR_LEN 14
 #  else
-#   include <net/ethernet.h>
+#   ifdef _AIX
+#    include <netinet/if_ether.h>
+#    define ETHER_HDR_LEN 14
+#   else
+#    include <net/ethernet.h>
+#   endif
 #  endif
 # endif
 #endif
@@ -58,7 +62,6 @@
 # endif
 #endif
 
-#include <net/if.h> /* struct ifreq */
 #include <netinet/in_systm.h> /* n_long */
 #include <netinet/ip.h> /* struct ip */
 #include <netinet/ip6.h> /* struct ip6_hdr */

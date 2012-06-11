@@ -29,6 +29,11 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifdef __NetBSD__
+# define gethostbyaddr(addr, len, type) \
+         gethostbyaddr((const char *)(addr), len, type)
+#endif
+
 static void dns_main(void) _noreturn_; /* the child process runs this */
 
 #define CHILD 0 /* child process uses this socket */
