@@ -83,8 +83,10 @@ static void decode_pppoe(u_char *, const struct pcap_pkthdr *,
    const u_char *);
 static void decode_pppoe_real(const u_char *pdata, const uint32_t len,
    struct pktsummary *sm);
+#ifdef DLT_LINUX_SLL
 static void decode_linux_sll(u_char *, const struct pcap_pkthdr *,
    const u_char *);
+#endif
 static void decode_raw(u_char *, const struct pcap_pkthdr *,
    const u_char *);
 static void decode_ip(const u_char *pdata, const uint32_t len,
@@ -307,6 +309,7 @@ decode_pppoe_real(const u_char *pdata, const uint32_t len,
          pdata[6], pdata[7]);
 }
 
+#ifdef DLT_LINUX_SLL
 /* very similar to decode_ether ... */
 static void
 decode_linux_sll(u_char *user _unused_,
@@ -345,6 +348,7 @@ decode_linux_sll(u_char *user _unused_,
       verbosef("linux_sll: unknown protocol (%04x)", type);
    }
 }
+#endif
 
 static void
 decode_raw(u_char *user _unused_,
