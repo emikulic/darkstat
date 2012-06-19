@@ -11,10 +11,6 @@ struct addr;
 
 void db_import(const char *filename);
 void db_export(const char *filename);
-
-/* byteswap */
-uint64_t hton64(const uint64_t ho);
-uint64_t ntoh64(const uint64_t no);
 void test_64order(void);
 
 /* read helpers */

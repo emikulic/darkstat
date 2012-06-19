@@ -27,9 +27,7 @@ static const unsigned char export_tag_hosts_ver1[] = {0xDA, 'H', 'S', 0x01};
 static const unsigned char export_tag_graph_ver1[] = {0xDA, 'G', 'R', 0x01};
 
 #ifndef swap64
-static inline uint64_t
-swap64(uint64_t _x)
-{
+static uint64_t swap64(uint64_t _x) {
    /* this is __bswap64 from:
     * $FreeBSD: src/sys/i386/include/endian.h,v 1.41$
     */
@@ -40,17 +38,12 @@ swap64(uint64_t _x)
 }
 #endif
 
-uint64_t
-hton64(const uint64_t ho)
-{
-   if (ntohs(0x1234) == 0x1234) return ho;
-   else return swap64(ho);
-}
-
-uint64_t
-ntoh64(const uint64_t no)
-{
-   return hton64(no);
+#define ntoh64 hton64
+static inline uint64_t hton64(const uint64_t ho) {
+   if (ntohs(0x1234) == 0x1234)
+      return ho;
+   else
+      return swap64(ho);
 }
 
 void
