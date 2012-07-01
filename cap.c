@@ -299,7 +299,8 @@ cap_poll(fd_set *read_set
     * Once per capture poll, check our IP address.  It's used in accounting
     * for traffic graphs.
     */
-   localip_update(); /* FIXME: this might even be too often */
+   localip_update(opt_interface, local_ips);
+   /* FIXME: ^ this might run too often */
 
    total = 0;
    for (;;) {

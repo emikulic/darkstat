@@ -1,7 +1,7 @@
 /* darkstat 3
  * copyright (c) 2001-2011 Emil Mikulic.
  *
- * localip.c: determine local IP of our capture interface
+ * localip.c: determine local IPs of an interface
  *
  * You may use, modify and redistribute this file under the terms of the
  * GNU General Public License version 2. (see COPYING.GPL)
@@ -9,14 +9,18 @@
 
 #include "addr.h"
 #include "config.h" /* for HAVE_IFADDRS_H */
+#include "conv.h"
 #include "err.h"
 #include "localip.h"
 #include "bsd.h" /* for strlcpy */
 
 #include <sys/socket.h>
 #include <net/if.h>
+#include <assert.h>
 #include <errno.h>
+#include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 
 #ifdef HAVE_IFADDRS_H
@@ -28,90 +32,93 @@
 # include <sys/ioctl.h>
 #endif
 
-static const char *iface = NULL;
-struct addr localip4, localip6;
-static struct addr last_localip4, last_localip6;
+struct local_ips *local_ips;
 
-void
-localip_init(const char *interface)
-{
-   iface = interface;
+struct local_ips *localip_make(void) {
+   struct local_ips *ips = xmalloc(sizeof(*ips));
 
-   /* defaults */
-   localip4.family = IPv4;
-   localip4.ip.v4 = 0;
-
-   localip6.family = IPv6;
-   memset(&(localip6.ip.v6), 0, sizeof(localip6.ip.v6));
-
-   last_localip4 = localip4;
-   last_localip6 = localip6;
-
-   /* initial update */
-   localip_update();
+   ips->is_valid = 0;
+   ips->last_update = 0;
+   ips->num_addrs = 0;
+   ips->addrs = NULL;
+   return ips;
 }
 
-static void
-localip_update_helper(void)
-{
-   /* defaults */
-   localip4.family = IPv4;
-   localip4.ip.v4 = 0;
+void localip_free(struct local_ips *ips) {
+   if (ips->addrs != NULL)
+      free(ips->addrs);
+   free(ips);
+}
 
-   localip6.family = IPv6;
-   memset(&(localip6.ip.v6), 0, sizeof(localip6.ip.v6));
+static void add_ip(const char *iface, struct local_ips *ips,
+                   int *index, struct addr *a) {
+   if (ips->num_addrs <= *index) {
+      /* Grow. */
+      ips->addrs = xrealloc(ips->addrs, sizeof(*(ips->addrs)) * (*index + 1));
+      ips->num_addrs++;
+      assert(ips->num_addrs > *index);
+      verbosef("interface '%s' gained new address %s", iface, addr_to_str(a));
+   } else {
+      /* Warn about changed address. */
+      if (!addr_equal(ips->addrs + *index, a)) {
+         static char before[INET6_ADDRSTRLEN];
+         strncpy(before, addr_to_str(ips->addrs + *index), INET6_ADDRSTRLEN);
+         verbosef("interface '%s' address %d/%d changed from %s to %s",
+            iface, *index+1, ips->num_addrs, before, addr_to_str(a));
+      }
+   }
+   ips->addrs[*index] = *a;
+   (*index)++;
+}
 
-   if (iface == NULL)
-      return; /* reading from capfile */
+/* Returns 0 on failure. */
+void localip_update(const char *iface, struct local_ips *ips) {
+   struct addr a;
+   int new_addrs = 0;
+
+   if (iface == NULL) {
+      /* reading from capfile */
+      ips->is_valid = 0;
+      return;
+   }
 
 #ifdef HAVE_IFADDRS_H
    {
-      int got_v4 = 0, got_v6 = 0;
       struct ifaddrs *ifas, *ifa;
 
-      if (getifaddrs(&ifas) < 0) {
-         warn("can't getifaddrs() on interface \"%s\"", iface);
-         return;
-      }
+      if (getifaddrs(&ifas) < 0)
+         err(1, "getifaddrs() failed");
 
-      for (ifa = ifas; ifa; ifa = ifa->ifa_next) {
-         if (got_v4 && got_v6)
-            break;   /* Task is already complete. */
-
+      for (ifa=ifas; ifa; ifa=ifa->ifa_next) {
          if (strncmp(ifa->ifa_name, iface, IFNAMSIZ))
             continue;   /* Wrong interface. */
 
          if (!ifa->ifa_addr)
             continue;   /* This can be NULL, e.g. for ppp0. */
 
-         /* The first IPv4 name is always functional. */
-         if ((ifa->ifa_addr->sa_family == AF_INET) && !got_v4)
-         {
-            /* Good IPv4 address. */
-            localip4.ip.v4 =
-               ((struct sockaddr_in *)ifa->ifa_addr)->sin_addr.s_addr;
-            got_v4 = 1;
-            continue;
-         }
-
-         /* IPv6 needs some obvious exceptions. */
-         if ( ifa->ifa_addr->sa_family == AF_INET6 ) {
-            struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *) ifa->ifa_addr;
-
+         if (ifa->ifa_addr->sa_family == AF_INET) {
+            a.family = IPv4;
+            a.ip.v4 = ((struct sockaddr_in *)ifa->ifa_addr)->sin_addr.s_addr;
+            add_ip(iface, ips, &new_addrs, &a);
+         } else if (ifa->ifa_addr->sa_family == AF_INET6) {
+            struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *)ifa->ifa_addr;
+# if 0
             if ( IN6_IS_ADDR_LINKLOCAL(&(sa6->sin6_addr))
                  || IN6_IS_ADDR_SITELOCAL(&(sa6->sin6_addr)) )
                continue;
-
-            /* Only standard IPv6 can reach this point. */
-            memcpy(&(localip6.ip.v6), &sa6->sin6_addr, sizeof(localip6.ip.v6));
-            got_v6 = 1;
-         }
+# endif
+            a.family = IPv6;
+            memcpy(&(a.ip.v6), &sa6->sin6_addr, sizeof(a.ip.v6));
+            add_ip(iface, ips, &new_addrs, &a);
+# ifdef AF_PACKET
+         } else if (ifa->ifa_addr->sa_family == AF_PACKET) {
+            /* ignore */
+# endif
+         } else
+            verbosef("unknown sa_family=%d on interface '%s'",
+               (int)ifa->ifa_addr->sa_family, iface);
       }
-
       freeifaddrs(ifas);
-
-      if (!got_v4)
-          warnx("can't get own IPv4 address on interface \"%s\"", iface);
    }
 #else /* don't HAVE_IFADDRS_H */
    {
@@ -121,34 +128,40 @@ localip_update_helper(void)
 
       strlcpy(ifr.ifr_name, iface, IFNAMSIZ);
       ifr.ifr_addr.sa_family = AF_INET;
-      if (ioctl(tmp, SIOCGIFADDR, &ifr) == -1) {
-         if (errno == EADDRNOTAVAIL) {
-            verbosef("lost local IP");
-         } else
-            warn("can't get own IP address on interface \"%s\"", iface);
-      } else {
-         /* success! */
+      if (ioctl(tmp, SIOCGIFADDR, &ifr) != -1) {
          sa = ifr.ifr_addr;
-         localip4.ip.v4 = ((struct sockaddr_in*)&sa)->sin_addr.s_addr;
+         a.family = IPv4;
+         a.ip.v4 = ((struct sockaddr_in*)(&ifr.ifr_addr))->sin_addr.s_addr;
+         add_ip(iface, ips, &new_addrs, &a);
       }
       close(tmp);
    }
 #endif
+   if (new_addrs == 0) {
+      if (ips->is_valid)
+         verbosef("interface '%s' no longer has any addresses", iface);
+      ips->is_valid = 0;
+   } else {
+      if (!ips->is_valid)
+         verbosef("interface '%s' now has addresses", iface);
+      ips->is_valid = 1;
+      if (ips->num_addrs != new_addrs)
+         verbosef("interface '%s' number of addresses decreased from %d to %d",
+            iface, ips->num_addrs, new_addrs);
+      ips->num_addrs = new_addrs;
+   }
+   ips->last_update = time(NULL);
 }
 
-void
-localip_update(void)
-{
-   localip_update_helper();
+int is_localip(const struct addr * const a,
+               const struct local_ips * const ips) {
+   int i;
 
-   if (!addr_equal(&last_localip4, &localip4)) {
-      verbosef("%s ip4 update: %s", iface, addr_to_str(&localip4));
-      last_localip4 = localip4;
+   for (i=0; i<ips->num_addrs; i++) {
+      if (addr_equal(a, ips->addrs+i))
+         return 1;
    }
-   if (!addr_equal(&last_localip6, &localip6)) {
-      verbosef("%s ip6 update: %s", iface, addr_to_str(&localip6));
-      last_localip6 = localip6;
-   }
+   return 0;
 }
 
-/* vim:set ts=3 sw=3 tw=78 expandtab: */
+/* vim:set ts=3 sw=3 tw=80 et: */

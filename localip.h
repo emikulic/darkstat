@@ -1,15 +1,31 @@
 /* darkstat 3
  * copyright (c) 2001-2011 Emil Mikulic.
  *
- * localip.h: determine local IP of our capture interface
+ * localip.h: determine the local IPs of an interface
  *
  * You may use, modify and redistribute this file under the terms of the
  * GNU General Public License version 2. (see COPYING.GPL)
  */
+#ifndef __DARKSTAT_LOCALIP_H
+#define __DARKSTAT_LOCALIP_H
 
-extern struct addr localip4, localip6;
+#include <time.h>
 
-void localip_init(const char *interface);
-void localip_update(void);
+struct local_ips {
+   int is_valid;
+   time_t last_update;
+   int num_addrs;
+   struct addr *addrs;
+};
 
-/* vim:set ts=3 sw=3 tw=78 expandtab: */
+extern struct local_ips *local_ips;
+
+struct local_ips *localip_make(void);
+void localip_free(struct local_ips *ips);
+
+void localip_update(const char *iface, struct local_ips *ips);
+int is_localip(const struct addr * const a,
+               const struct local_ips * const ips);
+
+#endif
+/* vim:set ts=3 sw=3 tw=80 et: */

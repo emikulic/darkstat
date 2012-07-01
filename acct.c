@@ -136,23 +136,14 @@ acct_init_localnet(const char *spec)
 static int
 addr_is_local(const struct addr * const a)
 {
-   if (a->family == IPv4) {
-      if (using_localnet4) {
-         if (addr_inside(a, &localnet4, &localmask4))
-            return 1;
-      } else {
-         if (addr_equal(a, &localip4))
-            return 1;
-      }
-   } else {
-      assert(a->family == IPv6);
-      if (using_localnet6) {
-         if (addr_inside(a, &localnet6, &localmask6))
-            return 1;
-      } else {
-         if (addr_equal(a, &localip6))
-            return 1;
-      }
+   if (is_localip(a, local_ips))
+      return 1;
+   if (a->family == IPv4 && using_localnet4) {
+      if (addr_inside(a, &localnet4, &localmask4))
+         return 1;
+   } else if (a->family == IPv6 && using_localnet6) {
+      if (addr_inside(a, &localnet6, &localmask6))
+         return 1;
    }
    return 0;
 }

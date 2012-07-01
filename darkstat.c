@@ -438,7 +438,9 @@ main(int argc, char **argv)
    graph_init();
    hosts_db_init();
    if (import_fn != NULL) db_import(import_fn);
-   localip_init(opt_interface);
+
+   local_ips = localip_make();
+   localip_update(opt_interface, local_ips);
 
    if (signal(SIGTERM, sig_shutdown) == SIG_ERR)
       errx(1, "signal(SIGTERM) failed");
@@ -511,6 +513,7 @@ main(int argc, char **argv)
    if (daylog_fn != NULL) daylog_free();
    ncache_free();
    if (pid_fn) pidfile_unlink();
+   localip_free(local_ips);
    verbosef("shut down");
    return (EXIT_SUCCESS);
 }
