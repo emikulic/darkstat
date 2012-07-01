@@ -265,16 +265,12 @@ acct_for(const struct pktsummary * const sm)
       }
       break;
 
-   case IPPROTO_ICMP:
-   case IPPROTO_ICMPV6:
-   case IPPROTO_AH:
-   case IPPROTO_ESP:
-   case IPPROTO_OSPF:
-      /* known protocol, don't complain about it */
+   case IPPROTO_INVALID:
+      /* proto decoding failed, don't complain in accounting */
       break;
 
    default:
-      verbosef("unknown IP proto (%04x)", sm->proto);
+      verbosef("acct_for: unknown IP protocol 0x%02x", sm->proto);
    }
 }
 

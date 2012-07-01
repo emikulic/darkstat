@@ -423,7 +423,22 @@ decode_ipv6(const u_char *pdata, const uint32_t len, struct pktsummary *sm)
    sm->dst.family = IPv6;
    memcpy(&sm->dst.ip.v6, &hdr->ip6_dst, sizeof(sm->dst.ip.v6));
 
-   decode_ip_payload(pdata + IPV6_HDR_LEN, len - IPV6_HDR_LEN, sm);
+   /* Ignore this packet if it uses extension headers. */
+   switch (sm->proto) {
+      case 0: /* Hop-by-Hop Options */
+      case IPPROTO_NONE:
+      case IPPROTO_DSTOPTS:
+      case IPPROTO_ROUTING:
+      case IPPROTO_FRAGMENT:
+      case IPPROTO_AH:
+      case IPPROTO_ESP:
+      case 135: /* Mobility */
+         sm->proto = IPPROTO_INVALID; /* don't do accounting! */
+         return;
+
+      default:
+         decode_ip_payload(pdata + IPV6_HDR_LEN, len - IPV6_HDR_LEN, sm);
+   }
 }
 
 static void
@@ -458,11 +473,11 @@ decode_ip_payload(const u_char *pdata, const uint32_t len,
       }
 
       case IPPROTO_ICMP:
+      case IPPROTO_IGMP:
       case IPPROTO_ICMPV6:
-      case IPPROTO_AH:
-      case IPPROTO_ESP:
       case IPPROTO_OSPF:
          /* known protocol, don't complain about it */
+         sm->proto = IPPROTO_INVALID; /* also don't do accounting */
          break;
 
       default:
