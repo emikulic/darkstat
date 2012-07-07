@@ -7,11 +7,13 @@
  * GNU General Public License version 2. (see COPYING.GPL)
  */
 
+#include "acct.h"
 #include "cdefs.h"
 #include "cap.h"
 #include "config.h"
 #include "conv.h"
 #include "decode.h"
+#include "err.h"
 #include "hosts_db.h"
 #include "localip.h"
 #include "opt.h"
@@ -24,7 +26,7 @@
 # include <sys/filio.h> /* Solaris' FIONBIO hides here */
 #endif
 #include <assert.h>
-#include "err.h"
+#include <pcap.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -89,8 +91,8 @@ cap_init(const char *device, const char *filter, int promisc)
    linkhdr = getlinkhdr(linktype);
    if (linkhdr == NULL)
       errx(1, "unknown linktype %d", linktype);
-   if (linkhdr->handler == NULL)
-      errx(1, "no handler for linktype %d", linktype);
+   if (linkhdr->decoder == NULL)
+      errx(1, "no decoder for linktype %d", linktype);
    snaplen = getsnaplen(linkhdr);
    if (opt_want_pppoe) {
       snaplen += PPPOE_HDR_LEN;
@@ -251,10 +253,9 @@ hexdump(const u_char *buf, const uint32_t len)
       if (col == 0) printf(" ");
       printf("%02x", buf[i]);
       if (i+1 == linkhdr->hdrlen)
-         printf("[");
-      else if (i+1 == linkhdr->hdrlen + IP_HDR_LEN)
-         printf("]");
-      else printf(" ");
+         printf("|"); /* marks end of link headers (e.g. ethernet) */
+      else
+         printf(" ");
       col += 3;
       if (col >= 72) {
          printf("\n");
@@ -265,15 +266,20 @@ hexdump(const u_char *buf, const uint32_t len)
    printf("\n");
 }
 
-/*
- * Callback function for pcap_dispatch() which chains to the decoder specified
+/* Callback function for pcap_dispatch() which chains to the decoder specified
  * in linkhdr struct.
  */
-static void
-callback(u_char *user, const struct pcap_pkthdr *h, const u_char *bytes)
-{
-   if (opt_want_hexdump) hexdump(bytes, h->caplen);
-   linkhdr->handler(user, h, bytes);
+static void callback(u_char *user _unused_,
+                     const struct pcap_pkthdr *pheader,
+                     const u_char *pdata) {
+   struct pktsummary sm;
+
+   if (opt_want_hexdump)
+      hexdump(pdata, pheader->caplen);
+   memset(&sm, 0, sizeof(sm));
+   sm.time = pheader->ts.tv_sec;
+   if (linkhdr->decoder(pheader, pdata, &sm))
+      acct_for(&sm);
 }
 
 /*
@@ -374,8 +380,8 @@ cap_from_file(const char *capfile, const char *filter)
    linkhdr = getlinkhdr(linktype);
    if (linkhdr == NULL)
       errx(1, "unknown linktype %d", linktype);
-   if (linkhdr->handler == NULL)
-      errx(1, "no handler for linktype %d", linktype);
+   if (linkhdr->decoder == NULL)
+      errx(1, "no decoder for linktype %d", linktype);
    if (linktype == DLT_EN10MB) /* FIXME: impossible with capfile? */
       hosts_db_show_macs = 1;
 

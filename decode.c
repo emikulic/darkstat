@@ -11,8 +11,6 @@
  */
 
 #include "cdefs.h"
-#include "acct.h"
-#include "cap.h"
 #include "decode.h"
 #include "err.h"
 #include "opt.h"
@@ -63,36 +61,42 @@
 #include <netinet/tcp.h> /* struct tcphdr */
 #include <netinet/udp.h> /* struct udphdr */
 
+#define PPP_HDR_LEN     4
+#define FDDI_HDR_LEN    21
+#define IP_HDR_LEN      sizeof(struct ip)
+#define IPV6_HDR_LEN    sizeof(struct ip6_hdr)
+#define TCP_HDR_LEN     sizeof(struct tcphdr)
+#define UDP_HDR_LEN     sizeof(struct udphdr)
+#define NULL_HDR_LEN    4
+#define SLL_HDR_LEN     16
+#define RAW_HDR_LEN     0
+
 #ifndef IPV6_VERSION
-#define IPV6_VERSION 0x60
+# define IPV6_VERSION 0x60
 #endif
 
 #ifndef IPV6_VERSION_MASK
-#define IPV6_VERSION_MASK 0xf0
+# define IPV6_VERSION_MASK 0xF0
 #endif
 
-static void decode_ether(u_char *, const struct pcap_pkthdr *,
-   const u_char *);
-static void decode_loop(u_char *, const struct pcap_pkthdr *,
-   const u_char *);
-static void decode_null(u_char *, const struct pcap_pkthdr *,
-   const u_char *);
-static void decode_ppp(u_char *, const struct pcap_pkthdr *,
-   const u_char *);
-static void decode_pppoe(u_char *, const struct pcap_pkthdr *,
-   const u_char *);
-static void decode_pppoe_real(const u_char *pdata, const uint32_t len,
-   struct pktsummary *sm);
+static int decode_ether(DECODER_ARGS);
+static int decode_loop(DECODER_ARGS);
+static int decode_null(DECODER_ARGS);
+static int decode_ppp(DECODER_ARGS);
+static int decode_pppoe(DECODER_ARGS);
 #ifdef DLT_LINUX_SLL
-static void decode_linux_sll(u_char *, const struct pcap_pkthdr *,
-   const u_char *);
+static int decode_linux_sll(DECODER_ARGS);
 #endif
-static void decode_raw(u_char *, const struct pcap_pkthdr *,
-   const u_char *);
-static int decode_ip(const u_char *pdata, const uint32_t len,
-   struct pktsummary *sm);
-static int decode_ipv6(const u_char *pdata, const uint32_t len,
-   struct pktsummary *sm);
+static int decode_raw(DECODER_ARGS);
+
+#define HELPER_ARGS const u_char *pdata, \
+                    const uint32_t len, \
+                    struct pktsummary *sm
+
+static int helper_pppoe(HELPER_ARGS);
+static int helper_ip(HELPER_ARGS);
+static int helper_ipv6(HELPER_ARGS);
+static void helper_ip_deeper(HELPER_ARGS); /* protocols like TCP/UDP */
 
 /* Link-type header information */
 static const struct linkhdr linkhdrs[] = {
@@ -113,218 +117,130 @@ static const struct linkhdr linkhdrs[] = {
    { -1, 0, NULL }
 };
 
-/*
- * Returns a pointer to the linkhdr record matching the given linktype, or
+/* Returns a pointer to the linkhdr record matching the given linktype, or
  * NULL if no matching entry found.
  */
-const struct linkhdr *
-getlinkhdr(const int linktype)
-{
+const struct linkhdr *getlinkhdr(const int linktype) {
    size_t i;
 
    for (i=0; linkhdrs[i].linktype != -1; i++)
       if (linkhdrs[i].linktype == linktype)
          return (&(linkhdrs[i]));
-   return (NULL);
+   return NULL;
 }
 
-/*
- * Returns the minimum snaplen needed to decode everything up to the TCP/UDP
- * packet headers.  The IPv6 header is normative.  The argument lh is not
- * allowed to be NULL.
+/* Returns the minimum snaplen needed to decode everything up to and including
+ * the TCP/UDP packet headers.
  */
-int
-getsnaplen(const struct linkhdr *lh)
-{
+int getsnaplen(const struct linkhdr *lh) {
    return (int)(lh->hdrlen + IPV6_HDR_LEN + MAX(TCP_HDR_LEN, UDP_HDR_LEN));
 }
 
-/* Decoding functions. */
-static void
-decode_ether(u_char *user _unused_,
-      const struct pcap_pkthdr *pheader,
-      const u_char *pdata)
-{
+static int decode_ether(DECODER_ARGS) {
    u_short type;
    const struct ether_header *hdr = (const struct ether_header *)pdata;
-   struct pktsummary sm;
-   memset(&sm, 0, sizeof(sm));
-   sm.time = pheader->ts.tv_sec;
 
    if (pheader->caplen < ETHER_HDR_LEN) {
       verbosef("ether: packet too short (%u bytes)", pheader->caplen);
-      return;
+      return 0;
    }
-
 #ifdef __sun
-   memcpy(sm.src_mac, hdr->ether_shost.ether_addr_octet, sizeof(sm.src_mac));
-   memcpy(sm.dst_mac, hdr->ether_dhost.ether_addr_octet, sizeof(sm.dst_mac));
+   memcpy(sm->src_mac, hdr->ether_shost.ether_addr_octet, sizeof(sm->src_mac));
+   memcpy(sm->dst_mac, hdr->ether_dhost.ether_addr_octet, sizeof(sm->dst_mac));
 #else
-   memcpy(sm.src_mac, hdr->ether_shost, sizeof(sm.src_mac));
-   memcpy(sm.dst_mac, hdr->ether_dhost, sizeof(sm.dst_mac));
+   memcpy(sm->src_mac, hdr->ether_shost, sizeof(sm->src_mac));
+   memcpy(sm->dst_mac, hdr->ether_dhost, sizeof(sm->dst_mac));
 #endif
-
-   type = ntohs( hdr->ether_type );
+   type = ntohs(hdr->ether_type);
    switch (type) {
-   case ETHERTYPE_IP:
-   case ETHERTYPE_IPV6:
-      if (!opt_want_pppoe) {
-         if (decode_ip(pdata + ETHER_HDR_LEN,
-                       pheader->caplen - ETHER_HDR_LEN, &sm)) {
-            acct_for(&sm);
-         }
-      } else
+      case ETHERTYPE_IP:
+      case ETHERTYPE_IPV6:
+         if (!opt_want_pppoe)
+            return helper_ip(pdata + ETHER_HDR_LEN,
+                             pheader->caplen - ETHER_HDR_LEN,
+                             sm);
          verbosef("ether: discarded IP packet, expecting PPPoE instead");
-      break;
-   case ETHERTYPE_ARP:
-      /* known protocol, don't complain about it. */
-      break;
-   case ETHERTYPE_PPPOE:
-      if (opt_want_pppoe)
-         decode_pppoe_real(pdata + ETHER_HDR_LEN,
-                           pheader->caplen - ETHER_HDR_LEN, &sm);
-      else
+         return 0;
+      case ETHERTYPE_PPPOE:
+         if (opt_want_pppoe)
+            return helper_pppoe(pdata + ETHER_HDR_LEN,
+                                pheader->caplen - ETHER_HDR_LEN,
+                                sm);
          verbosef("ether: got PPPoE frame: maybe you want --pppoe");
-      break;
-   default:
-      verbosef("ether: unknown protocol (0x%04x)", type);
+         return 0;
+      case ETHERTYPE_ARP:
+         /* known protocol, don't complain about it. */
+         return 0;
+      default:
+         verbosef("ether: unknown protocol (0x%04x)", type);
+         return 0;
    }
 }
 
 /* Very similar to decode_null, except on OpenBSD we need to think
  * about family endianness.
  */
-static void
-decode_loop(u_char *user _unused_,
-      const struct pcap_pkthdr *pheader,
-      const u_char *pdata)
-{
+static int decode_loop(DECODER_ARGS) {
    uint32_t family;
-   struct pktsummary sm;
-   memset(&sm, 0, sizeof(sm));
-   sm.time = pheader->ts.tv_sec;
 
    if (pheader->caplen < NULL_HDR_LEN) {
       verbosef("loop: packet too short (%u bytes)", pheader->caplen);
-      return;
+      return 0;
    }
    family = *(const uint32_t *)pdata;
 #ifdef __OpenBSD__
    family = ntohl(family);
 #endif
-   if (family == AF_INET) {
-      if (decode_ip(pdata + NULL_HDR_LEN,
-                    pheader->caplen - NULL_HDR_LEN, &sm)) {
-         acct_for(&sm);
-      }
-   }
-   else if (family == AF_INET6) {
-      if (decode_ipv6(pdata + NULL_HDR_LEN,
-                      pheader->caplen - NULL_HDR_LEN, &sm)) {
-         acct_for(&sm);
-      }
-   }
-   else
-      verbosef("loop: unknown family (%x)", family);
+   if (family == AF_INET)
+      return helper_ip(pdata + NULL_HDR_LEN,
+                       pheader->caplen - NULL_HDR_LEN, sm);
+   if (family == AF_INET6)
+      return helper_ipv6(pdata + NULL_HDR_LEN,
+                         pheader->caplen - NULL_HDR_LEN, sm);
+   verbosef("loop: unknown family (0x%04x)", family);
+   return 0;
 }
 
-static void
-decode_null(u_char *user _unused_,
-      const struct pcap_pkthdr *pheader,
-      const u_char *pdata)
-{
+static int decode_null(DECODER_ARGS) {
    uint32_t family;
-   struct pktsummary sm;
-   memset(&sm, 0, sizeof(sm));
-   sm.time = pheader->ts.tv_sec;
 
    if (pheader->caplen < NULL_HDR_LEN) {
       verbosef("null: packet too short (%u bytes)", pheader->caplen);
-      return;
+      return 0;
    }
    family = *(const uint32_t *)pdata;
-   if (family == AF_INET) {
-      if (decode_ip(pdata + NULL_HDR_LEN,
-                    pheader->caplen - NULL_HDR_LEN, &sm)) {
-         acct_for(&sm);
-      }
-   }
-   else if (family == AF_INET6) {
-      if (decode_ipv6(pdata + NULL_HDR_LEN,
-                      pheader->caplen - NULL_HDR_LEN, &sm)) {
-         acct_for(&sm);
-      }
-   }
-   else
-      verbosef("null: unknown family (%x)", family);
+   if (family == AF_INET)
+      return helper_ip(pdata + NULL_HDR_LEN,
+                       pheader->caplen - NULL_HDR_LEN,
+                       sm);
+   if (family == AF_INET6)
+      return helper_ipv6(pdata + NULL_HDR_LEN,
+                         pheader->caplen - NULL_HDR_LEN,
+                         sm);
+   verbosef("null: unknown family (0x%04x)", family);
+   return 0;
 }
 
-static void
-decode_ppp(u_char *user _unused_,
-      const struct pcap_pkthdr *pheader,
-      const u_char *pdata)
-{
-   struct pktsummary sm;
-   memset(&sm, 0, sizeof(sm));
-   sm.time = pheader->ts.tv_sec;
-
+static int decode_ppp(DECODER_ARGS) {
    if (pheader->caplen < PPPOE_HDR_LEN) {
       verbosef("ppp: packet too short (%u bytes)", pheader->caplen);
-      return;
+      return 0;
    }
-
-   if (pdata[2] == 0x00 && pdata[3] == 0x21) {
-      if (decode_ip(pdata + PPP_HDR_LEN, pheader->caplen - PPP_HDR_LEN, &sm)) {
-         acct_for(&sm);
-      }
-   } else
-      verbosef("non-IP PPP packet; ignoring.");
+   if (pdata[2] == 0x00 && pdata[3] == 0x21)
+      return helper_ip(pdata + PPP_HDR_LEN,
+                       pheader->caplen - PPP_HDR_LEN,
+                       sm);
+   verbosef("ppp: non-IP PPP packet; ignoring.");
+   return 0;
 }
 
-static void
-decode_pppoe(u_char *user _unused_,
-      const struct pcap_pkthdr *pheader,
-      const u_char *pdata)
-{
-   struct pktsummary sm;
-   memset(&sm, 0, sizeof(sm));
-   sm.time = pheader->ts.tv_sec;
-   decode_pppoe_real(pdata, pheader->caplen, &sm);
-}
-
-static void
-decode_pppoe_real(const u_char *pdata, const uint32_t len,
-   struct pktsummary *sm)
-{
-   if (len < PPPOE_HDR_LEN) {
-      verbosef("pppoe: packet too short (%u bytes)", len);
-      return;
-   }
-
-   if (pdata[1] != 0x00) {
-      verbosef("pppoe: code = 0x%02x, expecting 0; ignoring.", pdata[1]);
-      return;
-   }
-
-   if ((pdata[6] == 0xc0) && (pdata[7] == 0x21)) return; /* LCP */
-   if ((pdata[6] == 0xc0) && (pdata[7] == 0x25)) return; /* LQR */
-
-   if ((pdata[6] == 0x00) && (pdata[7] == 0x21)) {
-      if (decode_ip(pdata + PPPOE_HDR_LEN, len - PPPOE_HDR_LEN, sm)) {
-         acct_for(sm);
-      }
-   } else
-      verbosef("pppoe: non-IP PPPoE packet (0x%02x%02x); ignoring.",
-         pdata[6], pdata[7]);
+static int decode_pppoe(DECODER_ARGS) {
+   return helper_pppoe(pdata, pheader->caplen, sm);
 }
 
 #ifdef DLT_LINUX_SLL
 /* very similar to decode_ether ... */
-static void
-decode_linux_sll(u_char *user _unused_,
-      const struct pcap_pkthdr *pheader,
-      const u_char *pdata)
-{
+static int decode_linux_sll(DECODER_ARGS) {
    const struct sll_header {
       uint16_t packet_type;
       uint16_t device_type;
@@ -334,60 +250,63 @@ decode_linux_sll(u_char *user _unused_,
       uint16_t ether_type;
    } *hdr = (const struct sll_header *)pdata;
    u_short type;
-   struct pktsummary sm;
-   memset(&sm, 0, sizeof(sm));
-   sm.time = pheader->ts.tv_sec;
 
    if (pheader->caplen < SLL_HDR_LEN) {
       verbosef("linux_sll: packet too short (%u bytes)", pheader->caplen);
-      return;
+      return 0;
    }
-
    type = ntohs(hdr->ether_type);
    switch (type) {
    case ETHERTYPE_IP:
    case ETHERTYPE_IPV6:
-      if (decode_ip(pdata + SLL_HDR_LEN, pheader->caplen - SLL_HDR_LEN, &sm)) {
-         acct_for(&sm);
-      }
-      break;
+      return helper_ip(pdata + SLL_HDR_LEN,
+                       pheader->caplen - SLL_HDR_LEN,
+                       sm);
    case ETHERTYPE_ARP:
       /* known protocol, don't complain about it. */
-      break;
+      return 0;
    default:
-      verbosef("linux_sll: unknown protocol (%04x)", type);
+      verbosef("linux_sll: unknown protocol (0x%04x)", type);
+      return 0;
    }
 }
-#endif
+#endif /* DLT_LINUX_SLL */
 
-static void
-decode_raw(u_char *user _unused_,
-      const struct pcap_pkthdr *pheader,
-      const u_char *pdata)
-{
-   struct pktsummary sm;
-   memset(&sm, 0, sizeof(sm));
-   sm.time = pheader->ts.tv_sec;
-
-   if (decode_ip(pdata, pheader->caplen, &sm))
-      acct_for(&sm);
+static int decode_raw(DECODER_ARGS) {
+   return helper_ip(pdata, pheader->caplen, sm);
 }
 
-static void decode_ip_payload(const u_char *pdata, const uint32_t len,
-      struct pktsummary *sm);
+static int helper_pppoe(HELPER_ARGS) {
+   if (len < PPPOE_HDR_LEN) {
+      verbosef("pppoe: packet too short (%u bytes)", len);
+      return 0;
+   }
 
-static int
-decode_ip(const u_char *pdata, const uint32_t len, struct pktsummary *sm)
-{
+   if (pdata[1] != 0x00) {
+      verbosef("pppoe: code = 0x%02x, expecting 0; ignoring.", pdata[1]);
+      return 0;
+   }
+
+   if ((pdata[6] == 0xc0) && (pdata[7] == 0x21)) return 0; /* LCP */
+   if ((pdata[6] == 0xc0) && (pdata[7] == 0x25)) return 0; /* LQR */
+
+   if ((pdata[6] == 0x00) && (pdata[7] == 0x21))
+      return helper_ip(pdata + PPPOE_HDR_LEN, len - PPPOE_HDR_LEN, sm);
+
+   verbosef("pppoe: ignoring non-IP PPPoE packet (0x%02x%02x)",
+            pdata[6], pdata[7]);
+   return 0;
+}
+
+static int helper_ip(HELPER_ARGS) {
    const struct ip *hdr = (const struct ip *)pdata;
 
-   if (hdr->ip_v == 6) {
-      /* Redirect parsing of IPv6 packets. */
-      return decode_ipv6(pdata, len, sm);
-   }
    if (len < IP_HDR_LEN) {
       verbosef("ip: packet too short (%u bytes)", len);
       return 0;
+   }
+   if (hdr->ip_v == 6) {
+      return helper_ipv6(pdata, len, sm);
    }
    if (hdr->ip_v != 4) {
       verbosef("ip: version %d (expecting 4 or 6)", hdr->ip_v);
@@ -403,37 +322,34 @@ decode_ip(const u_char *pdata, const uint32_t len, struct pktsummary *sm)
    sm->dst.family = IPv4;
    sm->dst.ip.v4 = hdr->ip_dst.s_addr;
 
-   decode_ip_payload(pdata + IP_HDR_LEN, len - IP_HDR_LEN, sm);
+   helper_ip_deeper(pdata + IP_HDR_LEN, len - IP_HDR_LEN, sm);
    return 1;
 }
 
-static int
-decode_ipv6(const u_char *pdata, const uint32_t len, struct pktsummary *sm)
-{
+static int helper_ipv6(HELPER_ARGS) {
    const struct ip6_hdr *hdr = (const struct ip6_hdr *)pdata;
 
    if (len < IPV6_HDR_LEN) {
       verbosef("ipv6: packet too short (%u bytes)", len);
       return 0;
    }
-
    if ((hdr->ip6_vfc & IPV6_VERSION_MASK) != IPV6_VERSION) {
       verbosef("ipv6: bad version (%02x, expecting %02x)",
-         hdr->ip6_vfc & IPV6_VERSION_MASK,
-         IPV6_VERSION);
+               hdr->ip6_vfc & IPV6_VERSION_MASK, IPV6_VERSION);
       return 0;
    }
 
+   /* IPv4 has "total length," but IPv6 has "payload length" which doesn't
+    * count the header bytes.
+    */
    sm->len = ntohs(hdr->ip6_plen) + IPV6_HDR_LEN;
    sm->proto = hdr->ip6_nxt;
-
    sm->src.family = IPv6;
    memcpy(&sm->src.ip.v6, &hdr->ip6_src, sizeof(sm->src.ip.v6));
-
    sm->dst.family = IPv6;
    memcpy(&sm->dst.ip.v6, &hdr->ip6_dst, sizeof(sm->dst.ip.v6));
 
-   /* Ignore this packet if it uses extension headers. */
+   /* Don't do proto accounting if this packet uses extension headers. */
    switch (sm->proto) {
       case 0: /* Hop-by-Hop Options */
       case IPPROTO_NONE:
@@ -443,19 +359,20 @@ decode_ipv6(const u_char *pdata, const uint32_t len, struct pktsummary *sm)
       case IPPROTO_AH:
       case IPPROTO_ESP:
       case 135: /* Mobility */
-         sm->proto = IPPROTO_INVALID; /* don't do proto accounting! */
+         sm->proto = IPPROTO_INVALID;
          return 1; /* but we have addresses, so host accounting is ok */
 
       default:
-         decode_ip_payload(pdata + IPV6_HDR_LEN, len - IPV6_HDR_LEN, sm);
+         helper_ip_deeper(pdata + IPV6_HDR_LEN, len - IPV6_HDR_LEN, sm);
          return 1;
    }
 }
 
-static void
-decode_ip_payload(const u_char *pdata, const uint32_t len,
-      struct pktsummary *sm)
-{
+static void helper_ip_deeper(HELPER_ARGS) {
+   /* At this stage we have IP addresses so we can do host accounting.
+    * If proto decode fails, we set IPPROTO_INVALID to skip proto accounting.
+    * We don't need to "return 0" like other helpers.
+    */
    switch (sm->proto) {
       case IPPROTO_TCP: {
          const struct tcphdr *thdr = (const struct tcphdr *)pdata;
@@ -468,7 +385,7 @@ decode_ip_payload(const u_char *pdata, const uint32_t len,
          sm->dst_port = ntohs(thdr->th_dport);
          sm->tcp_flags = thdr->th_flags &
             (TH_FIN|TH_SYN|TH_RST|TH_PUSH|TH_ACK|TH_URG);
-         break;
+         return;
       }
 
       case IPPROTO_UDP: {
@@ -480,7 +397,7 @@ decode_ip_payload(const u_char *pdata, const uint32_t len,
          }
          sm->src_port = ntohs(uhdr->uh_sport);
          sm->dst_port = ntohs(uhdr->uh_dport);
-         break;
+         return;
       }
 
       case IPPROTO_ICMP:
@@ -492,7 +409,7 @@ decode_ip_payload(const u_char *pdata, const uint32_t len,
          break;
 
       default:
-         verbosef("ip_payload: unknown protocol %d", sm->proto);
+         verbosef("ip_deeper: unknown protocol 0x%02x", sm->proto);
    }
 }
 
