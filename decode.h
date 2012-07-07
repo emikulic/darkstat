@@ -27,7 +27,6 @@
 struct pktsummary {
    /* Fields are in host byte order (except IPs) */
    struct addr src, dst;
-   time_t time;
    uint16_t len;
    uint8_t proto; /* IPPROTO_INVALID means don't do proto accounting */
    uint8_t tcp_flags;           /* only for TCP */

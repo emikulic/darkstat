@@ -277,7 +277,6 @@ static void callback(u_char *user _unused_,
    if (opt_want_hexdump)
       hexdump(pdata, pheader->caplen);
    memset(&sm, 0, sizeof(sm));
-   sm.time = pheader->ts.tv_sec;
    if (linkhdr->decoder(pheader, pdata, &sm))
       acct_for(&sm);
 }
