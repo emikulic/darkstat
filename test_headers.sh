@@ -14,6 +14,7 @@ check_deps() {
   files=`ls *.h | fgrep -v -e graphjs.h -e stylecss.h`
 
   for f in $files; do
+    echo " * $f"
     cat >$src <<EOF
 #include "$f"
 void test_hdr_do_nothing(void) { }
