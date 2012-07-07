@@ -31,9 +31,10 @@ void str_appendstr(struct str *buf, const struct str *s);
 
 #ifdef __GNUC__
 /* amusing efficiency hack */
-#include <string.h>
-#define str_append(buf, s) str_appendn(buf, s, \
-    (__builtin_constant_p(s) ? sizeof(s)-1 : strlen(s)) )
+# include <string.h>
+# define str_append(buf, s) \
+   str_appendn(buf, s, \
+               (__builtin_constant_p(s) ? sizeof(s)-1 : strlen(s)) )
 #else
 void str_append(struct str *buf, const char *s);
 #endif
@@ -41,7 +42,10 @@ void str_append(struct str *buf, const char *s);
 size_t xvasprintf(char **result, const char *format, va_list va);
 size_t xasprintf(char **result, const char *format, ...);
 void str_appendf(struct str *buf, const char *format, ...);
+void str_vappendf(struct str *s, const char *format, va_list va);
 
 struct str *length_of_time(const time_t t);
+ssize_t str_write(const struct str * const buf, const int fd);
+size_t str_len(const struct str * const buf);
 
 /* vim:set ts=3 sw=3 tw=78 expandtab: */

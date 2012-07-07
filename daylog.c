@@ -12,6 +12,7 @@
 #include <sys/types.h>
 #include <assert.h>
 #include <fcntl.h>
+#include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -54,40 +55,44 @@ tomorrow(const time_t today)
    return mktime(&tm);
 }
 
-static int
-daylog_open(void)
-{
-   return open(daylog_fn, O_WRONLY | O_APPEND | O_CREAT | O_NOFOLLOW, 0600);
-}
-
-static void
-daylog_emit(void)
-{
-   int fd = daylog_open();
-
-   if (fd != -1) {
-      struct str *buf = str_make();
-      char *s;
-      size_t len;
-      str_appendf(buf, "%s|%u|%qu|%qu|%qu|%qu\n",
-         fmt_date(today_time), (unsigned int)today_time,
-         bytes_in, bytes_out, pkts_in, pkts_out);
-      str_extract(buf, &len, &s);
-
-      (void)write(fd, s, len); /* ignore write errors */
-      close(fd);
-      free(s);
-   }
-}
-
-void
-daylog_init(const char *filename)
-{
+/* Warns on error. */
+static void daylog_write(const char *format, ...) {
    int fd;
+   ssize_t wr;
+   va_list va;
    struct str *buf;
-   char *s;
-   size_t len;
 
+   assert(daylog_fn != NULL);
+   fd = open(daylog_fn, O_WRONLY | O_APPEND | O_CREAT | O_NOFOLLOW, 0600);
+   if (fd == -1) {
+      warn("daylog_write: couldn't open '%s' for append", daylog_fn);
+      return;
+   }
+
+   buf = str_make();
+   va_start(va, format);
+   str_vappendf(buf, format, va);
+   va_end(va);
+
+   wr = str_write(buf, fd);
+   if (wr == -1)
+      warn("daylog_write: couldn't write to '%s'", daylog_fn);
+   else if (wr != (ssize_t)str_len(buf))
+      warnx("daylog_write: truncated write to '%s': wrote %d of %d bytes",
+           daylog_fn,
+           (int)wr,
+           (int)str_len(buf));
+   close(fd);
+   str_free(buf);
+}
+
+static void daylog_emit(void) {
+   daylog_write("%s|%u|%qu|%qu|%qu|%qu\n",
+                fmt_date(today_time), (unsigned int)today_time,
+                bytes_in, bytes_out, pkts_in, pkts_out);
+}
+
+void daylog_init(const char *filename) {
    daylog_fn = filename;
    today_time = time(NULL);
    tomorrow_time = tomorrow(today_time);
@@ -95,57 +100,28 @@ daylog_init(const char *filename)
       (unsigned int)today_time, (unsigned int)tomorrow_time);
    bytes_in = bytes_out = pkts_in = pkts_out = 0;
 
-   fd = daylog_open();
-   if (fd == -1)
-      err(1, "couldn't open(\"%s\") for append", filename);
-
-   buf = str_make();
-   str_appendf(buf, "# logging started at %s (%u)\n",
-      fmt_date(today_time), (unsigned int)today_time);
-   str_extract(buf, &len, &s);
-   (void)write(fd, s, len); /* ignore write errors */
-   close(fd);
-   free(s);
+   daylog_write("# logging started at %s (%u)\n",
+                fmt_date(today_time), (unsigned int)today_time);
 }
 
-void daylog_free(void)
-{
-   int fd;
-   struct str *buf;
-   char *s;
-   size_t len;
-
+void daylog_free(void) {
    today_time = time(NULL);
-
-   /* Emit what's currently accumulated. */
-   daylog_emit();
-
-   fd = daylog_open();
-   if (fd == -1) return;
-
-   buf = str_make();
-   str_appendf(buf, "# logging stopped at %s (%u)\n",
-      fmt_date(today_time), (unsigned int)today_time);
-   str_extract(buf, &len, &s);
-   (void)write(fd, s, len); /* ignore write errors */
-   close(fd);
-   free(s);
+   daylog_emit(); /* Emit what's currently accumulated before we exit. */
+   daylog_write("# logging stopped at %s (%u)\n",
+                fmt_date(today_time), (unsigned int)today_time);
 }
 
-void
-daylog_acct(uint64_t amount, enum graph_dir dir)
-{
+void daylog_acct(uint64_t amount, enum graph_dir dir) {
    if (daylog_fn == NULL) return; /* disabled */
 
-   /* Check if we need to rotate. */
+   /* Check if we need to update the log. */
    if (now >= tomorrow_time) {
       daylog_emit();
 
       today_time = now;
       tomorrow_time = tomorrow(today_time);
       bytes_in = bytes_out = pkts_in = pkts_out = 0;
-      verbosef("rotated daylog, tomorrow = %u",
-         (unsigned int)tomorrow_time);
+      verbosef("updated daylog, tomorrow = %u", (unsigned int)tomorrow_time);
    }
 
    /* Accounting. */

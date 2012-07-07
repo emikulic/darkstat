@@ -16,14 +16,15 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include "conv.h"
+#include "err.h"
+#include "str.h"
+
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h> /* for uint32_t on Linux and OS X */
-
-#include "conv.h"
-#include "err.h"
-#include "str.h"
+#include <unistd.h>
 
 #define INITIAL_LEN 1024
 
@@ -226,9 +227,7 @@ str_append_hex8(struct str *s, const uint8_t b)
  *
  * %x is equivalent to %02x and expects a uint8_t
  */
-static void
-str_vappendf(struct str *s, const char *format, va_list va)
-{
+void str_vappendf(struct str *s, const char *format, va_list va) {
    size_t pos, len;
    len = strlen(format);
 
@@ -354,6 +353,14 @@ length_of_time(const time_t t)
    str_appendf(buf, "%d %s", secs, (secs==1)?"sec":"secs");
 
    return buf;
+}
+
+ssize_t str_write(const struct str * const buf, const int fd) {
+   return write(fd, buf->buf, buf->len);
+}
+
+size_t str_len(const struct str * const buf) {
+   return buf->len;
 }
 
 /* vim:set ts=3 sw=3 tw=78 expandtab: */
