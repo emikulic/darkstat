@@ -397,17 +397,9 @@ static void callback(u_char *user,
 
 /* Process any packets currently in the capture buffer. */
 void cap_poll(fd_set *read_set _unused_on_linux_) {
-   int ret, premature = 1;
    struct cap_iface *iface;
 
    STAILQ_FOREACH(iface, &cap_ifs, entries) {
-#ifndef linux /* We don't use select() on Linux. */
-      if (FD_ISSET(iface->fd, read_set))
-         premature = 0;
-      else
-         continue; /* skip this interface */
-#endif
-
       /* Once per capture poll, check our IP address.  It's used in accounting
        * for traffic graphs.
        */
@@ -415,6 +407,7 @@ void cap_poll(fd_set *read_set _unused_on_linux_) {
 
       for (;;) {
          struct timespec t;
+         int ret;
 
          timer_start(&t);
          ret = pcap_dispatch(
@@ -439,16 +432,12 @@ void cap_poll(fd_set *read_set _unused_on_linux_) {
          /* keep looping until we've dispatched all the outstanding packets */
          if (ret == 0)
             break;
-         else
-            premature = 0;
 #else
          /* we get them all on the first shot */
          break;
 #endif
       }
    }
-   if (premature)
-      verbosef("cap_poll() premature");
    cap_stats_update();
 }
 
