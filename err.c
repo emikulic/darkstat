@@ -29,7 +29,6 @@
 #include <string.h>
 #include <syslog.h>
 #include <unistd.h>
-#include <unistd.h>
 
 static void to_syslog(const char *type, const int want_err,
           const char *format, va_list va) _printflike_(3, 0);
