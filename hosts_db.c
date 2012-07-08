@@ -26,6 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h> /* memset(), strcmp() */
+#include <time.h>
 #include <unistd.h>
 
 int hosts_db_show_macs = 0;
@@ -236,7 +237,7 @@ make_func_host(const void *key)
    MAKE_BUCKET(b, h, host);
    h->addr = CASTKEY(struct addr);
    h->dns = NULL;
-   h->lastseen = 0;
+   h->last_seen_mono = 0;
    memset(&h->mac_addr, 0, sizeof(h->mac_addr));
    h->ports_tcp = NULL;
    h->ports_udp = NULL;
@@ -344,16 +345,15 @@ format_row_host(struct str *buf, const struct bucket *b,
       b->in, b->out, b->total);
 
    if (opt_want_lastseen) {
-      time_t last_t = b->u.host.lastseen;
+      long last = b->u.host.last_seen_mono;
       struct str *last_str = NULL;
 
-      if ((now >= last_t) && (last_t > 0))
-         last_str = length_of_time(now - last_t);
+      if ((now_mono() >= last) && (last > 0))
+         last_str = length_of_time(now_mono() - last);
 
-      str_append(buf,
-         " <td class=\"num\">");
+      str_append(buf, " <td class=\"num\">");
       if (last_str == NULL) {
-         if (last_t == 0)
+         if (last == 0)
             str_append(buf, "(never)");
          else
             str_append(buf, "(clock error)");
@@ -361,12 +361,10 @@ format_row_host(struct str *buf, const struct bucket *b,
          str_appendstr(buf, last_str);
          str_free(last_str);
       }
-      str_append(buf,
-         "</td>");
+      str_append(buf, "</td>");
    }
 
-   str_appendf(buf,
-      "</tr>\n");
+   str_appendf(buf, "</tr>\n");
 
    /* Only resolve hosts "on demand" */
    if (b->u.host.dns == NULL)
@@ -1024,14 +1022,12 @@ done:
 /* ---------------------------------------------------------------------------
  * Web interface: detailed view of a single host.
  */
-static struct str *
-html_hosts_detail(const char *ip)
-{
+static struct str *html_hosts_detail(const char *ip) {
    struct bucket *h;
    struct str *buf, *ls_len;
    char ls_when[100];
    const char *canonical;
-   time_t ls;
+   time_t last_real;
 
    h = host_search(ip);
    if (h == NULL)
@@ -1069,13 +1065,13 @@ html_hosts_detail(const char *ip)
       "<p>\n"
       "<b>Last seen:</b> ");
 
-   ls = h->u.host.lastseen;
+   last_real = mono_to_real(h->u.host.last_seen_mono);
    if (strftime(ls_when, sizeof(ls_when),
-      "%Y-%m-%d %H:%M:%S %Z%z", localtime(&ls)) != 0)
+      "%Y-%m-%d %H:%M:%S %Z%z", localtime(&last_real)) != 0)
          str_append(buf, ls_when);
 
-   if (h->u.host.lastseen <= now) {
-      ls_len = length_of_time(now - h->u.host.lastseen);
+   if (h->u.host.last_seen_mono <= now_mono()) {
+      ls_len = length_of_time(now_mono() - h->u.host.last_seen_mono);
       str_append(buf, " (");
       str_appendstr(buf, ls_len);
       str_free(ls_len);
@@ -1103,7 +1099,7 @@ html_hosts_detail(const char *ip)
    format_table(buf, h->u.host.ip_protos, 0,TOTAL,0);
 
    html_close(buf);
-   return (buf);
+   return buf;
 }
 
 /* ---------------------------------------------------------------------------
@@ -1263,7 +1259,7 @@ hosts_db_import_host(const int fd)
    if (ver > 1) {
       uint64_t t;
       if (!read64(fd, &t)) return 0;
-      host->u.host.lastseen = (time_t)t;
+      host->u.host.last_seen_mono = real_to_mono(t);
    }
 
    assert(sizeof(host->u.host.mac_addr) == 6);
@@ -1336,9 +1332,11 @@ int hosts_db_export(const int fd)
       if (!writen(fd, export_tag_host_ver3, sizeof(export_tag_host_ver3)))
          return 0;
 
-      if (!writeaddr(fd, &(b->u.host.addr))) return 0;
+      if (!writeaddr(fd, &(b->u.host.addr)))
+         return 0;
 
-      if (!write64(fd, (uint64_t)(b->u.host.lastseen))) return 0;
+      if (!write64(fd, (uint64_t)mono_to_real(b->u.host.last_seen_mono)))
+         return 0;
 
       assert(sizeof(b->u.host.mac_addr) == 6);
       if (!writen(fd, b->u.host.mac_addr, sizeof(b->u.host.mac_addr)))

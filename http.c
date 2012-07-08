@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <unistd.h>
 #include <zlib.h>
 
@@ -55,7 +56,7 @@ struct connection {
 
     int socket;
     struct sockaddr_storage client;
-    time_t last_active;
+    long last_active_mono;
     enum {
         RECV_REQUEST,          /* receiving request */
         SEND_HEADER_AND_REPLY, /* try to send header+reply together */
@@ -266,7 +267,7 @@ static struct connection *new_connection(void)
 
     conn->socket = -1;
     memset(&conn->client, 0, sizeof(conn->client));
-    conn->last_active = now;
+    conn->last_active_mono = now_mono();
     conn->request = NULL;
     conn->request_length = 0;
     conn->accept_gzip = 0;
@@ -363,13 +364,11 @@ static void free_connection(struct connection *conn)
  * buffer is returned for convenience.
  */
 #define DATE_LEN 30 /* strlen("Fri, 28 Feb 2003 00:02:08 GMT")+1 */
-static char *rfc1123_date(char *dest, const time_t when)
-{
-    time_t tmp = when;
+static char *rfc1123_date(char *dest, time_t when) {
     if (strftime(dest, DATE_LEN,
-        "%a, %d %b %Y %H:%M:%S %Z", gmtime(&tmp) ) == 0)
+        "%a, %d %b %Y %H:%M:%S %Z", gmtime(&when) ) == 0)
             errx(1, "strftime() failed [%s]", dest);
-    return (dest);
+    return dest;
 }
 
 static void generate_header(struct connection *conn,
@@ -397,7 +396,7 @@ static void generate_header(struct connection *conn,
         "\r\n"
         ,
         code, text,
-        rfc1123_date(date, now), server,
+        rfc1123_date(date, now_real()), server,
         conn->mime_type, conn->reply_length, conn->encoding,
         conn->header_extra);
     conn->http_code = code;
@@ -719,7 +718,7 @@ static void poll_recv_request(struct connection *conn)
         conn->state = DONE;
         return;
     }
-    conn->last_active = now;
+    conn->last_active_mono = now_mono();
 
     /* append to conn->request */
     conn->request = xrealloc(conn->request, conn->request_length+recvd+1);
@@ -772,7 +771,7 @@ static void poll_send_header_and_reply(struct connection *conn)
     iov[1].iov_len = conn->reply_length;
 
     sent = writev(conn->socket, iov, 2);
-    conn->last_active = now;
+    conn->last_active_mono = now_mono();
 
     /* handle any errors (-1) or closure (0) in send() */
     if (sent < 1) {
@@ -814,7 +813,7 @@ static void poll_send_header(struct connection *conn)
 
     sent = send(conn->socket, conn->header + conn->header_sent,
         conn->header_length - conn->header_sent, 0);
-    conn->last_active = now;
+    conn->last_active_mono = now_mono();
     dverbosef("poll_send_header(%d) sent %d bytes", conn->socket, (int)sent);
 
     /* handle any errors (-1) or closure (0) in send() */
@@ -850,7 +849,7 @@ static void poll_send_reply(struct connection *conn)
     sent = send(conn->socket,
         conn->reply + conn->reply_sent,
         conn->reply_length - conn->reply_sent, 0);
-    conn->last_active = now;
+    conn->last_active_mono = now_mono();
     dverbosef("poll_send_reply(%d) sent %d: [%d-%d] of %d",
         conn->socket, (int)sent,
         (int)conn->reply_sent,
@@ -1025,7 +1024,7 @@ http_fd_set(fd_set *recv_set, fd_set *send_set, int *max_fd,
 
     LIST_FOREACH_SAFE(conn, &connlist, entries, next)
     {
-        int idlefor = now - conn->last_active;
+        int idlefor = now_mono() - conn->last_active_mono;
 
         /* Time out dead connections. */
         if (idlefor >= idletime) {

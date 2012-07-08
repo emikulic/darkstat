@@ -63,6 +63,7 @@ localip.c \
 localip.h \
 ncache.c \
 ncache.h \
+now.c \
 now.h \
 opt.h \
 pidfile.c \

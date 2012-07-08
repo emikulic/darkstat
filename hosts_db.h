@@ -9,7 +9,7 @@
 #ifndef __DARKSTAT_HOSTS_DB_H
 #define __DARKSTAT_HOSTS_DB_H
 
-#include <sys/types.h> /* for time_t and uint64_t (esp on FreeBSD) */
+#include <sys/types.h> /* for uint64_t */
 
 #include "addr.h"
 
@@ -19,7 +19,7 @@ struct host {
    struct addr addr;
    char *dns;
    uint8_t mac_addr[6];
-   time_t lastseen;
+   long last_seen_mono;
    struct hashtable *ports_tcp, *ports_udp, *ip_protos;
 };
 

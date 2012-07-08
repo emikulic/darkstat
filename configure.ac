@@ -322,5 +322,7 @@ AC_SEARCH_LIBS(strlcat, [bsd],
 AC_CHECK_HEADERS(bsd/string.h)
 AC_CHECK_HEADERS(bsd/unistd.h)
 
+AC_SEARCH_LIBS(clock_gettime, rt)
+
 AC_CONFIG_FILES([Makefile darkstat.8])
 AC_OUTPUT

@@ -300,12 +300,10 @@ cap_poll(fd_set *read_set
    }
 #endif
 
-   /*
-    * Once per capture poll, check our IP address.  It's used in accounting
+   /* Once per capture poll, check our IP address.  It's used in accounting
     * for traffic graphs.
     */
    localip_update(opt_interface, local_ips);
-   /* FIXME: ^ this might run too often */
 
    total = 0;
    for (;;) {

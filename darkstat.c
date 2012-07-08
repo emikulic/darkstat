@@ -20,6 +20,7 @@
 #include "hosts_db.h"
 #include "localip.h"
 #include "ncache.h"
+#include "now.h"
 #include "pidfile.h"
 
 #include <assert.h>
@@ -32,9 +33,6 @@
 #include <syslog.h>
 #include <unistd.h>
 #include <pcap.h>
-
-#include "now.h"
-time_t now;
 
 #ifndef INADDR_NONE
 # define INADDR_NONE (-1) /* Solaris */
@@ -433,7 +431,7 @@ main(int argc, char **argv)
    privdrop(opt_chroot_dir, opt_privdrop_user);
 
    /* Don't need root privs for these: */
-   now = time(NULL);
+   now_init();
    if (daylog_fn != NULL) daylog_init(daylog_fn);
    graph_init();
    hosts_db_init();
@@ -459,7 +457,24 @@ main(int argc, char **argv)
       struct timeval timeout;
       fd_set rs, ws;
 
-      now = time(NULL);
+      FD_ZERO(&rs);
+      FD_ZERO(&ws);
+
+      cap_fd_set(&rs, &max_fd, &timeout, &use_timeout);
+      http_fd_set(&rs, &ws, &max_fd, &timeout, &use_timeout);
+
+      select_ret = select(max_fd+1, &rs, &ws, NULL,
+         (use_timeout) ? &timeout : NULL);
+      if (select_ret == 0 && !use_timeout)
+            errx(1, "select() erroneously timed out");
+      if (select_ret == -1) {
+         if (errno == EINTR)
+            continue;
+         else
+            err(1, "select()");
+      }
+
+      now_update();
 
       if (export_pending) {
          if (export_fn != NULL)
@@ -475,30 +490,10 @@ main(int argc, char **argv)
          reset_pending = 0;
       }
 
-      FD_ZERO(&rs);
-      FD_ZERO(&ws);
-
-      cap_fd_set(&rs, &max_fd, &timeout, &use_timeout);
-      http_fd_set(&rs, &ws, &max_fd, &timeout, &use_timeout);
-
-      select_ret = select(max_fd+1, &rs, &ws, NULL,
-         (use_timeout) ? &timeout : NULL);
-
-      if ((select_ret == 0) && (!use_timeout))
-            errx(1, "select() erroneously timed out");
-
-      if (select_ret == -1) {
-         if (errno == EINTR)
-            continue;
-         else
-            err(1, "select()");
-      }
-      else {
-         graph_rotate();
-         cap_poll(&rs);
-         dns_poll();
-         http_poll(&rs, &ws);
-      }
+      graph_rotate();
+      cap_poll(&rs);
+      dns_poll();
+      http_poll(&rs, &ws);
    }
 
    verbosef("shutting down");

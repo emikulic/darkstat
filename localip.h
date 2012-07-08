@@ -13,7 +13,7 @@
 
 struct local_ips {
    int is_valid;
-   time_t last_update;
+   long last_update_mono;
    int num_addrs;
    struct addr *addrs;
 };

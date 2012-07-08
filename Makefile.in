@@ -43,6 +43,7 @@ html.c		\
 http.c		\
 localip.c	\
 ncache.c	\
+now.c		\
 pidfile.c	\
 str.c
 
@@ -129,7 +130,7 @@ cap.o: cap.c acct.h cdefs.h cap.h config.h conv.h decode.h addr.h err.h \
 conv.o: conv.c conv.h err.h cdefs.h
 darkstat.o: darkstat.c acct.h cap.h cdefs.h config.h conv.h daylog.h \
  graph_db.h db.h dns.h err.h http.h hosts_db.h addr.h localip.h ncache.h \
- pidfile.h now.h
+ now.h pidfile.h
 daylog.o: daylog.c err.h cdefs.h daylog.h graph_db.h str.h now.h
 db.o: db.c cdefs.h err.h hosts_db.h addr.h graph_db.h db.h
 decode.o: decode.c cdefs.h decode.h addr.h err.h opt.h
@@ -144,7 +145,9 @@ hosts_sort.o: hosts_sort.c cdefs.h err.h hosts_db.h addr.h
 html.o: html.c config.h str.h html.h opt.h
 http.o: http.c cdefs.h config.h conv.h err.h graph_db.h hosts_db.h addr.h \
  http.h now.h queue.h str.h stylecss.h graphjs.h
-localip.o: localip.c addr.h config.h conv.h err.h cdefs.h localip.h bsd.h
+localip.o: localip.c addr.h bsd.h config.h conv.h err.h cdefs.h localip.h \
+ now.h
 ncache.o: ncache.c conv.h err.h cdefs.h ncache.h tree.h bsd.h config.h
+now.o: now.c err.h cdefs.h now.h
 pidfile.o: pidfile.c err.h cdefs.h str.h pidfile.h
 str.o: str.c conv.h err.h cdefs.h str.h

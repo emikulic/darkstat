@@ -23,6 +23,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h> /* for memcpy() */
+#include <time.h>
 
 #define GRAPH_WIDTH "320"
 #define GRAPH_HEIGHT "200"
@@ -46,63 +47,54 @@ static struct graph *graph_db[] = {
 };
 
 static unsigned int graph_db_size = sizeof(graph_db)/sizeof(*graph_db);
+static long start_mono, start_real, last_real;
 
-static time_t start_time, last_time;
-
-void
-graph_init(void)
-{
+void graph_init(void) {
    unsigned int i;
    for (i=0; i<graph_db_size; i++) {
       graph_db[i]->in  = xmalloc(sizeof(uint64_t) * graph_db[i]->num_bars);
       graph_db[i]->out = xmalloc(sizeof(uint64_t) * graph_db[i]->num_bars);
    }
-   start_time = time(NULL);
+   start_mono = now_mono();
+   start_real = now_real();
    graph_reset();
 }
 
-static void
-zero_graph(struct graph *g)
-{
+static void zero_graph(struct graph *g) {
    memset(g->in,  0, sizeof(uint64_t) * g->num_bars);
    memset(g->out, 0, sizeof(uint64_t) * g->num_bars);
 }
 
-void
-graph_reset(void)
-{
+void graph_reset(void) {
    unsigned int i;
+
    for (i=0; i<graph_db_size; i++)
       zero_graph(graph_db[i]);
-   last_time = 0;
+   last_real = 0;
 }
 
-void
-graph_free(void)
-{
+void graph_free(void) {
    unsigned int i;
+
    for (i=0; i<graph_db_size; i++) {
       free(graph_db[i]->in);
       free(graph_db[i]->out);
    }
 }
 
-void
-graph_acct(uint64_t amount, enum graph_dir dir)
-{
+void graph_acct(uint64_t amount, enum graph_dir dir) {
    unsigned int i;
    for (i=0; i<graph_db_size; i++)
-    switch (dir) {
-     case GRAPH_IN:  graph_db[i]->in[  graph_db[i]->pos ] += amount; break;
-     case GRAPH_OUT: graph_db[i]->out[ graph_db[i]->pos ] += amount; break;
-     default: errx(1, "unknown graph_dir in graph_acct: %d", dir);
-    }
+      if (dir == GRAPH_IN) {
+         graph_db[i]->in[  graph_db[i]->pos ] += amount;
+      } else {
+         assert(dir == GRAPH_OUT);
+         graph_db[i]->out[ graph_db[i]->pos ] += amount;
+      }
 }
 
 /* Advance a graph: advance the pos, zeroing out bars as we move. */
-static void
-advance(struct graph *g, const unsigned int pos)
-{
+static void advance(struct graph *g, const unsigned int pos) {
    if (g->pos == pos)
       return; /* didn't need to advance */
    do {
@@ -112,10 +104,9 @@ advance(struct graph *g, const unsigned int pos)
 }
 
 /* Rotate a graph: rotate all bars so that the bar at the current pos is moved
- * to the newly given pos.  This is non-destructive. */
-static void
-rotate(struct graph *g, const unsigned int pos)
-{
+ * to the newly given pos.
+ */
+static void rotate(struct graph *g, const unsigned int pos) {
    uint64_t *tmp;
    unsigned int i, ofs;
    size_t size;
@@ -140,13 +131,11 @@ rotate(struct graph *g, const unsigned int pos)
    g->pos = pos;
 }
 
-static void
-graph_resync(const time_t new_time)
-{
+static void graph_resync(const long new_time) {
    struct tm *tm;
    /*
-    * If time went backwards, we assume that real time is continuous and that
-    * the time adjustment should only affect display.  i.e., if we have:
+    * If real time went backwards, we assume that the time adjustment should
+    * only affect display.  i.e., if we have:
     *
     * second 15: 12  bytes
     * second 16: 345 bytes
@@ -159,11 +148,13 @@ graph_resync(const time_t new_time)
     * second 7: 345 bytes
     * second 8: <-- current pos
     *
-    * Note that we don't make any corrections for time being stepped forward.
+    * We don't make any corrections for time being stepped forward,
+    * it's treated as though there was no traffic during that time.
+    *
     * We rely on graph advancement to happen at the correct real time to
     * account for, for example, bandwidth used per day.
     */
-   assert(new_time < last_time);
+   assert(new_time < last_real);
 
    tm = localtime(&new_time);
    if (tm->tm_sec == 60)
@@ -174,25 +165,21 @@ graph_resync(const time_t new_time)
    rotate(&graph_hrs, tm->tm_hour);
    rotate(&graph_days, tm->tm_mday - 1);
 
-   last_time = new_time;
+   last_real = new_time;
 }
 
-void
-graph_rotate(void)
-{
-   time_t t, td;
+void graph_rotate(void) {
+   long t, td;
    struct tm *tm;
    unsigned int i;
 
-   t = now;
+   t = now_real();
+   td = t - last_real;
 
-   if (last_time == 0) {
+   if (last_real == 0) {
       verbosef("first rotate");
-      last_time = t;
+      last_real = t;
       tm = localtime(&t);
-      if (tm->tm_sec == 60)
-         tm->tm_sec = 59; /* mis-handle leap seconds */
-
       graph_secs.pos = tm->tm_sec;
       graph_mins.pos = tm->tm_min;
       graph_hrs.pos = tm->tm_hour;
@@ -200,22 +187,20 @@ graph_rotate(void)
       return;
    }
 
-   if (t == last_time)
-      return; /* superfluous rotate */
+   if (t == last_real)
+      return; /* time has not advanced a full second, don't rotate */
 
-   if (t < last_time) {
-      verbosef("time went backwards! (from %u to %u, offset is %d)",
-         (unsigned int)last_time, (unsigned int)t, (int)(t - last_time));
+   if (t < last_real) {
+      verbosef("graph_db: realtime went backwards! "
+               "(from %ld to %ld, offset is %ld)",
+               last_real, t, td);
       graph_resync(t);
       return;
    }
 
    /* else, normal rotation */
-   td = t - last_time;
-   last_time = t;
+   last_real = t;
    tm = localtime(&t);
-   if (tm->tm_sec == 60)
-      tm->tm_sec = 59; /* mis-handle leap seconds */
 
    /* zero out graphs which have been completely rotated through */
    for (i=0; i<graph_db_size; i++)
@@ -236,14 +221,12 @@ graph_rotate(void)
  * to have validated the header of the segment, and left the file position at
  * the start of the data.
  */
-int
-graph_import(const int fd)
-{
+int graph_import(const int fd) {
    uint64_t last;
    unsigned int i, j;
 
    if (!read64(fd, &last)) return 0;
-   last_time = (time_t)last;
+   last_real = last;
 
    for (i=0; i<graph_db_size; i++) {
       unsigned char num_bars, pos;
@@ -281,12 +264,10 @@ graph_import(const int fd)
  * Database Export: Dump hosts_db into a file provided by the caller.
  * The caller is responsible for writing out the header first.
  */
-int
-graph_export(const int fd)
-{
+int graph_export(const int fd) {
    unsigned int i, j;
 
-   if (!write64(fd, (uint64_t)last_time)) return 0;
+   if (!write64(fd, (uint64_t)last_real)) return 0;
    for (i=0; i<graph_db_size; i++) {
       if (!write8(fd, graph_db[i]->num_bars)) return 0;
       if (!write8(fd, graph_db[i]->pos)) return 0;
@@ -302,26 +283,28 @@ graph_export(const int fd)
 /* ---------------------------------------------------------------------------
  * Web interface: front page!
  */
-struct str *
-html_front_page(void)
-{
+struct str *html_front_page(void) {
    struct str *buf, *rf;
    unsigned int i;
    char start_when[100];
+   long d_real, d_mono;
 
    buf = str_make();
    html_open(buf, "Graphs", /*path_depth=*/0, /*want_graph_js=*/1);
 
+   d_mono = now_mono() - start_mono;
+   d_real = now_real() - start_real;
    str_append(buf, "<p>\n");
    str_append(buf, "<b>Running for</b> <span id=\"rf\">");
-   rf = length_of_time(now - start_time);
-   /* FIXME: use a more monotonic clock perhaps? */
+   rf = length_of_time(d_mono);
    str_appendstr(buf, rf);
    str_free(rf);
    str_append(buf, "</span>");
+   if (abs(d_real - d_mono) > 1)
+      str_appendf(buf, " (real time is off by %ld sec)", d_real - d_mono);
 
    if (strftime(start_when, sizeof(start_when),
-      "%Y-%m-%d %H:%M:%S %Z%z", localtime(&start_time)) != 0)
+      "%Y-%m-%d %H:%M:%S %Z%z", localtime(&start_real)) != 0)
       str_appendf(buf, "<b>, since</b> %s", start_when);
 
    str_appendf(buf,"<b>.</b><br>\n"
@@ -372,15 +355,13 @@ html_front_page(void)
 /* ---------------------------------------------------------------------------
  * Web interface: graphs.xml
  */
-struct str *
-xml_graphs(void)
-{
+struct str *xml_graphs(void) {
    unsigned int i, j;
    struct str *buf = str_make(), *rf;
 
    str_appendf(buf, "<graphs tp=\"%qu\" tb=\"%qu\" pc=\"%u\" pd=\"%u\" rf=\"",
       acct_total_packets, acct_total_bytes, cap_pkts_recv, cap_pkts_drop);
-   rf = length_of_time(now - start_time);
+   rf = length_of_time(now_real() - start_real);
    str_appendstr(buf, rf);
    str_free(rf);
    str_append(buf, "\">\n");
@@ -402,4 +383,4 @@ xml_graphs(void)
    return (buf);
 }
 
-/* vim:set ts=3 sw=3 tw=78 expandtab: */
+/* vim:set ts=3 sw=3 tw=80 et: */

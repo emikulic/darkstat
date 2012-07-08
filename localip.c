@@ -8,11 +8,12 @@
  */
 
 #include "addr.h"
+#include "bsd.h" /* for strlcpy */
 #include "config.h" /* for HAVE_IFADDRS_H */
 #include "conv.h"
 #include "err.h"
 #include "localip.h"
-#include "bsd.h" /* for strlcpy */
+#include "now.h"
 
 #include <sys/socket.h>
 #include <net/if.h>
@@ -38,7 +39,7 @@ struct local_ips *localip_make(void) {
    struct local_ips *ips = xmalloc(sizeof(*ips));
 
    ips->is_valid = 0;
-   ips->last_update = 0;
+   ips->last_update_mono = 0;
    ips->num_addrs = 0;
    ips->addrs = NULL;
    return ips;
@@ -81,6 +82,12 @@ void localip_update(const char *iface, struct local_ips *ips) {
       ips->is_valid = 0;
       return;
    }
+
+   if (ips->last_update_mono == now_mono()) {
+      /* Too soon, bail out. */
+      return;
+   }
+   ips->last_update_mono = now_mono();
 
 #ifdef HAVE_IFADDRS_H
    {
@@ -150,7 +157,6 @@ void localip_update(const char *iface, struct local_ips *ips) {
             iface, ips->num_addrs, new_addrs);
       ips->num_addrs = new_addrs;
    }
-   ips->last_update = time(NULL);
 }
 
 int is_localip(const struct addr * const a,

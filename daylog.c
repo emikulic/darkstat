@@ -9,50 +9,49 @@
 
 #define _GNU_SOURCE 1 /* for O_NOFOLLOW on Linux */
 
-#include <sys/types.h>
-#include <assert.h>
-#include <fcntl.h>
-#include <stdarg.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
 #include "err.h"
 #include "daylog.h"
 #include "str.h"
 #include "now.h"
 
+#include <assert.h>
+#include <fcntl.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <string.h>
+#include <time.h>
+#include <unistd.h>
+
 static const char *daylog_fn = NULL;
-static time_t today_time, tomorrow_time;
+static long today_real, tomorrow_real;
 static uint64_t bytes_in, bytes_out, pkts_in, pkts_out;
 
 #define DAYLOG_DATE_LEN 26 /* strlen("1900-01-01 00:00:00 +1234") + 1 */
 static char datebuf[DAYLOG_DATE_LEN];
 
-static char *
-fmt_date(const time_t when)
-{
-    time_t tmp = when;
-    if (strftime(datebuf, DAYLOG_DATE_LEN,
-        "%Y-%m-%d %H:%M:%S %z", localtime(&tmp) ) == 0)
+static char *fmt_date(time_t when) {
+    if (strftime(datebuf,
+                 DAYLOG_DATE_LEN,
+                 "%Y-%m-%d %H:%M:%S %z",
+                 localtime(&when)) == 0)
             errx(1, "strftime() failed in fmt_date()");
-    return (datebuf);
+    return datebuf;
 }
 
 /* Given some time today, find the first second of tomorrow. */
-static time_t
-tomorrow(const time_t today)
-{
-   time_t tmp = today;
+static time_t tomorrow(time_t t_before) {
+   time_t t_after;
    struct tm tm, *lt;
 
-   lt = localtime(&tmp);
+   lt = localtime(&t_before);
    memcpy(&tm, lt, sizeof(tm));
    tm.tm_sec = 0;
    tm.tm_min = 0;
    tm.tm_hour = 0;
    tm.tm_mday = lt->tm_mday + 1; /* tomorrow */
-   return mktime(&tm);
+   t_after = mktime(&tm);
+   assert(t_after > t_before);
+   return t_after;
 }
 
 /* Warns on error. */
@@ -87,41 +86,42 @@ static void daylog_write(const char *format, ...) {
 }
 
 static void daylog_emit(void) {
-   daylog_write("%s|%u|%qu|%qu|%qu|%qu\n",
-                fmt_date(today_time), (unsigned int)today_time,
+   daylog_write("%s|%ld|%qu|%qu|%qu|%qu\n",
+                fmt_date(today_real), (long)today_real,
                 bytes_in, bytes_out, pkts_in, pkts_out);
 }
 
 void daylog_init(const char *filename) {
    daylog_fn = filename;
-   today_time = time(NULL);
-   tomorrow_time = tomorrow(today_time);
-   verbosef("today is %u, tomorrow is %u",
-      (unsigned int)today_time, (unsigned int)tomorrow_time);
+   today_real = now_real();
+   tomorrow_real = tomorrow(today_real);
+   verbosef("today is %ld, tomorrow is %ld",
+            (long)today_real, (long)tomorrow_real);
    bytes_in = bytes_out = pkts_in = pkts_out = 0;
 
-   daylog_write("# logging started at %s (%u)\n",
-                fmt_date(today_time), (unsigned int)today_time);
+   daylog_write("# logging started at %s (%ld)\n",
+                fmt_date(today_real), (long)today_real);
 }
 
 void daylog_free(void) {
-   today_time = time(NULL);
+   today_real = now_real();
    daylog_emit(); /* Emit what's currently accumulated before we exit. */
-   daylog_write("# logging stopped at %s (%u)\n",
-                fmt_date(today_time), (unsigned int)today_time);
+   daylog_write("# logging stopped at %s (%ld)\n",
+                fmt_date(today_real), (long)today_real);
 }
 
 void daylog_acct(uint64_t amount, enum graph_dir dir) {
-   if (daylog_fn == NULL) return; /* disabled */
+   if (daylog_fn == NULL)
+      return; /* daylogging disabled */
 
    /* Check if we need to update the log. */
-   if (now >= tomorrow_time) {
+   if (now_real() >= tomorrow_real) {
       daylog_emit();
 
-      today_time = now;
-      tomorrow_time = tomorrow(today_time);
+      today_real = now_real();
+      tomorrow_real = tomorrow(today_real);
       bytes_in = bytes_out = pkts_in = pkts_out = 0;
-      verbosef("updated daylog, tomorrow = %u", (unsigned int)tomorrow_time);
+      verbosef("updated daylog, tomorrow = %ld", (long)tomorrow_real);
    }
 
    /* Accounting. */

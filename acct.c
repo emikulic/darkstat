@@ -205,7 +205,7 @@ acct_for(const struct pktsummary * const sm)
       hs->out   += sm->len;
       hs->total += sm->len;
       memcpy(hs->u.host.mac_addr, sm->src_mac, sizeof(sm->src_mac));
-      hs->u.host.lastseen = now;
+      hs->u.host.last_seen_mono = now_mono();
    }
 
    if (!opt_want_local_only || addr_is_local(&sm->dst)) {
