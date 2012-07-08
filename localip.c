@@ -45,25 +45,27 @@ void localip_free(struct local_ips *ips) {
       free(ips->addrs);
 }
 
-static void add_ip(const char *iface, struct local_ips *ips,
-                   int *index, struct addr *a) {
-   if (ips->num_addrs <= *index) {
+static void add_ip(const char *iface,
+                   struct local_ips *ips,
+                   int *idx,
+                   struct addr *a) {
+   if (ips->num_addrs <= *idx) {
       /* Grow. */
-      ips->addrs = xrealloc(ips->addrs, sizeof(*(ips->addrs)) * (*index + 1));
+      ips->addrs = xrealloc(ips->addrs, sizeof(*(ips->addrs)) * (*idx + 1));
       ips->num_addrs++;
-      assert(ips->num_addrs > *index);
+      assert(ips->num_addrs > *idx);
       verbosef("interface '%s' gained new address %s", iface, addr_to_str(a));
    } else {
       /* Warn about changed address. */
-      if (!addr_equal(ips->addrs + *index, a)) {
+      if (!addr_equal(ips->addrs + *idx, a)) {
          static char before[INET6_ADDRSTRLEN];
-         strncpy(before, addr_to_str(ips->addrs + *index), INET6_ADDRSTRLEN);
+         strncpy(before, addr_to_str(ips->addrs + *idx), INET6_ADDRSTRLEN);
          verbosef("interface '%s' address %d/%d changed from %s to %s",
-            iface, *index+1, ips->num_addrs, before, addr_to_str(a));
+            iface, *idx+1, ips->num_addrs, before, addr_to_str(a));
       }
    }
-   ips->addrs[*index] = *a;
-   (*index)++;
+   ips->addrs[*idx] = *a;
+   (*idx)++;
 }
 
 /* Returns 0 on failure. */

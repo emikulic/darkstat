@@ -302,8 +302,10 @@ void cap_start(const int promisc) {
 
 #ifdef linux
 # define _unused_on_linux_ _unused_
+# define _unused_otherwise_
 #else
 # define _unused_on_linux_
+# define _unused_otherwise_ _unused_
 #endif
 
 /*
@@ -311,7 +313,7 @@ void cap_start(const int promisc) {
  */
 void cap_fd_set(fd_set *read_set _unused_on_linux_,
                 int *max_fd _unused_on_linux_,
-                struct timeval *timeout,
+                struct timeval *timeout _unused_otherwise_,
                 int *need_timeout) {
    assert(*need_timeout == 0); /* we're first to get a shot at the fd_set */
 
