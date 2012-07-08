@@ -86,4 +86,30 @@ long real_to_mono(const long t) {
    return t - clock_real.tv_sec + clock_mono.tv_sec;
 }
 
+void timer_start(struct timespec *t) {
+   clock_gettime(CLOCK_MONOTONIC, t);
+}
+
+static int64_t ts_diff(const struct timespec * const a,
+                       const struct timespec * const b) {
+   return (int64_t)(a->tv_sec - b->tv_sec) * 1000000000 +
+          a->tv_nsec - b->tv_nsec;
+}
+
+void timer_stop(const struct timespec * const t,
+                const int64_t nsec,
+                const char *warning) {
+   struct timespec t2;
+   int64_t diff;
+
+   clock_gettime(CLOCK_MONOTONIC, &t2);
+   diff = ts_diff(&t2, t);
+   assert(diff > 0);
+   if (diff > nsec)
+      warnx("%s (took %lld nsec, over threshold of %lld nsec)",
+            warning,
+            (long long)diff,
+            (long long)nsec);
+}
+
 /* vim:set ts=3 sw=3 tw=80 et: */
