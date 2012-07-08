@@ -32,11 +32,11 @@ void html_open(struct str *buf, const char *title,
         "<!DOCTYPE html>\n"
         "<html>\n"
         "<head>\n"
-         "<title>%s (darkstat3 %s)</title>\n"
+         "<title>%s (darkstat %s)</title>\n"
          "<meta name=\"generator\" content=\"" PACKAGE_STRING "\">\n"
          "<meta name=\"robots\" content=\"noindex, noarchive\">\n"
-         "<link rel=\"stylesheet\" href=\"%s/style.css\" type=\"text/css\">\n"
-        , title, opt_interface, root);
+         "<link rel=\"stylesheet\" href=\"%s/style.css\" type=\"text/css\">\n",
+        title, title_interfaces, root);
 
     if (want_graph_js)
         str_appendf(buf,
@@ -67,4 +67,4 @@ void html_close(struct str *buf)
         "</html>\n");
 }
 
-/* vim:set ts=4 sw=4 tw=78 expandtab: */
+/* vim:set ts=4 sw=4 tw=80 et: */

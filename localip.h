@@ -18,9 +18,7 @@ struct local_ips {
    struct addr *addrs;
 };
 
-extern struct local_ips *local_ips;
-
-struct local_ips *localip_make(void);
+void localip_init(struct local_ips *ips);
 void localip_free(struct local_ips *ips);
 
 void localip_update(const char *iface, struct local_ips *ips);

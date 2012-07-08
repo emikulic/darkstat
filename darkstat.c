@@ -43,8 +43,7 @@ static volatile int running = 1;
 static void sig_shutdown(int signum _unused_) { running = 0; }
 
 static volatile int reset_pending = 0, export_pending = 0;
-static void sig_reset(int signum _unused_)
-{
+static void sig_reset(int signum _unused_) {
    reset_pending = 1;
    export_pending = 1;
 }
@@ -52,9 +51,8 @@ static void sig_reset(int signum _unused_)
 static void sig_export(int signum _unused_) { export_pending = 1; }
 
 /* --- Commandline parsing --- */
-static unsigned long
-parsenum(const char *str, unsigned long max /* 0 for no max */)
-{
+static unsigned long parsenum(const char *str,
+                              unsigned long max /* 0 for no max */) {
    unsigned long n;
    char *end;
 
@@ -69,8 +67,13 @@ parsenum(const char *str, unsigned long max /* 0 for no max */)
    return n;
 }
 
-const char *opt_interface = NULL;
-static void cb_interface(const char *arg) { opt_interface = arg; }
+static int opt_iface_seen = 0;
+static void cb_interface(const char *arg) {
+   cap_add_ifname(arg);
+   opt_iface_seen = 1;
+}
+
+static void cb_filter(const char *arg) { cap_add_filter(arg); }
 
 const char *opt_capfile = NULL;
 static void cb_capfile(const char *arg) { opt_capfile = arg; }
@@ -108,9 +111,6 @@ static void cb_port(const char *arg)
 { opt_bindport = (unsigned short)parsenum(arg, 65536); }
 
 static void cb_bindaddr(const char *arg) { http_add_bindaddr(arg); }
-
-const char *opt_filter = NULL;
-static void cb_filter(const char *arg) { opt_filter = arg; }
 
 static int is_localnet_specified = 0;
 static void cb_local(const char *arg)
@@ -212,11 +212,11 @@ struct cmdline_arg {
 };
 
 static struct cmdline_arg cmdline_args[] = {
-   {"-i",             "interface",       cb_interface,    0},
-   {"-r",             "file",            cb_capfile,      0},
+   {"-i",             "interface",       cb_interface,   -1},
+   {"-f",             "filter",          cb_filter,      -1},
+   {"-r",             "capfile",         cb_capfile,      0},
    {"-p",             "port",            cb_port,         0},
    {"-b",             "bindaddr",        cb_bindaddr,    -1},
-   {"-f",             "filter",          cb_filter,       0},
    {"-l",             "network/netmask", cb_local,        0},
    {"--local-only",   NULL,              cb_local_only,   0},
    {"--snaplen",      "bytes",           cb_snaplen,      0},
@@ -246,12 +246,8 @@ static struct cmdline_arg cmdline_args[] = {
    {NULL,             NULL,              NULL,            0}
 };
 
-/*
- * We autogenerate the usage statement from the cmdline_args data structure.
- */
-static void
-usage(void)
-{
+/* We autogenerate the usage statement from the cmdline_args data structure. */
+static void usage(void) {
    static char intro[] = "usage: darkstat ";
    char indent[sizeof(intro)];
    struct cmdline_arg *arg;
@@ -276,9 +272,7 @@ usage(void)
 "documentation and usage examples.\n");
 }
 
-static void
-parse_sub_cmdline(const int argc, char * const *argv)
-{
+static void parse_sub_cmdline(const int argc, char * const *argv) {
    struct cmdline_arg *arg;
 
    if (argc == 0) return;
@@ -317,9 +311,7 @@ parse_sub_cmdline(const int argc, char * const *argv)
    exit(EXIT_FAILURE);
 }
 
-static void
-parse_cmdline(const int argc, char * const *argv)
-{
+static void parse_cmdline(const int argc, char * const *argv) {
    if (argc < 1) {
       /* Not enough args. */
       usage();
@@ -334,17 +326,20 @@ parse_cmdline(const int argc, char * const *argv)
    }
 
    /* start syslogging as early as possible */
-   if (opt_want_syslog) openlog("darkstat", LOG_NDELAY | LOG_PID, LOG_DAEMON);
+   if (opt_want_syslog)
+      openlog("darkstat", LOG_NDELAY | LOG_PID, LOG_DAEMON);
 
    /* some default values */
-   if (opt_chroot_dir == NULL) opt_chroot_dir = CHROOT_DIR;
-   if (opt_privdrop_user == NULL) opt_privdrop_user = PRIVDROP_USER;
+   if (opt_chroot_dir == NULL)
+      opt_chroot_dir = CHROOT_DIR;
+   if (opt_privdrop_user == NULL)
+      opt_privdrop_user = PRIVDROP_USER;
 
    /* sanity check args */
-   if ((opt_interface == NULL) && (opt_capfile == NULL))
+   if (!opt_iface_seen && opt_capfile == NULL)
       errx(1, "must specify either interface (-i) or capture file (-r)");
 
-   if ((opt_interface != NULL) && (opt_capfile != NULL))
+   if (opt_iface_seen && opt_capfile != NULL)
       errx(1, "can't specify both interface (-i) and capture file (-r)");
 
    if ((opt_hosts_max != 0) && (opt_hosts_keep >= opt_hosts_max)) {
@@ -377,22 +372,17 @@ parse_cmdline(const int argc, char * const *argv)
       verbosef("WARNING: --local-only without -l only matches the local host");
 }
 
-static void
-run_from_capfile(void)
-{
+static void run_from_capfile(void) {
+   now_init();
    graph_init();
    hosts_db_init();
-   cap_from_file(opt_capfile, opt_filter);
-   cap_stop();
+   cap_from_file(opt_capfile);
    if (export_fn != NULL) db_export(export_fn);
    hosts_db_free();
    graph_free();
-#ifndef PRIu64
-#warning "PRIu64 is not defined, using qu instead"
-#define PRIu64 "qu"
-#endif
-   verbosef("Total packets: %"PRIu64", bytes: %"PRIu64,
-      acct_total_packets, acct_total_bytes);
+   verbosef("Total packets: %llu, bytes: %llu",
+            (unsigned long long)acct_total_packets,
+            (unsigned long long)acct_total_bytes);
 }
 
 /* --- Program body --- */
@@ -403,10 +393,6 @@ main(int argc, char **argv)
    parse_cmdline(argc-1, argv+1);
 
    if (opt_capfile) {
-      /*
-       * This is very different from a regular run against a network
-       * interface.
-       */
       run_from_capfile();
       return 0;
    }
@@ -424,7 +410,7 @@ main(int argc, char **argv)
 
    /* do this first as it forks - minimize memory use */
    if (opt_want_dns) dns_init(opt_privdrop_user);
-   cap_init(opt_interface, opt_filter, opt_want_promisc); /* needs root */
+   cap_start(opt_want_promisc); /* needs root */
    http_listen(opt_bindport);
    ncache_init(); /* must do before chroot() */
 
@@ -436,9 +422,6 @@ main(int argc, char **argv)
    graph_init();
    hosts_db_init();
    if (import_fn != NULL) db_import(import_fn);
-
-   local_ips = localip_make();
-   localip_update(opt_interface, local_ips);
 
    if (signal(SIGTERM, sig_shutdown) == SIG_ERR)
       errx(1, "signal(SIGTERM) failed");
@@ -510,7 +493,6 @@ main(int argc, char **argv)
    if (daylog_fn != NULL) daylog_free();
    ncache_free();
    if (pid_fn) pidfile_unlink();
-   localip_free(local_ips);
    verbosef("shut down");
    return (EXIT_SUCCESS);
 }

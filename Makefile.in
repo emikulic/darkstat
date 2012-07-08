@@ -126,7 +126,7 @@ acct.o: acct.c acct.h decode.h addr.h conv.h daylog.h graph_db.h err.h \
 addr.o: addr.c addr.h
 bsd.o: bsd.c bsd.h config.h cdefs.h
 cap.o: cap.c acct.h cdefs.h cap.h config.h conv.h decode.h addr.h err.h \
- hosts_db.h localip.h now.h opt.h
+ hosts_db.h localip.h now.h opt.h queue.h str.h
 conv.o: conv.c conv.h err.h cdefs.h
 darkstat.o: darkstat.c acct.h cap.h cdefs.h config.h conv.h daylog.h \
  graph_db.h db.h dns.h err.h http.h hosts_db.h addr.h localip.h ncache.h \

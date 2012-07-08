@@ -133,9 +133,8 @@ acct_init_localnet(const char *spec)
    verbosef("   local network mask: %s", addr_to_str(&localmask));
 }
 
-static int
-addr_is_local(const struct addr * const a)
-{
+static int addr_is_local(const struct addr * const a,
+                         const struct local_ips *local_ips) {
    if (is_localip(a, local_ips))
       return 1;
    if (a->family == IPv4 && using_localnet4) {
@@ -149,9 +148,8 @@ addr_is_local(const struct addr * const a)
 }
 
 /* Account for the given packet summary. */
-void
-acct_for(const struct pktsummary * const sm)
-{
+void acct_for(const struct pktsummary * const sm,
+              const struct local_ips * const local_ips) {
    struct bucket *hs = NULL, *hd = NULL;
    struct bucket *ps, *pd;
    int dir_in, dir_out;
@@ -180,18 +178,15 @@ acct_for(const struct pktsummary * const sm)
    acct_total_bytes += sm->len;
 
    /* Graphs. */
-   dir_out = addr_is_local(&(sm->src));
-   dir_in  = addr_is_local(&(sm->dst));
+   dir_out = addr_is_local(&sm->src, local_ips);
+   dir_in  = addr_is_local(&sm->dst, local_ips);
 
    /* Traffic staying within the network isn't counted. */
-   if (dir_in == 1 && dir_out == 1)
-      dir_in = dir_out = 0;
-
-   if (dir_out) {
+   if (dir_out && !dir_in) {
       daylog_acct((uint64_t)sm->len, GRAPH_OUT);
       graph_acct((uint64_t)sm->len, GRAPH_OUT);
    }
-   if (dir_in) {
+   if (dir_in && !dir_out) {
       daylog_acct((uint64_t)sm->len, GRAPH_IN);
       graph_acct((uint64_t)sm->len, GRAPH_IN);
    }
@@ -200,7 +195,7 @@ acct_for(const struct pktsummary * const sm)
 
    /* Hosts. */
    hosts_db_reduce();
-   if (!opt_want_local_only || addr_is_local(&sm->src)) {
+   if (!opt_want_local_only || dir_out) {
       hs = host_get(&(sm->src));
       hs->out   += sm->len;
       hs->total += sm->len;
@@ -208,7 +203,7 @@ acct_for(const struct pktsummary * const sm)
       hs->u.host.last_seen_mono = now_mono();
    }
 
-   if (!opt_want_local_only || addr_is_local(&sm->dst)) {
+   if (!opt_want_local_only || dir_in) {
       hd = host_get(&(sm->dst));
       hd->in    += sm->len;
       hd->total += sm->len;

@@ -33,22 +33,16 @@
 # include <sys/ioctl.h>
 #endif
 
-struct local_ips *local_ips;
-
-struct local_ips *localip_make(void) {
-   struct local_ips *ips = xmalloc(sizeof(*ips));
-
+void localip_init(struct local_ips *ips) {
    ips->is_valid = 0;
    ips->last_update_mono = 0;
    ips->num_addrs = 0;
    ips->addrs = NULL;
-   return ips;
 }
 
 void localip_free(struct local_ips *ips) {
    if (ips->addrs != NULL)
       free(ips->addrs);
-   free(ips);
 }
 
 static void add_ip(const char *iface, struct local_ips *ips,
