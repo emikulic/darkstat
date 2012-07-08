@@ -441,7 +441,6 @@ main(int argc, char **argv)
       struct timespec t;
       fd_set rs, ws;
 
-      timer_start(&t);
       FD_ZERO(&rs);
       FD_ZERO(&ws);
       cap_fd_set(&rs, &max_fd, &timeout, &use_timeout);
@@ -458,6 +457,7 @@ main(int argc, char **argv)
             err(1, "select()");
       }
 
+      timer_start(&t);
       now_update();
 
       if (export_pending) {
@@ -478,7 +478,7 @@ main(int argc, char **argv)
       cap_poll(&rs);
       dns_poll();
       http_poll(&rs, &ws);
-      timer_stop(&t, 1000000000, "event loop took longer than a second");
+      timer_stop(&t, 1000000000, "event processing took longer than a second");
    }
 
    verbosef("shutting down");
