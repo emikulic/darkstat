@@ -959,7 +959,7 @@ static void http_listen_one(struct addrinfo *ai,
     }
 
     /* listen on socket */
-    if (listen(sockin, -1) == -1)
+    if (listen(sockin, 128) == -1)
         err(1, "listen() failed");
 
     verbosef("listening on http://%s%s%s:%u/",
