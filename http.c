@@ -931,6 +931,8 @@ static void http_listen_one(struct addrinfo *ai,
         return;
     }
 
+    fd_set_nonblock(sockin);
+
     /* reuse address */
     sockopt = 1;
     if (setsockopt(sockin, SOL_SOCKET, SO_REUSEADDR,
