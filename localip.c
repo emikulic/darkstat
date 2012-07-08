@@ -103,7 +103,8 @@ void localip_update(const char *iface, struct local_ips *ips) {
             a.family = IPv4;
             a.ip.v4 = ((struct sockaddr_in *)ifa->ifa_addr)->sin_addr.s_addr;
             add_ip(iface, ips, &new_addrs, &a);
-         } else if (ifa->ifa_addr->sa_family == AF_INET6) {
+         }
+         if (ifa->ifa_addr->sa_family == AF_INET6) {
             struct sockaddr_in6 *sa6 = (struct sockaddr_in6 *)ifa->ifa_addr;
 # if 0
             if ( IN6_IS_ADDR_LINKLOCAL(&(sa6->sin6_addr))
@@ -113,13 +114,7 @@ void localip_update(const char *iface, struct local_ips *ips) {
             a.family = IPv6;
             memcpy(&(a.ip.v6), &sa6->sin6_addr, sizeof(a.ip.v6));
             add_ip(iface, ips, &new_addrs, &a);
-# ifdef AF_PACKET
-         } else if (ifa->ifa_addr->sa_family == AF_PACKET) {
-            /* ignore */
-# endif
-         } else
-            verbosef("unknown sa_family=%d on interface '%s'",
-               (int)ifa->ifa_addr->sa_family, iface);
+         }
       }
       freeifaddrs(ifas);
    }
