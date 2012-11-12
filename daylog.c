@@ -86,8 +86,8 @@ static void daylog_write(const char *format, ...) {
 }
 
 static void daylog_emit(void) {
-   daylog_write("%s|%ld|%qu|%qu|%qu|%qu\n",
-                fmt_date(today_real), (long)today_real,
+   daylog_write("%s|%qu|%qu|%qu|%qu|%qu\n",
+                fmt_date(today_real), (uint64_t)today_real,
                 bytes_in, bytes_out, pkts_in, pkts_out);
 }
 
@@ -99,15 +99,15 @@ void daylog_init(const char *filename) {
             (long)today_real, (long)tomorrow_real);
    bytes_in = bytes_out = pkts_in = pkts_out = 0;
 
-   daylog_write("# logging started at %s (%ld)\n",
-                fmt_date(today_real), (long)today_real);
+   daylog_write("# logging started at %s (%qu)\n",
+                fmt_date(today_real), (uint64_t)today_real);
 }
 
 void daylog_free(void) {
    today_real = now_real();
    daylog_emit(); /* Emit what's currently accumulated before we exit. */
-   daylog_write("# logging stopped at %s (%ld)\n",
-                fmt_date(today_real), (long)today_real);
+   daylog_write("# logging stopped at %s (%qu)\n",
+                fmt_date(today_real), (uint64_t)today_real);
 }
 
 void daylog_acct(uint64_t amount, enum graph_dir dir) {

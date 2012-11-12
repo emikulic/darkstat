@@ -131,7 +131,7 @@ static void rotate(struct graph *g, const unsigned int pos) {
    g->pos = pos;
 }
 
-static void graph_resync(const long new_time) {
+static void graph_resync(const time_t new_real) {
    struct tm *tm;
    /*
     * If real time went backwards, we assume that the time adjustment should
@@ -154,9 +154,9 @@ static void graph_resync(const long new_time) {
     * We rely on graph advancement to happen at the correct real time to
     * account for, for example, bandwidth used per day.
     */
-   assert(new_time < last_real);
+   assert(new_real < last_real);
 
-   tm = localtime(&new_time);
+   tm = localtime(&new_real);
    if (tm->tm_sec == 60)
       tm->tm_sec = 59; /* mis-handle leap seconds */
 
@@ -165,7 +165,7 @@ static void graph_resync(const long new_time) {
    rotate(&graph_hrs, tm->tm_hour);
    rotate(&graph_days, tm->tm_mday - 1);
 
-   last_real = new_time;
+   last_real = new_real;
 }
 
 void graph_rotate(void) {
