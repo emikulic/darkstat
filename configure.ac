@@ -289,19 +289,16 @@ if test -n "$PCAP_BROKEN" ; then
  cat <<END_MSG
 $RULE
 
-darkstat absolutely requires libpcap to be installed.  If
-it's installed into a prefix that isn't being picked up by
+darkstat absolutely requires libpcap to be installed.  On Debian
+systems, apt-get install libpcap-dev.  On RPM systems like RedHat, try
+installing the libpcap-devel package.
+
+If libpcap is installed into a prefix that isn't being picked up by
 configure, for example /usr/local, re-run configure and add
 --with-pcap=/usr/local
 
-If you are using a package-based operating system (like
-something with RPMs), see if there is a pcap-devel or
-libpcap-devel package that you can install, to provide the
-pcap headers and libraries.
-
-Failing all of the above, go to http://www.tcpdump.org/ and
-download the source distribution of libpcap and build it
-yourself.
+Failing all of the above, go to http://www.tcpdump.org/ and download the
+source distribution of libpcap and build it yourself.
 
 $RULE
 END_MSG
