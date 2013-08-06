@@ -153,7 +153,10 @@ AC_SEARCH_LIBS(hstrerror, [resolv], [],
 AC_CHECK_HEADERS(sys/filio.h)
 
 # This is the modern way.  Older systems use the ioctl method.
-AC_CHECK_HEADERS(ifaddrs.h)
+AC_SEARCH_LIBS(getifaddrs, [c],
+  [AC_CHECK_HEADERS(ifaddrs.h)])
+
+
 
 # Some OSes (Solaris) need sys/sockio.h for SIOCGIFADDR
 AC_CHECK_HEADERS(sys/sockio.h)
