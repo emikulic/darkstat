@@ -1,0 +1,12 @@
+To build the latest version of darkstat from git, do:
+
+  git clone http://unix4lyfe.org/git/darkstat
+  cd darkstat
+  autoconf
+  autoheader
+  ./configure --enable-warnings
+  make
+
+Test the binary without daemonizing it (running it in the background):
+
+  sudo ./darkstat -i eth0 --no-daemon --verbose
