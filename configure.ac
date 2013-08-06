@@ -92,121 +92,25 @@ else
  AC_MSG_RESULT(skipped)
 fi
 
-AC_ARG_ENABLE(mad-warnings, AS_HELP_STRING([--enable-mad-warnings],
- [turn on lots of compile-time warnings, these are GCC-specific and only
- really useful for development]),
+AC_ARG_ENABLE(warnings, AS_HELP_STRING([--enable-warnings],
+ [turn on lots of compile-time warnings,
+  these are only useful for development]),
  [if test "x$enableval" = "xyes" ; then
-   AC_MSG_CHECKING(if your C compiler can emit certain warnings)
+   AC_MSG_CHECKING(if your C compiler has gcc-like --extra-warnings)
    save_cflags="$CFLAGS"
-   CFLAGS="$CFLAGS -fdiagnostics-show-option \
--Waddress \
--Waggregate-return \
--Wall \
--Wbad-function-cast \
--Wcast-align \
--Wcast-qual \
--Wchar-subscripts \
--Wcomment \
--Wdeclaration-after-statement \
--Wdisabled-optimization \
--Wextra \
--Wfloat-equal \
--Wformat \
--Wformat=2 \
--Wformat-nonliteral \
--Wformat-security \
--Wformat-y2k \
--Wimplicit \
--Wimplicit-function-declaration \
--Wimplicit-int \
--Winit-self \
--Winline \
--Winvalid-pch \
--Wmain \
--Wmissing-braces \
--Wmissing-declarations \
--Wmissing-field-initializers \
--Wmissing-format-attribute \
--Wmissing-include-dirs \
--Wmissing-noreturn \
--Wmissing-prototypes \
--Wnested-externs \
--Wnonnull \
--Wold-style-definition \
--Wpacked \
--Wparentheses \
--Wpointer-arith \
--Wpointer-sign \
--Wredundant-decls \
--Wreturn-type \
--Wsequence-point \
--Wshadow \
--Wsign-compare \
--Wstrict-aliasing -fstrict-aliasing \
--Wstrict-overflow=5 -fstrict-overflow \
--Wstrict-prototypes \
--Wswitch \
--Wswitch-default \
--Wswitch-enum \
--Wtrigraphs \
--Wundef \
--Wuninitialized \
--Wunknown-pragmas \
--Wunsafe-loop-optimizations \
--Wunused \
--Wunused-function \
--Wunused-label \
--Wunused-parameter \
--Wunused-value \
--Wunused-variable \
--Wvariadic-macros \
--Wvolatile-register-var \
--Wwrite-strings \
-"
-# The above are valid for gcc version 4.2.1.
-
+   CFLAGS="$CFLAGS -fdiagnostics-show-option --all-warnings --extra-warnings"
    if (eval $ac_link) 2>/dev/null; then
     AC_MSG_RESULT(yes)
+   else
+    AC_MSG_RESULT(no)
+    CFLAGS="$save_cflags"
+   fi
 
-    AC_MSG_CHECKING(if your C compiler can emit certain other warnings)
-    save_cflags="$CFLAGS"
-    CFLAGS="$CFLAGS \
--Warray-bounds \
--Wclobbered \
--Wcoverage-mismatch \
--Wempty-body \
--Wignored-qualifiers \
--Wlogical-op \
--Wmissing-parameter-type \
--Wold-style-declaration \
--Wpacked-bitfield-compat \
--Wsync-nand \
--Wtype-limits \
--Wvla \
-"
-# The above are valid for gcc version 4.4.3.
-# We skip the following entirely:
-#-pedantic
-#-Wabi
-#-Wc++-compat
-#-Wconversion
-#-Wfatal-errors
-#-Wlong-long
-#-Wpadded
-#-Wsign-conversion
-#-Wstack-protector
-#-Wsystem-headers
-#-Wtraditional
-#-Wtraditional-conversion
-#-Wunreachable-code
-
-    if (eval $ac_link) 2>/dev/null; then
-     AC_MSG_RESULT(yes)
-    else
-     AC_MSG_RESULT(no)
-     CFLAGS="$save_cflags"
-    fi
-
+   AC_MSG_CHECKING(if your C compiler has clang-like -Weverything)
+   save_cflags="$CFLAGS"
+   CFLAGS="$CFLAGS -Weverything"
+   if (eval $ac_link) 2>/dev/null; then
+    AC_MSG_RESULT(yes)
    else
     AC_MSG_RESULT(no)
     CFLAGS="$save_cflags"
