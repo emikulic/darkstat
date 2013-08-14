@@ -1,4 +1,8 @@
-v3.0.716 (August 2013)
+v3.0.717 (14 August 2013)
+	- (OS X only) Work around lack of clock_gettime().
+	- Fix crash due to str_appendf() not understanding %ld.
+
+v3.0.716 (8 August 2013)
 	- Implement support for multiple capture interfaces.
 	- Support multiple local IPs on an interface.
 	- Only error out if we fail to create all HTTP sockets.
