@@ -1,10 +1,18 @@
 #!/bin/sh
 #
 # release.sh: script to roll a release tarball of darkstat.
-# copyright (c) 2006-2011 Emil Mikulic.
+# copyright (c) 2006-2013 Emil Mikulic.
 #
 # This is for developer use only and lives in the repo but
 # shouldn't end up in a tarball.
+#
+# Release checklist:
+#  - git tag 3.0.xxx
+#  - git push --tags
+#  - Update website
+#  - Mail announcement to darkstat-announce@googlegroups.com
+#  - Update FreeBSD port, eg: http://www.freebsd.org/cgi/query-pr.cgi?pr=181277
+#  - Update freecode.com
 #
 if [ $# -ne 1 ]; then
   echo "usage: $0 3.0.0rc0" >&2
