@@ -1,19 +1,19 @@
-darkstat v3.0.540 and earlier defaulted to running in the foreground
-and had a "-d" commandline argument to get darkstat to daemonize,
-detach from the controlling terminal, and run in the background.
+Changes to defaults, most recent first:
 
-Since r540, the default has been inverted.  darkstat will daemonize by
-default.
+- After v3.0.708, --debug was split into --verbose and --no-daemon.
 
-Since r626, this behaviour can be suppressed with the "--debug"
-commandline argument, to force darkstat to stay in the foreground for
-debugging purposes.
+- Since v3.0.694, darkstat is able to save its internal database into a file and
+  reload it on startup.  The file format is, by design, incompatible with the
+  format from darkstat v2.
 
-The "-d" argument is no longer recognized, and will prevent darkstat
-from starting, so make sure you adjust any startup scripts you may have.
+- After v3.0.626, daemonizing can be suppressed with the "--debug" commandline
+  argument, to force darkstat to stay in the foreground for debugging purposes.
 
-After 3.0.708, --debug was split into --verbose and --no-daemon.
+  The "-d" argument is no longer recognized, and will prevent darkstat
+  from starting, so make sure you adjust any startup scripts you may have.
 
-Since v3.0.694, darkstat is able to save its internal database into a
-file and reload it on startup.  The file format is, by design,
-incompatible with the format from darkstat v2.
+- v3.0.540 and earlier defaulted to running in the foreground and had a "-d"
+  commandline argument to get darkstat to daemonize, detach from the controlling
+  terminal, and run in the background.
+
+  After 540, the default has been inverted.  darkstat will daemonize by default.
