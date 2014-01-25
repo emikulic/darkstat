@@ -15,6 +15,8 @@
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
+#ifndef __DARKSTAT_STR_H
+#define __DARKSTAT_STR_H
 
 #include "cdefs.h"
 
@@ -22,11 +24,11 @@
 #include <stdarg.h>
 #include <stdint.h>  /* for uint64_t */
 
-typedef long long   signed int qd; /* as in appendf("%qd") */
-typedef long long unsigned int qu; /* as in appendf("%qu") */
-typedef long long unsigned int llu; /* as in printf("%llu") */
+typedef long long   signed int qd;   /* as in appendf("%qd") */
+typedef long long unsigned int qu;   /* as in appendf("%qu") */
+typedef long long unsigned int llu;  /* as in printf("%llu") */
 
-_Static_assert(sizeof(qd) == sizeof(int64_t), "qd must be uint64_t sized");
+_Static_assert(sizeof(qd) == sizeof(int64_t), "qd must be int64_t sized");
 _Static_assert(sizeof(qu) == sizeof(uint64_t), "qu must be uint64_t sized");
 _Static_assert(sizeof(llu) == sizeof(uint64_t), "llu must be uint64_t sized");
 
@@ -61,4 +63,5 @@ struct str *length_of_time(const time_t t);
 ssize_t str_write(const struct str * const buf, const int fd);
 size_t str_len(const struct str * const buf);
 
+#endif  /* __DARKSTAT_STR_H */
 /* vim:set ts=3 sw=3 tw=78 expandtab: */
