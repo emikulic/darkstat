@@ -57,6 +57,7 @@ void graph_init(void) {
    }
    start_mono = now_mono();
    start_real = now_real();
+   last_real = 0;
    graph_reset();
 }
 
