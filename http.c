@@ -56,7 +56,7 @@ struct connection {
 
     int socket;
     struct sockaddr_storage client;
-    long last_active_mono;
+    time_t last_active_mono;
     enum {
         RECV_REQUEST,          /* receiving request */
         SEND_HEADER_AND_REPLY, /* try to send header+reply together */
