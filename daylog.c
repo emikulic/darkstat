@@ -24,8 +24,11 @@
 #include <unistd.h>
 
 static const char *daylog_fn = NULL;
-static long today_real, tomorrow_real;
+static time_t today_real, tomorrow_real;
 static uint64_t bytes_in, bytes_out, pkts_in, pkts_out;
+
+typedef long long unsigned int qu; /* as in appendf("%qu") */
+typedef long long unsigned int llu; /* as in printf("%llu") */
 
 #define DAYLOG_DATE_LEN 26 /* strlen("1900-01-01 00:00:00 +1234") + 1 */
 static char datebuf[DAYLOG_DATE_LEN];
@@ -89,27 +92,32 @@ static void daylog_write(const char *format, ...) {
 
 static void daylog_emit(void) {
    daylog_write("%s|%qu|%qu|%qu|%qu|%qu\n",
-                fmt_date(today_real), (uint64_t)today_real,
-                bytes_in, bytes_out, pkts_in, pkts_out);
+                fmt_date(today_real),
+                (qu)today_real,
+                (qu)bytes_in,
+                (qu)bytes_out,
+                (qu)pkts_in,
+                (qu)pkts_out);
 }
 
 void daylog_init(const char *filename) {
    daylog_fn = filename;
    today_real = now_real();
    tomorrow_real = tomorrow(today_real);
-   verbosef("today is %ld, tomorrow is %ld",
-            (long)today_real, (long)tomorrow_real);
+   verbosef("today is %llu, tomorrow is %llu",
+            (llu)today_real,
+            (llu)tomorrow_real);
    bytes_in = bytes_out = pkts_in = pkts_out = 0;
 
    daylog_write("# logging started at %s (%qu)\n",
-                fmt_date(today_real), (uint64_t)today_real);
+                fmt_date(today_real), (qu)today_real);
 }
 
 void daylog_free(void) {
    today_real = now_real();
    daylog_emit(); /* Emit what's currently accumulated before we exit. */
    daylog_write("# logging stopped at %s (%qu)\n",
-                fmt_date(today_real), (uint64_t)today_real);
+                fmt_date(today_real), (qu)today_real);
 }
 
 void daylog_acct(uint64_t amount, enum graph_dir dir) {
@@ -123,7 +131,7 @@ void daylog_acct(uint64_t amount, enum graph_dir dir) {
       today_real = now_real();
       tomorrow_real = tomorrow(today_real);
       bytes_in = bytes_out = pkts_in = pkts_out = 0;
-      verbosef("updated daylog, tomorrow = %ld", (long)tomorrow_real);
+      verbosef("updated daylog, tomorrow = %llu", (llu)tomorrow_real);
    }
 
    /* Accounting. */
