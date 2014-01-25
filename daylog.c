@@ -27,9 +27,6 @@ static const char *daylog_fn = NULL;
 static time_t today_real, tomorrow_real;
 static uint64_t bytes_in, bytes_out, pkts_in, pkts_out;
 
-typedef long long unsigned int qu; /* as in appendf("%qu") */
-typedef long long unsigned int llu; /* as in printf("%llu") */
-
 #define DAYLOG_DATE_LEN 26 /* strlen("1900-01-01 00:00:00 +1234") + 1 */
 static char datebuf[DAYLOG_DATE_LEN];
 

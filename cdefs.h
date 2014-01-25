@@ -26,7 +26,7 @@
 #endif
 
 #if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901
-#define restrict __restrict
+# define restrict __restrict
 #endif
 
 #ifndef MAX
@@ -35,6 +35,16 @@
 
 #ifndef MIN
 # define MIN(a,b) ((a) < (b) ? (a) : (b))
+#endif
+
+#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 201112L
+# ifdef __COUNTER__
+#  define _Static_assert(x, y)    __Static_assert(x, __COUNTER__)
+# else
+#  define _Static_assert(x, y)    __Static_assert(x, __LINE__)
+# endif
+# define __Static_assert(x, y)   ___Static_assert(x, y)
+# define ___Static_assert(x, y)  typedef char __assert_ ## y[(x) ? 1 : -1]
 #endif
 
 /* vim:set ts=3 sw=3 tw=78 expandtab: */
