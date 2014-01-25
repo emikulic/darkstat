@@ -128,6 +128,7 @@ static void rotate(struct graph *g, const unsigned int pos) {
    memcpy(g->out, tmp, size);
 
    free(tmp);
+   assert(g->num_bars > 0);
    assert(pos == ( (g->pos + ofs) % g->num_bars ));
    g->pos = pos;
 }
