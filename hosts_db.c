@@ -20,7 +20,7 @@
 #include "opt.h"
 #include "str.h"
 
-#include <netdb.h>     /* struct addrinfo */
+#include <netdb.h>  /* struct addrinfo */
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
@@ -342,10 +342,12 @@ format_row_host(struct str *buf, const struct bucket *b,
       " <td class=\"num\">%'qu</td>\n"
       " <td class=\"num\">%'qu</td>\n"
       " <td class=\"num\">%'qu</td>\n",
-      b->in, b->out, b->total);
+      (qu)b->in,
+      (qu)b->out,
+      (qu)b->total);
 
    if (opt_want_lastseen) {
-      long last = b->u.host.last_seen_mono;
+      time_t last = b->u.host.last_seen_mono;
       struct str *last_str = NULL;
 
       if ((now_mono() >= last) && (last > 0))
@@ -356,7 +358,9 @@ format_row_host(struct str *buf, const struct bucket *b,
          if (last == 0)
             str_append(buf, "(never)");
          else
-            str_append(buf, "(clock error)");
+            str_appendf(buf, "(clock error: now = %qu, last = %qu)",
+                        (qu)now_mono(),
+                        (qu)last);
       } else {
          str_appendstr(buf, last_str);
          str_free(last_str);
@@ -403,7 +407,12 @@ format_row_port_tcp(struct str *buf, const struct bucket *b,
       " <td class=\"num\">%'qu</td>\n"
       "</tr>\n",
       css_class,
-      p->port, getservtcp(p->port), b->in, b->out, b->total, p->syn
+      p->port,
+      getservtcp(p->port),
+      (qu)b->in,
+      (qu)b->out,
+      (qu)b->total,
+      (qu)p->syn
    );
 }
 
@@ -437,7 +446,11 @@ format_row_port_udp(struct str *buf, const struct bucket *b,
       " <td class=\"num\">%'qu</td>\n"
       "</tr>\n",
       css_class,
-      p->port, getservudp(p->port), b->in, b->out, b->total
+      p->port,
+      getservudp(p->port),
+      (qu)b->in,
+      (qu)b->out,
+      (qu)b->total
    );
 }
 
@@ -471,8 +484,11 @@ format_row_ip_proto(struct str *buf, const struct bucket *b,
       " <td class=\"num\">%'qu</td>\n"
       "</tr>\n",
       css_class,
-      p->proto, getproto(p->proto),
-      b->in, b->out, b->total
+      p->proto,
+      getproto(p->proto),
+      (qu)b->in,
+      (qu)b->out,
+      (qu)b->total
    );
 }
 
@@ -1087,7 +1103,9 @@ static struct str *html_hosts_detail(const char *ip) {
       " <b>Out:</b> %'qu<br>\n"
       " <b>Total:</b> %'qu<br>\n"
       "</p>\n",
-      h->in, h->out, h->total);
+      (qu)h->in,
+      (qu)h->out,
+      (qu)h->total);
 
    str_append(buf, "<h3>TCP ports</h3>\n");
    format_table(buf, h->u.host.ports_tcp, 0,TOTAL,0);

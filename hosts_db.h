@@ -19,7 +19,7 @@ struct host {
    struct addr addr;
    char *dns;
    uint8_t mac_addr[6];
-   long last_seen_mono;
+   time_t last_seen_mono;
    struct hashtable *ports_tcp, *ports_udp, *ip_protos;
 };
 
