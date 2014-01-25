@@ -9,6 +9,7 @@
 
 #define _GNU_SOURCE 1 /* for O_NOFOLLOW on Linux */
 
+#include "cdefs.h"
 #include "err.h"
 #include "daylog.h"
 #include "str.h"
@@ -55,6 +56,7 @@ static time_t tomorrow(time_t t_before) {
 }
 
 /* Warns on error. */
+static void daylog_write(const char *format, ...) _printflike_(1, 2);
 static void daylog_write(const char *format, ...) {
    int fd;
    ssize_t wr;

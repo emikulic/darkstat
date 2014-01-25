@@ -27,6 +27,6 @@ void warn(const char *format, ...) _printflike_(1, 2);
 void warnx(const char *format, ...) _printflike_(1, 2);
 
 void verbosef(const char *format, ...) _printflike_(1, 2);
-void dverbosef(const char *format _unused_, ...);
+void dverbosef(const char *format _unused_, ...) _printflike_(1, 2);
 
 /* vim:set ts=3 sw=3 tw=78 expandtab: */

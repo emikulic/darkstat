@@ -16,6 +16,8 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#include "cdefs.h"
+
 #include <sys/types.h>
 #include <stdarg.h>
 
@@ -39,10 +41,12 @@ void str_appendstr(struct str *buf, const struct str *s);
 void str_append(struct str *buf, const char *s);
 #endif
 
-size_t xvasprintf(char **result, const char *format, va_list va);
-size_t xasprintf(char **result, const char *format, ...);
-void str_appendf(struct str *buf, const char *format, ...);
-void str_vappendf(struct str *s, const char *format, va_list va);
+size_t xvasprintf(char **result, const char *format, va_list va)
+   _printflike_(2, 0);
+size_t xasprintf(char **result, const char *format, ...) _printflike_(2, 3);
+void str_vappendf(struct str *s, const char *format, va_list va)
+   _printflike_(2, 0);
+void str_appendf(struct str *s, const char *format, ...) _printflike_(2, 3);
 
 struct str *length_of_time(const time_t t);
 ssize_t str_write(const struct str * const buf, const int fd);

@@ -409,6 +409,9 @@ static void generate_header(struct connection *conn,
  */
 static void default_reply(struct connection *conn,
     const int errcode, const char *errname, const char *format, ...)
+    _printflike_(4, 5);
+static void default_reply(struct connection *conn,
+    const int errcode, const char *errname, const char *format, ...)
 {
     char *reason;
     va_list va;
