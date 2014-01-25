@@ -29,10 +29,9 @@
 static int pidfd = -1;
 static const char *pidname = NULL;
 
-void
-pidfile_create(const char *chroot_dir, const char *filename,
-   const char *privdrop_user)
-{
+void pidfile_create(const char *chroot_dir,
+                    const char *filename,
+                    const char *privdrop_user) {
    struct passwd *pw;
 
    if (pidfd != -1)
@@ -48,8 +47,11 @@ pidfile_create(const char *chroot_dir, const char *filename,
          err(1, "getpwnam(\"%s\") failed", privdrop_user);
    }
 
-   if (chdir(chroot_dir) == -1)
-      err(1, "chdir(\"%s\") failed", chroot_dir);
+   if (chroot_dir != NULL) {
+      if (chdir(chroot_dir) == -1) {
+         err(1, "chdir(\"%s\") failed", chroot_dir);
+      }
+   }
    pidname = filename;
    pidfd = open(filename, O_WRONLY | O_CREAT | O_TRUNC | O_EXCL, 0600);
    if (pidfd == -1)

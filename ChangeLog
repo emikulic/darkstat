@@ -1,3 +1,8 @@
+v3.0.718 (January 2014)
+	- (SECURITY!) The user must specify a --chroot dir for
+	  chroot() to happen.  We don't set a default in the configure
+	  script anymore.
+
 v3.0.717 (14 August 2013)
 	- (OS X only) Work around lack of clock_gettime().
 	- Fix crash due to str_appendf() not understanding %ld.
@@ -29,15 +34,17 @@ v3.0.714 (June 2011)
 	- Allow sort on last-seen, thanks to Dirk Koopman.
 	- Support multiple bind addresses.
 	- Add --disable-debug configure flag, thanks to Malte S. Stretz.
-	- Make it possible to save the DB without resetting it (SIGUSR2).
-	- Web: Use relative URLs, so darkstat works properly behind mod_proxy,
-	  thanks to Malte S. Stretz.
+	- Make it possible to export the database without resetting it:
+	  by sending SIGUSR2.
+	- Web: Use relative URLs, so darkstat works properly
+	  behind mod_proxy, thanks to Malte S. Stretz.
 
 v3.0.713 (March 2010)
 	- Don't require --verbose for pcap_stats.
 	- Survive interface going down on Linux.
 	- Support DLT_RAW, implemented by Anton S. Ustyuzhanin.
-	- Skip accounting for hosts or ports if their max is set to zero.
+	- Skip accounting for hosts or ports if their max
+	  is set to zero.
 	- Implement --hexdump for troubleshooting.
 	- Web: Implement --no-lastseen
 	- Implement --snaplen manual override.
@@ -177,6 +184,6 @@ v3.0.471 (Jun 2006)
 
 v2.6 (Nov 2003)
 
-	End of the line for darkstat 2
+	End of the line for darkstat 2.
 
 vim:set noet ts=8 sw=8 tw=72:

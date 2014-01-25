@@ -134,44 +134,16 @@ const char *opt_privdrop_user = NULL;
 static void cb_user(const char *arg) { opt_privdrop_user = arg; }
 
 const char *opt_daylog_fn = NULL;
-static void cb_daylog(const char *arg)
-{
-   if (opt_chroot_dir == NULL)
-      errx(1, "the daylog file is relative to the chroot.\n"
-      "You must specify a --chroot dir before you can use --daylog.");
-   else
-      opt_daylog_fn = arg;
-}
+static void cb_daylog(const char *arg) { opt_daylog_fn = arg; }
 
 const char *import_fn = NULL;
-static void cb_import(const char *arg)
-{
-   if (opt_chroot_dir == NULL)
-      errx(1, "the import file is relative to the chroot.\n"
-      "You must specify a --chroot dir before you can use --import.");
-   else
-      import_fn = arg;
-}
+static void cb_import(const char *arg) { import_fn = arg; }
 
 const char *export_fn = NULL;
-static void cb_export(const char *arg)
-{
-   if ((opt_chroot_dir == NULL) && (opt_capfile == NULL))
-      errx(1, "the export file is relative to the chroot.\n"
-      "You must specify a --chroot dir before you can use --export.");
-   else
-      export_fn = arg;
-}
+static void cb_export(const char *arg) { export_fn = arg; }
 
 static const char *pid_fn = NULL;
-static void cb_pidfile(const char *arg)
-{
-   if (opt_chroot_dir == NULL)
-      errx(1, "the pidfile is relative to the chroot.\n"
-      "You must specify a --chroot dir before you can use --pidfile.");
-   else
-      pid_fn = arg;
-}
+static void cb_pidfile(const char *arg) { pid_fn = arg; }
 
 unsigned int opt_hosts_max = 1000;
 static void cb_hosts_max(const char *arg)
@@ -334,9 +306,7 @@ static void parse_cmdline(const int argc, char * const *argv) {
    if (opt_want_syslog)
       openlog("darkstat", LOG_NDELAY | LOG_PID, LOG_DAEMON);
 
-   /* some default values */
-   if (opt_chroot_dir == NULL)
-      opt_chroot_dir = CHROOT_DIR;
+   /* default value */
    if (opt_privdrop_user == NULL)
       opt_privdrop_user = PRIVDROP_USER;
 

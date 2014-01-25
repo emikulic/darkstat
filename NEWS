@@ -1,5 +1,8 @@
 Changes to defaults, most recent first:
 
+- After v3.0.717, the user must specify a --chroot dir for chroot() to happen.
+  We don't set a default in the configure script anymore.
+
 - After v3.0.708, --debug was split into --verbose and --no-daemon.
 
 - Since v3.0.694, darkstat is able to save its internal database into a file and
@@ -17,3 +20,5 @@ Changes to defaults, most recent first:
   terminal, and run in the background.
 
   After 540, the default has been inverted.  darkstat will daemonize by default.
+
+vim:set noet ts=8 sw=8 tw=80:

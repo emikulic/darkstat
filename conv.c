@@ -288,9 +288,7 @@ daemonize_finish(void)
  * For security, chroot (optionally) and drop privileges.
  * Pass a NULL chroot_dir to disable chroot() behaviour.
  */
-void
-privdrop(const char *chroot_dir, const char *privdrop_user)
-{
+void privdrop(const char *chroot_dir, const char *privdrop_user) {
    struct passwd *pw;
 
    errno = 0;
@@ -302,7 +300,9 @@ privdrop(const char *chroot_dir, const char *privdrop_user)
       else
          err(1, "getpwnam(\"%s\") failed", privdrop_user);
    }
-   if (chroot_dir != NULL) {
+   if (chroot_dir == NULL) {
+      verbosef("no --chroot dir specified, darkstat will not chroot()");
+   } else {
       tzset(); /* read /etc/localtime before we chroot */
       if (chdir(chroot_dir) == -1)
          err(1, "chdir(\"%s\") failed", chroot_dir);
@@ -344,3 +344,5 @@ fd_set_block(const int fd)
       err(1, "fcntl(fd %d) to unset O_NONBLOCK", fd);
    assert( (fcntl(fd, F_GETFL, 0) & O_NONBLOCK ) == 0 );
 }
+
+/* vim:set ts=3 sw=3 tw=78 expandtab: */
