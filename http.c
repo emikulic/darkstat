@@ -574,11 +574,16 @@ process_gzip(struct connection *conn)
     zs.zfree = Z_NULL;
     zs.opaque = Z_NULL;
 
-    if (deflateInit2(&zs, Z_BEST_COMPRESSION, Z_DEFLATED,
-        15+16, /* 15 = biggest window, 16 = add gzip header+trailer */
-        8 /* default */,
-        Z_DEFAULT_STRATEGY) != Z_OK)
-       return;
+    if (deflateInit2(&zs,
+                     Z_BEST_COMPRESSION,
+                     Z_DEFLATED,
+                     15+16, /* 15 = biggest window,
+                               16 = add gzip header+trailer */
+                     8 /* default */,
+                     Z_DEFAULT_STRATEGY) != Z_OK) {
+        free(buf);
+        return;
+    }
 
     zs.avail_in = conn->reply_length;
     zs.next_in = (unsigned char *)conn->reply;
@@ -589,7 +594,7 @@ process_gzip(struct connection *conn)
     if (deflate(&zs, Z_FINISH) != Z_STREAM_END) {
         deflateEnd(&zs);
         free(buf);
-        verbosef("failed to compress %u bytes", (unsigned int)len);
+        verbosef("failed to compress %zu bytes", len);
         return;
     }
 
