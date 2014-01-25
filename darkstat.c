@@ -16,12 +16,13 @@
 #include "db.h"
 #include "dns.h"
 #include "err.h"
-#include "http.h"
 #include "hosts_db.h"
+#include "http.h"
 #include "localip.h"
 #include "ncache.h"
 #include "now.h"
 #include "pidfile.h"
+#include "str.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -381,8 +382,8 @@ static void run_from_capfile(void) {
    hosts_db_free();
    graph_free();
    verbosef("Total packets: %llu, bytes: %llu",
-            (unsigned long long)acct_total_packets,
-            (unsigned long long)acct_total_bytes);
+            (llu)acct_total_packets,
+            (llu)acct_total_bytes);
 }
 
 /* --- Program body --- */
