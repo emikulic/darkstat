@@ -33,7 +33,7 @@ rec_cmp(struct name_rec *a, struct name_rec *b)
 }
 
 RB_HEAD(nc_tree, name_rec);
-RB_GENERATE(nc_tree, name_rec, ptree, rec_cmp)
+RB_GENERATE_STATIC(nc_tree, name_rec, ptree, rec_cmp)
 
 static struct nc_tree
    t_proto   = RB_INITIALIZER(&name_rec),

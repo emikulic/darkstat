@@ -111,12 +111,7 @@ tree_cmp(struct tree_rec *a, struct tree_rec *b)
 }
 
 static RB_HEAD(tree_t, tree_rec) ip_tree = RB_INITIALIZER(&tree_rec);
-/* Quiet warnings. */
-static struct tree_rec * tree_t_RB_NEXT(struct tree_rec *elm)
-   _unused_;
-static struct tree_rec * tree_t_RB_MINMAX(struct tree_t *head, int val)
-   _unused_;
-RB_GENERATE(tree_t, tree_rec, ptree, tree_cmp)
+RB_GENERATE_STATIC(tree_t, tree_rec, ptree, tree_cmp)
 
 void
 dns_queue(const struct addr *const ipaddr)

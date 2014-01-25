@@ -9,4 +9,4 @@ LLVM=$HOME/llvm
 CLANG=$LLVM/install/bin/clang
 
 $CLANG -Weverything -Wno-padded -Wno-format-non-iso -Wno-cast-align \
-  -Wno-disabled-macro-expansion -O -c $TARGET
+  -Wno-disabled-macro-expansion -Wno-used-but-marked-unused -O -c $TARGET
