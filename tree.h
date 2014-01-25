@@ -1,12 +1,8 @@
-/* This is a cut down version of FreeBSD's
- * src/sys/sys/tree.h,v 1.5
- *
- * Also tagged
- * $NetBSD: tree.h,v 1.8 2004/03/28 19:38:30 provos Exp $
- * $OpenBSD: tree.h,v 1.7 2002/10/17 21:51:54 art Exp $
- *
- * The original file's license:
- *
+/* This is a cut down version of NetBSD's /usr/include/sys/tree.h */
+
+/*	$NetBSD: tree.h,v 1.20 2013/09/14 13:20:45 joerg Exp $	*/
+/*	$OpenBSD: tree.h,v 1.13 2011/07/09 00:19:45 pirofti Exp $	*/
+/*
  * Copyright 2002 Niels Provos <provos@citi.umich.edu>
  * All rights reserved.
  *
@@ -31,12 +27,23 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#ifndef	_SYS_TREE_H_
+#define	_SYS_TREE_H_
+
+#include "cdefs.h"
+
+/* Macros that define a red-black tree */
 #define RB_HEAD(name, type)						\
 struct name {								\
 	struct type *rbh_root; /* root of the tree */			\
 }
 
-#define RB_INITIALIZER(root) { NULL }
+#define RB_INITIALIZER(root)						\
+	{ NULL }
+
+#define RB_INIT(root) do {						\
+	(root)->rbh_root = NULL;					\
+} while (/*CONSTCOND*/ 0)
 
 #define RB_BLACK	0
 #define RB_RED		1
@@ -53,6 +60,7 @@ struct {								\
 #define RB_PARENT(elm, field)		(elm)->field.rbe_parent
 #define RB_COLOR(elm, field)		(elm)->field.rbe_color
 #define RB_ROOT(head)			(head)->rbh_root
+#define RB_EMPTY(head)			(RB_ROOT(head) == NULL)
 
 #define RB_SET(elm, parent, field) do {					\
 	RB_PARENT(elm, field) = parent;					\
@@ -65,7 +73,9 @@ struct {								\
 	RB_COLOR(red, field) = RB_RED;					\
 } while (/*CONSTCOND*/ 0)
 
-#define RB_AUGMENT(x)	do {} while (0)
+#ifndef RB_AUGMENT
+#define RB_AUGMENT(x)	do {} while (/*CONSTCOND*/ 0)
+#endif
 
 #define RB_ROTATE_LEFT(head, elm, tmp, field) do {			\
 	(tmp) = RB_RIGHT(elm, field);					\
@@ -107,8 +117,32 @@ struct {								\
 		RB_AUGMENT(RB_PARENT(tmp, field));			\
 } while (/*CONSTCOND*/ 0)
 
+/* Generates prototypes and inline functions */
+#define RB_PROTOTYPE(name, type, field, cmp)				\
+	RB_PROTOTYPE_INTERNAL(name, type, field, cmp,)
+#define	RB_PROTOTYPE_STATIC(name, type, field, cmp)			\
+	RB_PROTOTYPE_INTERNAL(name, type, field, cmp, _unused_ static)
+#define RB_PROTOTYPE_INTERNAL(name, type, field, cmp, attr)		\
+attr void name##_RB_INSERT_COLOR(struct name *, struct type *);		\
+attr void name##_RB_REMOVE_COLOR(struct name *, struct type *, struct type *);\
+attr struct type *name##_RB_REMOVE(struct name *, struct type *);	\
+attr struct type *name##_RB_INSERT(struct name *, struct type *);	\
+attr struct type *name##_RB_FIND(struct name *, struct type *);		\
+attr struct type *name##_RB_NFIND(struct name *, struct type *);	\
+attr struct type *name##_RB_NEXT(struct type *);			\
+attr struct type *name##_RB_PREV(struct type *);			\
+attr struct type *name##_RB_MINMAX(struct name *, int);			\
+									\
+
+#include <assert.h>
+
+/* Main rb operation.
+ * Moves node close to the key of elm to top
+ */
 #define	RB_GENERATE(name, type, field, cmp)				\
-	RB_GENERATE_INTERNAL(name, type, field, cmp, static)
+	RB_GENERATE_INTERNAL(name, type, field, cmp,)
+#define	RB_GENERATE_STATIC(name, type, field, cmp)			\
+	RB_GENERATE_INTERNAL(name, type, field, cmp, _unused_ static)
 #define RB_GENERATE_INTERNAL(name, type, field, cmp, attr)		\
 attr void								\
 name##_RB_INSERT_COLOR(struct name *head, struct type *elm)		\
@@ -117,6 +151,7 @@ name##_RB_INSERT_COLOR(struct name *head, struct type *elm)		\
 	while ((parent = RB_PARENT(elm, field)) != NULL &&		\
 	    RB_COLOR(parent, field) == RB_RED) {			\
 		gparent = RB_PARENT(parent, field);			\
+    assert(gparent != NULL); \
 		if (parent == RB_LEFT(gparent, field)) {		\
 			tmp = RB_RIGHT(gparent, field);			\
 			if (tmp && RB_COLOR(tmp, field) == RB_RED) {	\
@@ -167,6 +202,7 @@ name##_RB_REMOVE_COLOR(struct name *head, struct type *parent, struct type *elm)
 				RB_ROTATE_LEFT(head, parent, tmp, field);\
 				tmp = RB_RIGHT(parent, field);		\
 			}						\
+      assert(tmp != NULL); \
 			if ((RB_LEFT(tmp, field) == NULL ||		\
 			    RB_COLOR(RB_LEFT(tmp, field), field) == RB_BLACK) &&\
 			    (RB_RIGHT(tmp, field) == NULL ||		\
@@ -200,6 +236,7 @@ name##_RB_REMOVE_COLOR(struct name *head, struct type *parent, struct type *elm)
 				RB_ROTATE_RIGHT(head, parent, tmp, field);\
 				tmp = RB_LEFT(parent, field);		\
 			}						\
+      assert(tmp != NULL); \
 			if ((RB_LEFT(tmp, field) == NULL ||		\
 			    RB_COLOR(RB_LEFT(tmp, field), field) == RB_BLACK) &&\
 			    (RB_RIGHT(tmp, field) == NULL ||		\
@@ -270,6 +307,7 @@ name##_RB_REMOVE(struct name *head, struct type *elm)			\
 			RB_AUGMENT(RB_PARENT(old, field));		\
 		} else							\
 			RB_ROOT(head) = elm;				\
+    assert(RB_LEFT(old, field) != NULL); \
 		RB_PARENT(RB_LEFT(old, field), field) = elm;		\
 		if (RB_RIGHT(old, field))				\
 			RB_PARENT(RB_RIGHT(old, field), field) = elm;	\
@@ -348,6 +386,27 @@ name##_RB_FIND(struct name *head, struct type *elm)			\
 	return (NULL);							\
 }									\
 									\
+/* Finds the first node greater than or equal to the search key */	\
+attr struct type *							\
+name##_RB_NFIND(struct name *head, struct type *elm)			\
+{									\
+	struct type *tmp = RB_ROOT(head);				\
+	struct type *res = NULL;					\
+	int comp;							\
+	while (tmp) {							\
+		comp = cmp(elm, tmp);					\
+		if (comp < 0) {						\
+			res = tmp;					\
+			tmp = RB_LEFT(tmp, field);			\
+		}							\
+		else if (comp > 0)					\
+			tmp = RB_RIGHT(tmp, field);			\
+		else							\
+			return (tmp);					\
+	}								\
+	return (res);							\
+}									\
+									\
 /* ARGSUSED */								\
 attr struct type *							\
 name##_RB_NEXT(struct type *elm)					\
@@ -363,6 +422,28 @@ name##_RB_NEXT(struct type *elm)					\
 		else {							\
 			while (RB_PARENT(elm, field) &&			\
 			    (elm == RB_RIGHT(RB_PARENT(elm, field), field)))\
+				elm = RB_PARENT(elm, field);		\
+			elm = RB_PARENT(elm, field);			\
+		}							\
+	}								\
+	return (elm);							\
+}									\
+									\
+/* ARGSUSED */								\
+attr struct type *							\
+name##_RB_PREV(struct type *elm)					\
+{									\
+	if (RB_LEFT(elm, field)) {					\
+		elm = RB_LEFT(elm, field);				\
+		while (RB_RIGHT(elm, field))				\
+			elm = RB_RIGHT(elm, field);			\
+	} else {							\
+		if (RB_PARENT(elm, field) &&				\
+		    (elm == RB_RIGHT(RB_PARENT(elm, field), field)))	\
+			elm = RB_PARENT(elm, field);			\
+		else {							\
+			while (RB_PARENT(elm, field) &&			\
+			    (elm == RB_LEFT(RB_PARENT(elm, field), field)))\
 				elm = RB_PARENT(elm, field);		\
 			elm = RB_PARENT(elm, field);			\
 		}							\
@@ -386,9 +467,45 @@ name##_RB_MINMAX(struct name *head, int val)				\
 }
 
 #define RB_NEGINF	-1
+#define RB_INF	1
 
 #define RB_INSERT(name, x, y)	name##_RB_INSERT(x, y)
 #define RB_REMOVE(name, x, y)	name##_RB_REMOVE(x, y)
 #define RB_FIND(name, x, y)	name##_RB_FIND(x, y)
+#define RB_NFIND(name, x, y)	name##_RB_NFIND(x, y)
 #define RB_NEXT(name, x, y)	name##_RB_NEXT(y)
+#define RB_PREV(name, x, y)	name##_RB_PREV(y)
 #define RB_MIN(name, x)		name##_RB_MINMAX(x, RB_NEGINF)
+#define RB_MAX(name, x)		name##_RB_MINMAX(x, RB_INF)
+
+#define RB_FOREACH(x, name, head)					\
+	for ((x) = RB_MIN(name, head);					\
+	     (x) != NULL;						\
+	     (x) = name##_RB_NEXT(x))
+
+#define RB_FOREACH_FROM(x, name, y)					\
+	for ((x) = (y);							\
+	    ((x) != NULL) && ((y) = name##_RB_NEXT(x), (x) != NULL);	\
+	     (x) = (y))
+
+#define RB_FOREACH_SAFE(x, name, head, y)				\
+	for ((x) = RB_MIN(name, head);					\
+	    ((x) != NULL) && ((y) = name##_RB_NEXT(x), (x) != NULL);	\
+	     (x) = (y))
+
+#define RB_FOREACH_REVERSE(x, name, head)				\
+	for ((x) = RB_MAX(name, head);					\
+	     (x) != NULL;						\
+	     (x) = name##_RB_PREV(x))
+
+#define RB_FOREACH_REVERSE_FROM(x, name, y)				\
+	for ((x) = (y);							\
+	    ((x) != NULL) && ((y) = name##_RB_PREV(x), (x) != NULL);	\
+	     (x) = (y))
+
+#define RB_FOREACH_REVERSE_SAFE(x, name, head, y)			\
+	for ((x) = RB_MAX(name, head);					\
+	    ((x) != NULL) && ((y) = name##_RB_PREV(x), (x) != NULL);	\
+	     (x) = (y))
+
+#endif	/* _SYS_TREE_H_ */
