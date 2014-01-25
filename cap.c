@@ -398,12 +398,21 @@ static void callback(u_char *user,
 /* Process any packets currently in the capture buffer. */
 void cap_poll(fd_set *read_set _unused_on_linux_) {
    struct cap_iface *iface;
+   static int told = 0;
 
    STAILQ_FOREACH(iface, &cap_ifs, entries) {
       /* Once per capture poll, check our IP address.  It's used in accounting
        * for traffic graphs.
        */
       localip_update(iface->name, &iface->local_ips);
+      if (!told && iface->local_ips.num_addrs == 0) {
+         verbosef("interface '%s' has no addresses, "
+                  "your graphs will be blank",
+                  iface->name);
+         verbosef("please read the darkstat manpage, "
+                  "and consider using the -l option");
+         told = 1;
+      }
 
       for (;;) {
          struct timespec t;
