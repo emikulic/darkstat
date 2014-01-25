@@ -148,6 +148,6 @@ http.o: http.c cdefs.h config.h conv.h err.h graph_db.h hosts_db.h addr.h \
 localip.o: localip.c addr.h bsd.h config.h conv.h err.h cdefs.h localip.h \
  now.h
 ncache.o: ncache.c conv.h err.h cdefs.h ncache.h tree.h bsd.h config.h
-now.o: now.c err.h cdefs.h now.h
+now.o: now.c err.h cdefs.h now.h str.h
 pidfile.o: pidfile.c err.h cdefs.h str.h pidfile.h
 str.o: str.c conv.h err.h cdefs.h str.h

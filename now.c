@@ -17,6 +17,7 @@
  */
 #include "err.h"
 #include "now.h"
+#include "str.h"
 
 #include <assert.h>
 #include <string.h>
@@ -80,6 +81,17 @@ static int before(const struct timespec *a, const struct timespec *b) {
    return 0;
 }
 
+static void warn_backwards(const char *name,
+                           const struct timespec * const t0,
+                           const struct timespec * const t1) {
+   verbosef("%s clock went backwards from %lld.%09lld to %lld.%09lld",
+            name,
+            (lld)t0->tv_sec,
+            (lld)t0->tv_nsec,
+            (lld)t1->tv_sec,
+            (lld)t1->tv_nsec);
+}
+
 static void clock_update(const clockid_t clk_id,
                          struct timespec *dest,
                          const char *name) {
@@ -87,12 +99,7 @@ static void clock_update(const clockid_t clk_id,
 
    clock_gettime(clk_id, &t);
    if (now_initialized && before(&t, dest)) {
-      verbosef("%s clock went backwards from %ld.%09ld to %ld.%09ld",
-               name,
-               (long)dest->tv_sec,
-               (long)dest->tv_nsec,
-               (long)t.tv_sec,
-               (long)t.tv_nsec);
+      warn_backwards(name, &t, dest);
    }
    memcpy(dest, &t, sizeof(t));
 }
@@ -133,20 +140,24 @@ static int64_t ts_diff(const struct timespec * const a,
           a->tv_nsec - b->tv_nsec;
 }
 
-void timer_stop(const struct timespec * const t,
+void timer_stop(const struct timespec * const t0,
                 const int64_t nsec,
                 const char *warning) {
-   struct timespec t2;
+   struct timespec t1;
    int64_t diff;
 
-   clock_gettime(CLOCK_MONOTONIC, &t2);
-   diff = ts_diff(&t2, t);
-   assert(diff > 0);
-   if (diff > nsec)
+   clock_gettime(CLOCK_MONOTONIC, &t1);
+   if (before(&t1, t0)) {
+      warn_backwards("monotonic timer", t0, &t1);
+      return;
+   }
+   diff = ts_diff(&t1, t0);
+   if (diff > nsec) {
       warnx("%s (took %lld nsec, over threshold of %lld nsec)",
             warning,
-            (long long)diff,
-            (long long)nsec);
+            (lld)diff,
+            (lld)nsec);
+   }
 }
 
 /* vim:set ts=3 sw=3 tw=80 et: */

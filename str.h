@@ -26,10 +26,12 @@
 
 typedef long long   signed int qd;   /* as in appendf("%qd") */
 typedef long long unsigned int qu;   /* as in appendf("%qu") */
+typedef long long unsigned int lld;  /* as in printf("%lld") */
 typedef long long unsigned int llu;  /* as in printf("%llu") */
 
 _Static_assert(sizeof(qd) == sizeof(int64_t), "qd must be int64_t sized");
 _Static_assert(sizeof(qu) == sizeof(uint64_t), "qu must be uint64_t sized");
+_Static_assert(sizeof(lld) == sizeof(int64_t), "lld must be int64_t sized");
 _Static_assert(sizeof(llu) == sizeof(uint64_t), "llu must be uint64_t sized");
 
 /* Note: the contents are 8-bit clean and not zero terminated! */
