@@ -129,14 +129,14 @@ static void cb_chroot(const char *arg) { opt_chroot_dir = arg; }
 const char *opt_privdrop_user = NULL;
 static void cb_user(const char *arg) { opt_privdrop_user = arg; }
 
-const char *daylog_fn = NULL;
+const char *opt_daylog_fn = NULL;
 static void cb_daylog(const char *arg)
 {
    if (opt_chroot_dir == NULL)
       errx(1, "the daylog file is relative to the chroot.\n"
       "You must specify a --chroot dir before you can use --daylog.");
    else
-      daylog_fn = arg;
+      opt_daylog_fn = arg;
 }
 
 const char *import_fn = NULL;
@@ -418,7 +418,7 @@ main(int argc, char **argv)
 
    /* Don't need root privs for these: */
    now_init();
-   if (daylog_fn != NULL) daylog_init(daylog_fn);
+   if (opt_daylog_fn != NULL) daylog_init(opt_daylog_fn);
    graph_init();
    hosts_db_init();
    if (import_fn != NULL) db_import(import_fn);
@@ -490,7 +490,7 @@ main(int argc, char **argv)
    if (export_fn != NULL) db_export(export_fn);
    hosts_db_free();
    graph_free();
-   if (daylog_fn != NULL) daylog_free();
+   if (opt_daylog_fn != NULL) daylog_free();
    ncache_free();
    if (pid_fn) pidfile_unlink();
    verbosef("shut down");
