@@ -38,6 +38,7 @@
 #include <zlib.h>
 
 static char *http_base_url = NULL;
+static int http_base_len = 0;
 
 static const char mime_type_xml[] = "text/xml";
 static const char mime_type_html[] = "text/html; charset=us-ascii";
@@ -620,34 +621,33 @@ process_gzip(struct connection *conn)
  */
 static void process_get(struct connection *conn)
 {
-    char *decoded_url, *safe_url;
+    char *safe_url;
 
     verbosef("http: %s \"%s\" %s", conn->method, conn->uri,
         (conn->query == NULL)?"":conn->query);
 
-    /* work out path of file being requested */
-    decoded_url = urldecode(conn->uri);
-
-    /* make sure it's safe */
-    safe_url = make_safe_uri(decoded_url);
-    free(decoded_url);
-    if (safe_url == NULL)
     {
-        default_reply(conn, 400, "Bad Request",
-                "You requested an invalid URI: %s", conn->uri);
-        return;
-    }
+        /* Decode the URL being requested. */
+        char *decoded_url;
+        char *decoded_url_offset;
 
-    /* make relative (or fail) */
-    decoded_url = safe_url;
-    if (!str_starts_with(decoded_url, http_base_url))
-    {
-        default_reply(conn, 404, "Not Found",
-            "The page you requested could not be found.");
+        decoded_url = urldecode(conn->uri);
+
+        /* Optionally strip the base. */
+        decoded_url_offset = decoded_url;
+        if (str_starts_with(decoded_url, http_base_url)) {
+            decoded_url_offset += http_base_len - 1;
+        }
+
+        /* Make sure it's safe. */
+        safe_url = make_safe_uri(decoded_url_offset);
         free(decoded_url);
-        return;
+        if (safe_url == NULL) {
+            default_reply(conn, 400, "Bad Request",
+                    "You requested an invalid URI: %s", conn->uri);
+            return;
+        }
     }
-    safe_url = decoded_url + strlen(http_base_url) - 1;
 
     if (strcmp(safe_url, "/") == 0) {
         struct str *buf = html_front_page();
@@ -660,7 +660,7 @@ static void process_get(struct connection *conn)
         if (buf == NULL) {
             default_reply(conn, 404, "Not Found",
                 "The page you requested could not be found.");
-            free(decoded_url);
+            free(safe_url);
             return;
         }
         str_extract(buf, &(conn->reply_length), &(conn->reply));
@@ -680,10 +680,10 @@ static void process_get(struct connection *conn)
     else {
         default_reply(conn, 404, "Not Found",
             "The page you requested could not be found.");
-        free(decoded_url);
+        free(safe_url);
         return;
     }
-    free(decoded_url);
+    free(safe_url);
 
     process_gzip(conn);
     assert(conn->mime_type != NULL);
@@ -910,27 +910,27 @@ void http_init_base(const char *url) {
 
     if (url == NULL) {
         http_base_url = strdup("/");
-        return;
-    }
-
-    /* Make sure that the url has leading and trailing slashes. */
-    urllen = strlen(url);
-    slashed_url = xmalloc(urllen+3);
-    slashed_url[0] = '/';
-    memcpy(slashed_url+1, url, urllen); /* don't copy NUL */
-    slashed_url[urllen+1] = '/';
-    slashed_url[urllen+2] = '\0';
-
-    /* Clean the url. */
-    safe_url = make_safe_uri(slashed_url);
-    free(slashed_url);
-    if (safe_url == NULL) {
-        verbosef("invalid base \"%s\", ignored", url);
-        http_base_url = strdup("/"); /* set to default */
-        return;
     } else {
-        http_base_url = safe_url;
+        /* Make sure that the url has leading and trailing slashes. */
+        urllen = strlen(url);
+        slashed_url = xmalloc(urllen+3);
+        slashed_url[0] = '/';
+        memcpy(slashed_url+1, url, urllen); /* don't copy NUL */
+        slashed_url[urllen+1] = '/';
+        slashed_url[urllen+2] = '\0';
+
+        /* Clean the url. */
+        safe_url = make_safe_uri(slashed_url);
+        free(slashed_url);
+        if (safe_url == NULL) {
+            verbosef("invalid base \"%s\", ignored", url);
+            http_base_url = strdup("/"); /* set to default */
+        } else {
+            http_base_url = safe_url;
+        }
     }
+    http_base_len = strlen(http_base_url);
+    verbosef("set base url to \"%s\"", http_base_url);
 }
 
 /* Use getaddrinfo to figure out what type of socket to create and
