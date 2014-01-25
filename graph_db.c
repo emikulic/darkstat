@@ -303,7 +303,7 @@ struct str *html_front_page(void) {
    str_append(buf, "</span>");
    if (abs(d_real - d_mono) > 1)
       str_appendf(buf, " (real time is off by %qd sec)",
-                  (int64_t)d_real - (int64_t)d_mono);
+                  (qd)d_real - (qd)d_mono);
 
    if (strftime(start_when, sizeof(start_when),
       "%Y-%m-%d %H:%M:%S %Z%z", localtime(&start_real)) != 0)
@@ -315,9 +315,10 @@ struct str *html_front_page(void) {
       "(<span id=\"pc\">%'u</span> <b>captured,</b> "
       "<span id=\"pd\">%'u</span> <b>dropped)</b><br>\n"
       "</p>\n",
-      acct_total_bytes,
-      acct_total_packets,
-      cap_pkts_recv, cap_pkts_drop);
+      (qu)acct_total_bytes,
+      (qu)acct_total_packets,
+      cap_pkts_recv,
+      cap_pkts_drop);
 
    str_append(buf,
       "<div id=\"graphs\">\n"
@@ -362,7 +363,10 @@ struct str *xml_graphs(void) {
    struct str *buf = str_make(), *rf;
 
    str_appendf(buf, "<graphs tp=\"%qu\" tb=\"%qu\" pc=\"%u\" pd=\"%u\" rf=\"",
-      acct_total_packets, acct_total_bytes, cap_pkts_recv, cap_pkts_drop);
+      (qu)acct_total_packets,
+      (qu)acct_total_bytes,
+      cap_pkts_recv,
+      cap_pkts_drop);
    rf = length_of_time(now_real() - start_real);
    str_appendstr(buf, rf);
    str_free(rf);
@@ -377,7 +381,9 @@ struct str *xml_graphs(void) {
          j = (j + 1) % g->num_bars;
          /* <element pos="" in="" out=""/> */
          str_appendf(buf, "<e p=\"%u\" i=\"%qu\" o=\"%qu\"/>\n",
-            g->offset + j, g->in[j], g->out[j]);
+            g->offset + j,
+            (qu)g->in[j],
+            (qu)g->out[j]);
       } while (j != g->pos);
       str_appendf(buf, "</%s>\n", g->unit);
    }

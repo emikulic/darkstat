@@ -22,11 +22,13 @@
 #include <stdarg.h>
 #include <stdint.h>  /* for uint64_t */
 
+typedef long long   signed int qd; /* as in appendf("%qd") */
 typedef long long unsigned int qu; /* as in appendf("%qu") */
 typedef long long unsigned int llu; /* as in printf("%llu") */
 
-_Static_assert(sizeof(qu) == sizeof(uint64_t), "qu must be uint64_t");
-_Static_assert(sizeof(llu) == sizeof(uint64_t), "llu must be uint64_t");
+_Static_assert(sizeof(qd) == sizeof(int64_t), "qd must be uint64_t sized");
+_Static_assert(sizeof(qu) == sizeof(uint64_t), "qu must be uint64_t sized");
+_Static_assert(sizeof(llu) == sizeof(uint64_t), "llu must be uint64_t sized");
 
 /* Note: the contents are 8-bit clean and not zero terminated! */
 
