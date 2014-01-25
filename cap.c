@@ -415,15 +415,15 @@ void cap_poll(fd_set *read_set _unused_on_linux_) {
                -1, /* count = entire buffer */
                callback,
                (u_char*)iface); /* user = struct to pass to callback */
+         timer_stop(&t,
+                    2 * CAP_TIMEOUT_MSEC * 1000000,
+                    "pcap_dispatch took too long");
 
          if (ret < 0) {
             warnx("pcap_dispatch('%s'): %s",
                iface->name, pcap_geterr(iface->pcap));
             continue;
          }
-         timer_stop(&t,
-                    2 * CAP_TIMEOUT_MSEC * 1000000,
-                    "pcap_dispatch took too long");
 
 #if 0 /* debugging */
          verbosef("iface '%s' got %d pkts", iface->name, ret);
