@@ -1,7 +1,14 @@
-v3.0.718 (January 2014)
-	- (SECURITY!) The user must specify a --chroot dir for
-	  chroot() to happen.  We don't set a default in the configure
-	  script anymore.
+v3.0.718 (25 January 2014)
+	- (SECURITY!) Don't chroot() by default.  The user must specify
+	  a --chroot dir for this to happen now.
+	- Bring back the "--base /path" functionality.
+	- Add explicit warning about graphs being blank if we can't get
+	  local IPs on an interface.
+	- Don't crash in timer_stop() if monotonic time stops or goes
+	  backwards.
+	- Lots of internal cleanups.
+	- Use time_t instead of "long" for time.  This is more correct
+	  and should fix darkstat on OpenBSD 5.5 on 32-bit systems.
 
 v3.0.717 (14 August 2013)
 	- (OS X only) Work around lack of clock_gettime().
