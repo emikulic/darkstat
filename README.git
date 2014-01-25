@@ -10,3 +10,7 @@ To build the latest version of darkstat from git, do:
 Test the binary without daemonizing it (running it in the background):
 
   sudo ./darkstat -i eth0 --no-daemon --verbose
+
+To view the manpage:
+
+  nroff -man darkstat.8 | less
