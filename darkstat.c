@@ -127,6 +127,9 @@ static void cb_local_only(const char *arg _unused_)
 const char *opt_chroot_dir = NULL;
 static void cb_chroot(const char *arg) { opt_chroot_dir = arg; }
 
+const char *opt_base = NULL;
+static void cb_base(const char *arg) { opt_base = arg; }
+
 const char *opt_privdrop_user = NULL;
 static void cb_user(const char *arg) { opt_privdrop_user = arg; }
 
@@ -219,6 +222,7 @@ static struct cmdline_arg cmdline_args[] = {
    {"-p",             "port",            cb_port,         0},
    {"-b",             "bindaddr",        cb_bindaddr,    -1},
    {"-l",             "network/netmask", cb_local,        0},
+   {"--base",         "path",            cb_base,         0},
    {"--local-only",   NULL,              cb_local_only,   0},
    {"--snaplen",      "bytes",           cb_snaplen,      0},
    {"--pppoe",        NULL,              cb_pppoe,        0},
@@ -412,6 +416,7 @@ main(int argc, char **argv)
    /* do this first as it forks - minimize memory use */
    if (opt_want_dns) dns_init(opt_privdrop_user);
    cap_start(opt_want_promisc); /* needs root */
+   http_init_base(opt_base);
    http_listen(opt_bindport);
    ncache_init(); /* must do before chroot() */
 

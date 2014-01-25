@@ -8,6 +8,7 @@
 #include <sys/select.h>
 #include <netinet/in.h>
 
+void http_init_base(const char *url);
 void http_add_bindaddr(const char *bindaddr);
 void http_listen(const unsigned short bindport);
 void http_fd_set(fd_set *recv_set, fd_set *send_set, int *max_fd,
