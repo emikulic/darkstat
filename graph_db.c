@@ -1,5 +1,5 @@
 /* darkstat 3
- * copyright (c) 2006-2011 Emil Mikulic.
+ * copyright (c) 2006-2014 Emil Mikulic.
  *
  * graph_db.c: round robin database for graph data
  *

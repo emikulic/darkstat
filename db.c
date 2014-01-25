@@ -1,7 +1,7 @@
 /* darkstat 3
  *
  * db.c: load and save in-memory database from/to file
- * copyright (c) 2007-2011 Ben Stewart, Emil Mikulic.
+ * copyright (c) 2007-2012 Ben Stewart, Emil Mikulic.
  *
  * You may use, modify and redistribute this file under the terms of the
  * GNU General Public License version 2. (see COPYING.GPL)

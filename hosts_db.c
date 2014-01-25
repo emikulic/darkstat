@@ -1,5 +1,5 @@
 /* darkstat 3
- * copyright (c) 2001-2011 Emil Mikulic.
+ * copyright (c) 2001-2014 Emil Mikulic.
  *
  * hosts_db.c: database of hosts, ports, protocols.
  *

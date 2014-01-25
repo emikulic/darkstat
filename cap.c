@@ -1,5 +1,5 @@
 /* darkstat 3
- * copyright (c) 2001-2011 Emil Mikulic.
+ * copyright (c) 2001-2014 Emil Mikulic.
  *
  * cap.c: capture packets, and hand them off to decode and acct.
  *

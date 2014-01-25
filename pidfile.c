@@ -1,5 +1,5 @@
 /* darkstat 3
- * copyright (c) 2007-2011 Emil Mikulic.
+ * copyright (c) 2007-2014 Emil Mikulic.
  *
  * pidfile.h: pidfile manglement
  *

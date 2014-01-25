@@ -1,5 +1,5 @@
 /* darkstat 3
- * copyright (c) 2001-2006 Emil Mikulic.
+ * copyright (c) 2001-2014 Emil Mikulic.
  *
  * now.h: a cache of the current time.
  *

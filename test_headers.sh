@@ -1,5 +1,5 @@
 #!/bin/sh
-# copyright (c) 2011 Emil Mikulic.
+# copyright (c) 2011-2012 Emil Mikulic.
 
 a="\033[33;1m"
 z="\033[m"

@@ -1,7 +1,7 @@
 /* darkstat 3
  *
  * db.h: load and save in-memory database from/to file
- * copyright (c) 2007-2011 Ben Stewart, Emil Mikulic.
+ * copyright (c) 2007-2012 Ben Stewart, Emil Mikulic.
  */
 
 #include <sys/types.h> /* for size_t */
