@@ -381,23 +381,28 @@ static void generate_header(struct connection *conn,
     if (conn->encoding == NULL)
         conn->encoding = encoding_identity;
 
-    verbosef("http: %d %s (%s: %zu bytes)", code, text,
-        conn->encoding, conn->reply_length);
+    verbosef("http: %d %s (%s: %zu bytes)",
+             code,
+             text,
+             conn->encoding,
+             conn->reply_length);
     conn->header_length = xasprintf(&(conn->header),
         "HTTP/1.1 %d %s\r\n"
         "Date: %s\r\n"
         "Server: %s\r\n"
         "Vary: Accept-Encoding\r\n"
         "Content-Type: %s\r\n"
-        "Content-Length: %d\r\n"
+        "Content-Length: %qu\r\n"
         "Content-Encoding: %s\r\n"
         "X-Robots-Tag: noindex, noarchive\r\n"
         "%s"
-        "\r\n"
-        ,
+        "\r\n",
         code, text,
-        rfc1123_date(date, now_real()), server,
-        conn->mime_type, conn->reply_length, conn->encoding,
+        rfc1123_date(date, now_real()),
+        server,
+        conn->mime_type,
+        (qu)conn->reply_length,
+        conn->encoding,
         conn->header_extra);
     conn->http_code = code;
 }
