@@ -1043,7 +1043,7 @@ static struct str *html_hosts_detail(const char *ip) {
    struct str *buf, *ls_len;
    char ls_when[100];
    const char *canonical;
-   time_t last_real;
+   time_t last_seen_real;
 
    h = host_search(ip);
    if (h == NULL)
@@ -1081,9 +1081,9 @@ static struct str *html_hosts_detail(const char *ip) {
       "<p>\n"
       "<b>Last seen:</b> ");
 
-   last_real = mono_to_real(h->u.host.last_seen_mono);
+   last_seen_real = mono_to_real(h->u.host.last_seen_mono);
    if (strftime(ls_when, sizeof(ls_when),
-      "%Y-%m-%d %H:%M:%S %Z%z", localtime(&last_real)) != 0)
+      "%Y-%m-%d %H:%M:%S %Z%z", localtime(&last_seen_real)) != 0)
          str_append(buf, ls_when);
 
    if (h->u.host.last_seen_mono <= now_mono()) {

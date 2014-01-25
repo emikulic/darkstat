@@ -425,8 +425,9 @@ void cap_poll(fd_set *read_set _unused_on_linux_) {
                     2 * CAP_TIMEOUT_MSEC * 1000000,
                     "pcap_dispatch took too long");
 
-         if (0) /* debugging */
-            verbosef("iface '%s' got %d pkts", iface->name, ret);
+#if 0 /* debugging */
+         verbosef("iface '%s' got %d pkts", iface->name, ret);
+#endif
 
 #ifdef linux
          /* keep looping until we've dispatched all the outstanding packets */

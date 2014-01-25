@@ -8,4 +8,5 @@ TARGET=dev_all.c
 LLVM=$HOME/llvm
 CLANG=$LLVM/install/bin/clang
 
-$CLANG -Weverything -O -c $TARGET
+$CLANG -Weverything -Wno-padded -Wno-format-non-iso -Wno-cast-align \
+  -Wno-disabled-macro-expansion -O -c $TARGET

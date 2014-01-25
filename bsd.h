@@ -22,7 +22,7 @@ size_t strlcat(char *dst, const char *src, size_t siz);
 #endif
 
 #ifndef HAVE_SETPROCTITLE
-#define setproctitle(fmt, ...) /* no-op */
+#define setproctitle(fmt) /* no-op */
 #endif
 
 /* vim:set ts=3 sw=3 tw=78 expandtab: */

@@ -38,7 +38,7 @@ static void dns_main(void) _noreturn_; /* the child process runs this */
 
 #define CHILD 0 /* child process uses this socket */
 #define PARENT 1
-static int sock[2];
+static int dns_sock[2];
 static pid_t pid = -1;
 
 struct dns_reply {
@@ -50,7 +50,7 @@ struct dns_reply {
 void
 dns_init(const char *privdrop_user)
 {
-   if (socketpair(AF_UNIX, SOCK_STREAM, 0, sock) == -1)
+   if (socketpair(AF_UNIX, SOCK_STREAM, 0, dns_sock) == -1)
       err(1, "socketpair");
 
    pid = fork();
@@ -60,19 +60,18 @@ dns_init(const char *privdrop_user)
    if (pid == 0) {
       /* We are the child. */
       privdrop(NULL /* don't chroot */, privdrop_user);
-      close(sock[PARENT]);
-      sock[PARENT] = -1;
+      close(dns_sock[PARENT]);
+      dns_sock[PARENT] = -1;
       daemonize_finish(); /* drop our copy of the lifeline! */
       if (signal(SIGUSR1, SIG_IGN) == SIG_ERR)
          errx(1, "signal(SIGUSR1, ignore) failed");
       dns_main();
-      verbosef("fell out of dns_main()");
       exit(0);
    } else {
       /* We are the parent. */
-      close(sock[CHILD]);
-      sock[CHILD] = -1;
-      fd_set_nonblock(sock[PARENT]);
+      close(dns_sock[CHILD]);
+      dns_sock[CHILD] = -1;
+      fd_set_nonblock(dns_sock[PARENT]);
       verbosef("DNS child has PID %d", pid);
    }
 }
@@ -82,7 +81,7 @@ dns_stop(void)
 {
    if (pid == -1)
       return; /* no child was started */
-   close(sock[PARENT]);
+   close(dns_sock[PARENT]);
    if (kill(pid, SIGINT) == -1)
       err(1, "kill");
    verbosef("dns_stop() waiting for child");
@@ -144,7 +143,7 @@ dns_queue(const struct addr *const ipaddr)
       return;
    }
 
-   num_w = write(sock[PARENT], ipaddr, sizeof(*ipaddr)); /* won't block */
+   num_w = write(dns_sock[PARENT], ipaddr, sizeof(*ipaddr)); /* won't block */
    if (num_w == 0)
       warnx("dns_queue: write: ignoring end of file");
    else if (num_w == -1)
@@ -177,7 +176,7 @@ dns_get_result(struct addr *ipaddr, char **name)
    struct dns_reply reply;
    ssize_t numread;
 
-   numread = read(sock[PARENT], &reply, sizeof(reply));
+   numread = read(dns_sock[PARENT], &reply, sizeof(reply));
    if (numread == -1) {
       if (errno == EAGAIN)
          return (0); /* no input waiting */
@@ -256,7 +255,7 @@ struct qitem {
    struct addr ip;
 };
 
-STAILQ_HEAD(qhead, qitem) queue = STAILQ_HEAD_INITIALIZER(queue);
+static STAILQ_HEAD(qhead, qitem) queue = STAILQ_HEAD_INITIALIZER(queue);
 
 static void
 enqueue(const struct addr *const ip)
@@ -302,23 +301,23 @@ dns_main(void)
    struct addr ip;
 
    setproctitle("DNS child");
-   fd_set_nonblock(sock[CHILD]);
+   fd_set_nonblock(dns_sock[CHILD]);
    verbosef("DNS child entering main DNS loop");
    for (;;) {
       int blocking;
 
       if (STAILQ_EMPTY(&queue)) {
          blocking = 1;
-         fd_set_block(sock[CHILD]);
+         fd_set_block(dns_sock[CHILD]);
          verbosef("entering blocking read loop");
       } else {
          blocking = 0;
-         fd_set_nonblock(sock[CHILD]);
+         fd_set_nonblock(dns_sock[CHILD]);
          verbosef("non-blocking poll");
       }
       for (;;) {
          /* While we have input to process... */
-         ssize_t numread = read(sock[CHILD], &ip, sizeof(ip));
+         ssize_t numread = read(dns_sock[CHILD], &ip, sizeof(ip));
          if (numread == 0)
             exit(0); /* end of file, nothing more to do here. */
          if (numread == -1) {
@@ -336,7 +335,7 @@ dns_main(void)
              * run out of input we fall through to queue processing.
              */
             blocking = 0;
-            fd_set_nonblock(sock[CHILD]);
+            fd_set_nonblock(dns_sock[CHILD]);
          }
       }
 
@@ -392,8 +391,8 @@ dns_main(void)
             strlcpy(reply.name, host, sizeof(reply.name));
             reply.error = 0;
          }
-         fd_set_block(sock[CHILD]);
-         xwrite(sock[CHILD], &reply, sizeof(reply));
+         fd_set_block(dns_sock[CHILD]);
+         xwrite(dns_sock[CHILD], &reply, sizeof(reply));
          verbosef("DNS: %s is \"%s\".", addr_to_str(&reply.addr),
             (ret == 0) ? reply.name : gai_strerror(ret));
       }
