@@ -62,12 +62,12 @@ int clock_gettime(clockid_t clk_id, struct timespec *tp) {
 static struct timespec clock_real, clock_mono;
 static int now_initialized = 0;
 
-long now_real(void) {
+time_t now_real(void) {
    assert(now_initialized);
    return clock_real.tv_sec;
 }
 
-long now_mono(void) {
+time_t now_mono(void) {
    assert(now_initialized);
    return clock_mono.tv_sec;
 }
@@ -113,12 +113,12 @@ void now_update(void) {
    all_clocks_update();
 }
 
-long mono_to_real(const long t) {
+time_t mono_to_real(const time_t t) {
    assert(now_initialized);
    return t - clock_mono.tv_sec + clock_real.tv_sec;
 }
 
-long real_to_mono(const long t) {
+time_t real_to_mono(const time_t t) {
    assert(now_initialized);
    return t - clock_real.tv_sec + clock_mono.tv_sec;
 }

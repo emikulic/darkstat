@@ -20,11 +20,11 @@
 void now_init(void);
 void now_update(void); /* once per event loop (in darkstat.c) */
 
-long now_real(void);
-long now_mono(void);
+time_t now_real(void);
+time_t now_mono(void);
 
-long mono_to_real(const long t);
-long real_to_mono(const long t);
+time_t mono_to_real(const time_t t);
+time_t real_to_mono(const time_t t);
 
 /* Emits warnings if a call is too slow. */
 struct timespec;

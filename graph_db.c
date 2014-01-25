@@ -47,7 +47,7 @@ static struct graph *graph_db[] = {
 };
 
 static unsigned int graph_db_size = sizeof(graph_db)/sizeof(*graph_db);
-static long start_mono, start_real, last_real;
+static time_t start_mono, start_real, last_real;
 
 void graph_init(void) {
    unsigned int i;
@@ -169,7 +169,7 @@ static void graph_resync(const time_t new_real) {
 }
 
 void graph_rotate(void) {
-   long t, td;
+   time_t t, td;
    struct tm *tm;
    unsigned int i;
 
@@ -287,7 +287,7 @@ struct str *html_front_page(void) {
    struct str *buf, *rf;
    unsigned int i;
    char start_when[100];
-   long d_real, d_mono;
+   time_t d_real, d_mono;
 
    buf = str_make();
    html_open(buf, "Graphs", /*path_depth=*/0, /*want_graph_js=*/1);
