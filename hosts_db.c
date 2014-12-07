@@ -347,20 +347,21 @@ format_row_host(struct str *buf, const struct bucket *b,
       (qu)b->total);
 
    if (opt_want_lastseen) {
-      time_t last = b->u.host.last_seen_mono;
+      int64_t last = b->u.host.last_seen_mono;
+      int64_t now = (int64_t)now_mono();
       struct str *last_str = NULL;
 
-      if ((now_mono() >= last) && (last > 0))
-         last_str = length_of_time(now_mono() - last);
+      if ((now >= last) && (last != 0))
+         last_str = length_of_time(now - last);
 
       str_append(buf, " <td class=\"num\">");
       if (last_str == NULL) {
          if (last == 0)
             str_append(buf, "(never)");
          else
-            str_appendf(buf, "(clock error: now = %qu, last = %qu)",
-                        (qu)now_mono(),
-                        (qu)last);
+            str_appendf(buf, "(clock error: last = %qd, now = %qu)",
+                        (qd)last,
+                        (qu)now);
       } else {
          str_appendstr(buf, last_str);
          str_free(last_str);
@@ -1087,13 +1088,16 @@ static struct str *html_hosts_detail(const char *ip) {
          str_append(buf, ls_when);
 
    if (h->u.host.last_seen_mono <= now_mono()) {
-      ls_len = length_of_time(now_mono() - h->u.host.last_seen_mono);
+      ls_len = length_of_time((int64_t)now_mono() - h->u.host.last_seen_mono);
       str_append(buf, " (");
       str_appendstr(buf, ls_len);
       str_free(ls_len);
       str_append(buf, " ago)");
    } else {
-      str_append(buf, " (in the future, possible clock problem)");
+      str_appendf(buf, " (in the future, possible clock problem, "
+                  "last = %qd, now = %qu)",
+                  (qd)h->u.host.last_seen_mono,
+                  (qu)now_mono());
    }
 
    str_appendf(buf,

@@ -19,7 +19,10 @@ struct host {
    struct addr addr;
    char *dns;
    uint8_t mac_addr[6];
-   time_t last_seen_mono;
+   /* last_seen_mono is converted to/from time_t in export/import.
+    * It can be negative (due to machine reboots).
+    */
+   int64_t last_seen_mono;
    struct hashtable *ports_tcp, *ports_udp, *ip_protos;
 };
 

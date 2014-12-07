@@ -119,14 +119,14 @@ void now_update(void) {
    all_clocks_update();
 }
 
-time_t mono_to_real(const time_t t) {
+time_t mono_to_real(const int64_t t) {
    assert(now_initialized);
-   return t - clock_mono.tv_sec + clock_real.tv_sec;
+   return (time_t)(t - (int64_t)clock_mono.tv_sec + (int64_t)clock_real.tv_sec);
 }
 
-time_t real_to_mono(const time_t t) {
+int64_t real_to_mono(const time_t t) {
    assert(now_initialized);
-   return t - clock_real.tv_sec + clock_mono.tv_sec;
+   return (int64_t)(t - clock_real.tv_sec + clock_mono.tv_sec);
 }
 
 void timer_start(struct timespec *t) {

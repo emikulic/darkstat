@@ -23,8 +23,10 @@ void now_update(void); /* once per event loop (in darkstat.c) */
 time_t now_real(void);
 time_t now_mono(void);
 
-time_t mono_to_real(const time_t t);
-time_t real_to_mono(const time_t t);
+/* Monotonic times can be negative (a time from before the machine booted) so
+ * treat them as signed. */
+time_t mono_to_real(const int64_t t);
+int64_t real_to_mono(const time_t t);
 
 /* Emits warnings if a call is too slow. */
 struct timespec;

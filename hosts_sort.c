@@ -11,39 +11,34 @@
 #include "err.h"
 #include "hosts_db.h"
 
-/* ---------------------------------------------------------------------------
- * comparator for sorting (biggest first)
- */
-static int
-cmp(const struct bucket * const *x, const struct bucket * const *y,
-    const enum sort_dir dir)
-{
-   uint64_t a, b;
-
-   switch (dir) {
-   case IN:
-      a = (*x)->in;
-      b = (*y)->in;
-      break;
-   case OUT:
-      a = (*x)->out;
-      b = (*y)->out;
-      break;
-   case TOTAL:
-      a = (*x)->total;
-      b = (*y)->total;
-      break;
-   case LASTSEEN:
-      a = (*x)->u.host.last_seen_mono;
-      b = (*y)->u.host.last_seen_mono;
-      break;
-   default:
-      errx(1, "cmp: unknown direction: %d", dir);
-   }
-
+static int cmp_u64(const uint64_t a, const uint64_t b) {
    if (a < b) return (1);
-   else if (a > b) return (-1);
-   else return (0);
+   if (a > b) return (-1);
+   return (0);
+}
+
+static int cmp_i64(const int64_t a, const int64_t b) {
+   if (a < b) return (1);
+   if (a > b) return (-1);
+   return (0);
+}
+
+/* Comparator for sorting 'struct bucket' */
+static int cmp(const struct bucket * const *x, const struct bucket * const *y,
+    const enum sort_dir dir) {
+   switch (dir) {
+      case IN:
+         return cmp_u64((*x)->in, (*y)->in);
+      case OUT:
+         return cmp_u64((*x)->out, (*y)->out);
+      case TOTAL:
+         return cmp_u64((*x)->total, (*y)->total);
+      case LASTSEEN:
+         return cmp_i64((*x)->u.host.last_seen_mono,
+                        (*y)->u.host.last_seen_mono);
+      default:
+         errx(1, "cmp: unknown direction: %d", dir);
+   }
 }
 
 /*
