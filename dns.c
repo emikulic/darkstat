@@ -66,7 +66,7 @@ dns_init(const char *privdrop_user)
       if (signal(SIGUSR1, SIG_IGN) == SIG_ERR)
          errx(1, "signal(SIGUSR1, ignore) failed");
       dns_main();
-      exit(0);
+      errx(1, "DNS child fell out of dns_main()");
    } else {
       /* We are the parent. */
       close(dns_sock[CHILD]);
@@ -375,7 +375,7 @@ dns_main(void)
                                  host, sizeof(host), NULL, 0, flags);
                break;
             default:
-               ret = EAI_FAMILY;
+               errx(1, "unexpected ip.family = %d", ip.family);
          }
 
          if (ret != 0) {
