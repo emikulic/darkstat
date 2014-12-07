@@ -1082,23 +1082,28 @@ static struct str *html_hosts_detail(const char *ip) {
       "<p>\n"
       "<b>Last seen:</b> ");
 
-   last_seen_real = mono_to_real(h->u.host.last_seen_mono);
-   if (strftime(ls_when, sizeof(ls_when),
-      "%Y-%m-%d %H:%M:%S %Z%z", localtime(&last_seen_real)) != 0)
-         str_append(buf, ls_when);
-
-   if (h->u.host.last_seen_mono <= now_mono()) {
-      ls_len = length_of_time((int64_t)now_mono() - h->u.host.last_seen_mono);
-      str_append(buf, " (");
-      str_appendstr(buf, ls_len);
-      str_free(ls_len);
-      str_append(buf, " ago)");
+   if (h->u.host.last_seen_mono == 0) {
+      str_append(buf, "(never)");
    } else {
-      str_appendf(buf, " (in the future, possible clock problem, "
-                  "last = %qd, now = %qu)",
-                  (qd)h->u.host.last_seen_mono,
-                  (qu)now_mono());
-   }
+      last_seen_real = mono_to_real(h->u.host.last_seen_mono);
+      if (strftime(ls_when, sizeof(ls_when),
+         "%Y-%m-%d %H:%M:%S %Z%z", localtime(&last_seen_real)) != 0)
+            str_append(buf, ls_when);
+
+      if (h->u.host.last_seen_mono <= now_mono()) {
+         ls_len =
+             length_of_time((int64_t)now_mono() - h->u.host.last_seen_mono);
+         str_append(buf, " (");
+         str_appendstr(buf, ls_len);
+         str_free(ls_len);
+         str_append(buf, " ago)");
+      } else {
+         str_appendf(buf, " (in the future, possible clock problem, "
+                     "last = %qd, now = %qu)",
+                     (qd)h->u.host.last_seen_mono,
+                     (qu)now_mono());
+      }
+  }
 
    str_appendf(buf,
       "</p>\n"
