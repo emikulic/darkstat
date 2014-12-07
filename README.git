@@ -4,7 +4,7 @@ release tarball or a binary package (like *.deb)
 
 To build the latest version of darkstat from git, do:
 
-  git clone http://unix4lyfe.org/git/darkstat
+  git clone https://www.unix4lyfe.org/git/darkstat
   cd darkstat
   autoconf
   autoheader
