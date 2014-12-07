@@ -15,7 +15,7 @@ void cap_add_filter(const char *filter); /* call zero or more times */
 void cap_start(const int promisc);
 void cap_fd_set(fd_set *read_set, int *max_fd,
    struct timeval *timeout, int *need_timeout);
-void cap_poll(fd_set *read_set);
+int cap_poll(fd_set *read_set);
 void cap_stop(void);
 
 void cap_from_file(const char *capfile);

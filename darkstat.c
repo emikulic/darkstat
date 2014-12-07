@@ -412,7 +412,10 @@ main(int argc, char **argv)
    daemonize_finish();
 
    while (running) {
-      int select_ret, max_fd = -1, use_timeout = 0;
+      int select_ret;
+      int max_fd = -1;
+      int use_timeout = 0;
+      int cap_ret;
       struct timeval timeout;
       struct timespec t;
       fd_set rs, ws;
@@ -451,10 +454,14 @@ main(int argc, char **argv)
       }
 
       graph_rotate();
-      cap_poll(&rs);
+      cap_ret = cap_poll(&rs);
       dns_poll();
       http_poll(&rs, &ws);
       timer_stop(&t, 1000000000, "event processing took longer than a second");
+
+      if (!cap_ret) {
+         running = 0;
+      }
    }
 
    verbosef("shutting down");

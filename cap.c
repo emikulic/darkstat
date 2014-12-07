@@ -112,6 +112,7 @@ static void cap_set_filter(pcap_t *pcap, const char *filter) {
    free(tmp_filter);
 }
 
+/* Start capturing on just one interface. Called from cap_start(). */
 static void cap_start_one(struct cap_iface *iface, const int promisc) {
    char errbuf[PCAP_ERRBUF_SIZE], *tmp_device;
    int linktype, snaplen, waited;
@@ -395,8 +396,10 @@ static void callback(u_char *user,
       acct_for(&sm, &iface->local_ips);
 }
 
-/* Process any packets currently in the capture buffer. */
-void cap_poll(fd_set *read_set _unused_on_linux_) {
+/* Process any packets currently in the capture buffer.
+ * Returns 0 on error (usually means the interface went down).
+ */
+int cap_poll(fd_set *read_set _unused_on_linux_) {
    struct cap_iface *iface;
    static int told = 0;
 
@@ -431,7 +434,7 @@ void cap_poll(fd_set *read_set _unused_on_linux_) {
          if (ret < 0) {
             warnx("pcap_dispatch('%s'): %s",
                iface->name, pcap_geterr(iface->pcap));
-            continue;
+            return 0;
          }
 
 #if 0 /* debugging */
@@ -449,6 +452,7 @@ void cap_poll(fd_set *read_set _unused_on_linux_) {
       }
    }
    cap_stats_update();
+   return 1;
 }
 
 void cap_stop(void) {
