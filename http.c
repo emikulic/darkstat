@@ -1181,6 +1181,7 @@ void http_poll(fd_set *recv_set, fd_set *send_set)
 
 void http_stop(void) {
     struct connection *conn;
+    struct connection *next;
     unsigned int i;
 
     free(http_base_url);
@@ -1192,7 +1193,7 @@ void http_stop(void) {
     insocks = NULL;
 
     /* Close in-flight connections. */
-    LIST_FOREACH(conn, &connlist, entries) {
+    LIST_FOREACH_SAFE(conn, &connlist, entries, next) {
         LIST_REMOVE(conn, entries);
         free_connection(conn);
         free(conn);
