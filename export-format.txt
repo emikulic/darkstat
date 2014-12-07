@@ -8,11 +8,12 @@ FILE HEADER 0xDA314159                              darkstat export format
             HOST HEADER 'H' 'S' 'T' 0x03            host ver3
             ADDRESS FAMILY 0x04                     Either 4 or 6.
               IPv4 ADDR 0x0A010101                  IPv4 10.1.1.1
-              or for 0x06:
+            or for 0x06:
               IPv6 ADDR 0x0000 0000 0000 0000 0000 0000 0000 0001
                                                     meaning IPv6 ::1
+            LASTSEEN 0x0000 0000 4800 0123          64-bit time_t meaning:
+                                                    2008-04-12 00:24:03 UTC
             MACADDR 0x001122334455                  00:11:22:33:44:55
-            LASTSEEN 0x0000000048000123 (time_t)    2008-04-12 00:24:03 UTC
             HOSTNAME 0x09 "localhost"               9 is the string length
             IN 0x0000000000123456                   Bytes in: 1193046
             OUT 0x0000000000789ABC                  Bytes out: 7903932
