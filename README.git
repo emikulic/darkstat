@@ -1,3 +1,7 @@
+These instructions are for developers and other people building darkstat
+from git instead of a release tarball. This file shouldn't end up in a
+release tarball or a binary package (like *.deb)
+
 To build the latest version of darkstat from git, do:
 
   git clone http://unix4lyfe.org/git/darkstat
