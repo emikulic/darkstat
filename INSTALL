@@ -30,11 +30,13 @@ $ make install DESTDIR=/chroot/whatever
 Portability
 -----------
 
-Builds out of the box on:
+I, the darkstat maintainer, mostly develop darkstat on Debian GNU/Linux, but
+mostly run darkstat on FreeBSD.
 
- - FreeBSD 7.0
+darkstat usually builds out-of-the-box on FreeBSD, although you should probably
+install it from ports.
 
-Reported to also work on:
+In the past, darkstat has also been reported to work on:
 
  - Solaris (with Sun C 5.8, and libpcap installed)
  - Fedora Core (with libpcap-devel installed)
@@ -45,3 +47,6 @@ Reported to also work on:
  - Ubuntu (you need build-essential, zlib1g-dev, libpcap-dev)
  - Mandrake
  - OpenSUSE
+
+Sadly, darkstat doesn't run on GNU/Hurd 0.3 because the BPF there doesn't
+support non-blocking operation (FIONBIO).
