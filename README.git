@@ -18,3 +18,16 @@ Test the binary without daemonizing it (running it in the background):
 To view the manpage:
 
   nroff -man darkstat.8 | less
+
+To build with sanitizers:
+
+  CFLAGS="-g -fsanitize=address -fsanitize=undefined" ./configure
+
+To see what make is doing:
+
+  make V=1
+
+Suggested valgrind invocation:
+(note that valgrind doesn't work with a -fsanitize=address build)
+
+  sudo valgrind --leak-check=full --show-reachable=yes ./darkstat -i eth0 --no-daemon --verbose --chroot $PWD --export DB --import DB --daylog DAYLOG --user $USER
