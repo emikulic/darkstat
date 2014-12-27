@@ -21,9 +21,6 @@ sbindir = @sbindir@
 datarootdir = @datarootdir@
 mandir = @mandir@
 
-# Optimizations FIXME: dead code.  push into autoconf?
-#CPPFLAGS += -D__OPTIMIZE__
-
 SRCS = \
 acct.c		\
 addr.c		\
