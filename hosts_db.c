@@ -1151,6 +1151,7 @@ static struct str *html_hosts_detail(const char *ip) {
    str_append(buf, "<h3>IP protocols</h3>\n");
    format_table(buf, h->u.host.ip_protos, 0,TOTAL,0);
 
+   str_append(buf, "<br>\n");
    html_close(buf);
    return buf;
 }
