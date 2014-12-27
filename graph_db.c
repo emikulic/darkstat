@@ -55,9 +55,6 @@ void graph_init(void) {
       graph_db[i]->in  = xmalloc(sizeof(uint64_t) * graph_db[i]->num_bars);
       graph_db[i]->out = xmalloc(sizeof(uint64_t) * graph_db[i]->num_bars);
    }
-   start_mono = now_mono();
-   start_real = now_real();
-   last_real = 0;
    graph_reset();
 }
 
@@ -71,7 +68,15 @@ void graph_reset(void) {
 
    for (i=0; i<graph_db_size; i++)
       zero_graph(graph_db[i]);
+
+   /* Reset starting time. */
+   start_mono = now_mono();
+   start_real = now_real();
    last_real = 0;
+
+   /* Clear counters. */
+   acct_total_bytes = 0;
+   acct_total_packets = 0;
 }
 
 void graph_free(void) {
@@ -297,7 +302,7 @@ struct str *html_front_page(void) {
    d_mono = now_mono() - start_mono;
    d_real = now_real() - start_real;
    str_append(buf, "<p>\n");
-   str_append(buf, "<b>Running for</b> <span id=\"rf\">");
+   str_append(buf, "<b>Measuring for</b> <span id=\"rf\">");
    rf = length_of_time(d_mono);
    str_appendstr(buf, rf);
    str_free(rf);
@@ -311,7 +316,7 @@ struct str *html_front_page(void) {
       str_appendf(buf, "<b>, since</b> %s", start_when);
 
    str_appendf(buf,"<b>.</b><br>\n"
-      "<b>Total</b> <span id=\"tb\">%'qu</span> <b>bytes, "
+      "<b>Seen</b> <span id=\"tb\">%'qu</span> <b>bytes, "
       "in</b> <span id=\"tp\">%'qu</span> <b>packets.</b> "
       "(<span id=\"pc\">%'u</span> <b>captured,</b> "
       "<span id=\"pd\">%'u</span> <b>dropped)</b><br>\n"
