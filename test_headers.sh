@@ -69,9 +69,12 @@ check_defines() {
 
 check_deps
 
-defines=`grep \# config.h | cut -d# -f2 | cut -d' ' -f2 | tr '\n' '|' |
-  sed -e 's/|$//'`
+# Check config.h: build a list of macros that are or could be defined.
+defines=`egrep '#define|#undef' config.h | cut -d# -f2 | cut -d' ' -f2 |
+  sort -u | tr '\n' '|' | sed -e 's/|$//'`
+# Check against all files except itself.
 files=`ls *.[ch] | fgrep -v config.h`
+#echo "config.h defines: ($defines)"
 check_defines config.h "$defines" "$files"
 
 defines=`sed -e 's/# \+/#/;' < cdefs.h | grep '#define' | cut -d' ' -f2 |
