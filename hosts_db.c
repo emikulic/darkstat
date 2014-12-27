@@ -91,9 +91,7 @@ static const double phi_1 =
    0.61803398874989490252573887119069695472717285156250;
 
 /* Co-prime of u, using phi^-1 */
-inline static uint32_t
-coprime(const uint32_t u)
-{
+static uint32_t coprime(const uint32_t u) {
    return ( (uint32_t)( (double)(u) * phi_1 ) | 1U );
 }
 
@@ -101,9 +99,7 @@ coprime(const uint32_t u)
  * This is the "recommended" IPv4 hash function, as seen in FreeBSD's
  * src/sys/netinet/tcp_hostcache.c 1.1
  */
-inline static uint32_t
-ipv4_hash(const struct addr *const a)
-{
+static uint32_t ipv4_hash(const struct addr *const a) {
    uint32_t ip = a->ip.v4;
    return ( (ip) ^ ((ip) >> 7) ^ ((ip) >> 17) );
 }
@@ -125,9 +121,7 @@ ipv4_hash(const struct addr *const a)
  * This is the IPv6 hash function used by FreeBSD in the same file as above,
  * svn rev 122922.
  */
-inline static uint32_t
-ipv6_hash(const struct addr *const a)
-{
+static uint32_t ipv6_hash(const struct addr *const a) {
    const struct in6_addr *const ip6 = &(a->ip.v6);
    return ( ip6->s6_addr32[0] ^ ip6->s6_addr32[1] ^
             ip6->s6_addr32[2] ^ ip6->s6_addr32[3] );

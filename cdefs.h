@@ -17,18 +17,6 @@
 # define _printflike_(fmtarg, firstvararg)
 #endif
 
-#if __GNUC__ == 2
-# define inline __inline__
-#else
-# ifdef __TenDRA__
-#  define inline __inline
-# endif
-#endif
-
-#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901
-# define restrict __restrict
-#endif
-
 #ifndef MAX
 # define MAX(a,b) ((a) > (b) ? (a) : (b))
 #endif

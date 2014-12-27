@@ -17,6 +17,9 @@ AC_DEFINE_UNQUOTED(PRIVDROP_USER, "$_pdu", [User to privdrop to.])
 AC_PROG_INSTALL
 AC_PROG_CC
 
+# Compiler's language features.
+AC_C_RESTRICT
+
 m4_pattern_allow([^AM_DEFAULT_VERBOSITY$])
 AC_ARG_ENABLE([silent-rules],
 [  --enable-silent-rules          less verbose build output (undo: 'make V=1')

@@ -16,7 +16,6 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "cdefs.h"
 #include "err.h"
 #include "hosts_db.h"
 #include "graph_db.h"
@@ -39,7 +38,7 @@ static uint64_t swap64(uint64_t _x) {
 #endif
 
 #define ntoh64 hton64
-static inline uint64_t hton64(const uint64_t ho) {
+static uint64_t hton64(const uint64_t ho) {
    if (ntohs(0x1234) == 0x1234)
       return ho;
    else
