@@ -23,7 +23,8 @@
 #include <string.h>
 #include <time.h>
 
-#ifdef __MACH__  /* Fake up clock_gettime() on OS X. */
+#if defined(__MACH__) && !defined(__gnu_hurd__)
+/* Fake up clock_gettime() on OS X. */
 #  include <sys/time.h>
 #  include <inttypes.h>
 #  include <mach/mach.h>
