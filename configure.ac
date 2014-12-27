@@ -109,10 +109,9 @@ $RULE
 I can't link to zlib.  You really can't have a modern
 operating system without zlib.
 
-If you are using a package-based operating system (like
-something with RPMs), see if there is a zlib-devel package
-that you can install, to provide the zlib headers and
-libraries.
+On Debian or a derivative, try: sudo apt-get install zlib1g-dev
+
+On an RPM system, see if there is a zlib-devel package.
 
 $RULE
 END
