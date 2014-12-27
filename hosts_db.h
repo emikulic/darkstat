@@ -23,7 +23,11 @@ struct host {
     * It can be negative (due to machine reboots).
     */
    int64_t last_seen_mono;
-   struct hashtable *ports_tcp, *ports_udp, *ip_protos;
+   struct hashtable *ports_tcp;
+   struct hashtable *ports_tcp_remote;
+   struct hashtable *ports_udp;
+   struct hashtable *ports_udp_remote;
+   struct hashtable *ip_protos;
 };
 
 struct port_tcp {
@@ -64,7 +68,11 @@ int hosts_db_export(const int fd);
 struct bucket *host_find(const struct addr *const a); /* can return NULL */
 struct bucket *host_get(const struct addr *const a);
 struct bucket *host_get_port_tcp(struct bucket *host, const uint16_t port);
+struct bucket *host_get_port_tcp_remote(struct bucket *host,
+                                        const uint16_t port);
 struct bucket *host_get_port_udp(struct bucket *host, const uint16_t port);
+struct bucket *host_get_port_udp_remote(struct bucket *host,
+                                        const uint16_t port);
 struct bucket *host_get_ip_proto(struct bucket *host, const uint8_t proto);
 
 /* Web pages. */

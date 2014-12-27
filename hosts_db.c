@@ -234,7 +234,9 @@ make_func_host(const void *key)
    h->last_seen_mono = 0;
    memset(&h->mac_addr, 0, sizeof(h->mac_addr));
    h->ports_tcp = NULL;
+   h->ports_tcp_remote = NULL;
    h->ports_udp = NULL;
+   h->ports_udp_remote = NULL;
    h->ip_protos = NULL;
    return (b);
 }
@@ -245,7 +247,9 @@ free_func_host(struct bucket *b)
    struct host *h = &(b->u.host);
    if (h->dns != NULL) free(h->dns);
    hashtable_free(h->ports_tcp);
+   hashtable_free(h->ports_tcp_remote);
    hashtable_free(h->ports_udp);
+   hashtable_free(h->ports_udp_remote);
    hashtable_free(h->ip_protos);
 }
 
@@ -821,13 +825,24 @@ struct bucket *
 host_get_port_tcp(struct bucket *host, const uint16_t port)
 {
    struct host *h = &host->u.host;
-   assert(h != NULL);
    if (h->ports_tcp == NULL)
       h->ports_tcp = hashtable_make(PORT_BITS, opt_ports_max, opt_ports_keep,
          hash_func_short, free_func_simple, key_func_port_tcp,
          find_func_port_tcp, make_func_port_tcp,
          format_cols_port_tcp, format_row_port_tcp);
    return (hashtable_find_or_insert(h->ports_tcp, &port, ALLOW_REDUCE));
+}
+
+struct bucket *
+host_get_port_tcp_remote(struct bucket *host, const uint16_t port)
+{
+   struct host *h = &host->u.host;
+   if (h->ports_tcp_remote == NULL)
+      h->ports_tcp_remote = hashtable_make(
+          PORT_BITS, opt_ports_max, opt_ports_keep, hash_func_short,
+          free_func_simple, key_func_port_tcp, find_func_port_tcp,
+          make_func_port_tcp, format_cols_port_tcp, format_row_port_tcp);
+   return (hashtable_find_or_insert(h->ports_tcp_remote, &port, ALLOW_REDUCE));
 }
 
 /* ---------------------------------------------------------------------------
@@ -837,13 +852,24 @@ struct bucket *
 host_get_port_udp(struct bucket *host, const uint16_t port)
 {
    struct host *h = &host->u.host;
-   assert(h != NULL);
    if (h->ports_udp == NULL)
       h->ports_udp = hashtable_make(PORT_BITS, opt_ports_max, opt_ports_keep,
          hash_func_short, free_func_simple, key_func_port_udp,
          find_func_port_udp, make_func_port_udp,
          format_cols_port_udp, format_row_port_udp);
    return (hashtable_find_or_insert(h->ports_udp, &port, ALLOW_REDUCE));
+}
+
+struct bucket *
+host_get_port_udp_remote(struct bucket *host, const uint16_t port)
+{
+   struct host *h = &host->u.host;
+   if (h->ports_udp_remote == NULL)
+      h->ports_udp_remote = hashtable_make(
+          PORT_BITS, opt_ports_max, opt_ports_keep, hash_func_short,
+          free_func_simple, key_func_port_udp, find_func_port_udp,
+          make_func_port_udp, format_cols_port_udp, format_row_port_udp);
+   return (hashtable_find_or_insert(h->ports_udp_remote, &port, ALLOW_REDUCE));
 }
 
 /* ---------------------------------------------------------------------------
@@ -1110,11 +1136,17 @@ static struct str *html_hosts_detail(const char *ip) {
       (qu)h->out,
       (qu)h->total);
 
-   str_append(buf, "<h3>TCP ports</h3>\n");
+   str_append(buf, "<h3>TCP ports on this host</h3>\n");
    format_table(buf, h->u.host.ports_tcp, 0,TOTAL,0);
 
-   str_append(buf, "<h3>UDP ports</h3>\n");
+   str_append(buf, "<h3>TCP ports on remote hosts</h3>\n");
+   format_table(buf, h->u.host.ports_tcp_remote, 0,TOTAL,0);
+
+   str_append(buf, "<h3>UDP ports on this host</h3>\n");
    format_table(buf, h->u.host.ports_udp, 0,TOTAL,0);
+
+   str_append(buf, "<h3>UDP ports on remote hosts</h3>\n");
+   format_table(buf, h->u.host.ports_udp_remote, 0,TOTAL,0);
 
    str_append(buf, "<h3>IP protocols</h3>\n");
    format_table(buf, h->u.host.ip_protos, 0,TOTAL,0);
@@ -1126,21 +1158,26 @@ static struct str *html_hosts_detail(const char *ip) {
 /* ---------------------------------------------------------------------------
  * Database import and export code:
  * Initially written and contributed by Ben Stewart.
- * copyright (c) 2007-2011 Ben Stewart, Emil Mikulic.
+ * copyright (c) 2007-2014 Ben Stewart, Emil Mikulic.
  */
 static int hosts_db_export_ip(const struct hashtable *h, const int fd);
-static int hosts_db_export_tcp(const struct hashtable *h, const int fd);
-static int hosts_db_export_udp(const struct hashtable *h, const int fd);
+static int hosts_db_export_tcp(const char magic, const struct hashtable *h,
+                               const int fd);
+static int hosts_db_export_udp(const char magic, const struct hashtable *h,
+                               const int fd);
 
 static const char
-   export_proto_ip  = 'P',
-   export_proto_tcp = 'T',
-   export_proto_udp = 'U';
+   export_proto_ip         = 'P',
+   export_proto_tcp        = 'T',
+   export_proto_tcp_remote = 't',
+   export_proto_udp        = 'U',
+   export_proto_udp_remote = 'u';
 
 static const unsigned char
    export_tag_host_ver1[] = {'H', 'S', 'T', 0x01},
    export_tag_host_ver2[] = {'H', 'S', 'T', 0x02},
-   export_tag_host_ver3[] = {'H', 'S', 'T', 0x03};
+   export_tag_host_ver3[] = {'H', 'S', 'T', 0x03},
+   export_tag_host_ver4[] = {'H', 'S', 'T', 0x04};
 
 /* ---------------------------------------------------------------------------
  * Load a host's ip_proto table from a file.
@@ -1174,15 +1211,16 @@ hosts_db_import_ip(const int fd, struct bucket *host)
 }
 
 /* ---------------------------------------------------------------------------
- * Load a host's port_tcp table from a file.
+ * Load a host's port_tcp{,_remote} table from a file.
  * Returns 0 on failure, 1 on success.
  */
-static int
-hosts_db_import_tcp(const int fd, struct bucket *host)
-{
+static int hosts_db_import_tcp(const int fd, const char magic,
+                               struct bucket *host,
+                               struct bucket *(get_port_fn)(struct bucket *host,
+                                                            uint16_t port)) {
    uint16_t count, i;
 
-   if (!expect8(fd, export_proto_tcp)) return 0;
+   if (!expect8(fd, magic)) return 0;
    if (!read16(fd, &count)) return 0;
 
    for (i=0; i<count; i++) {
@@ -1196,7 +1234,7 @@ hosts_db_import_tcp(const int fd, struct bucket *host)
       if (!read64(fd, &out)) return 0;
 
       /* Store data */
-      b = host_get_port_tcp(host, port);
+      b = get_port_fn(host, port);
       b->in = in;
       b->out = out;
       b->total = in + out;
@@ -1210,12 +1248,13 @@ hosts_db_import_tcp(const int fd, struct bucket *host)
  * Load a host's port_tcp table from a file.
  * Returns 0 on failure, 1 on success.
  */
-static int
-hosts_db_import_udp(const int fd, struct bucket *host)
-{
+static int hosts_db_import_udp(const int fd, const char magic,
+                               struct bucket *host,
+                               struct bucket *(get_port_fn)(struct bucket *host,
+                                                            uint16_t port)) {
    uint16_t count, i;
 
-   if (!expect8(fd, export_proto_udp)) return 0;
+   if (!expect8(fd, magic)) return 0;
    if (!read16(fd, &count)) return 0;
 
    for (i=0; i<count; i++) {
@@ -1228,7 +1267,7 @@ hosts_db_import_udp(const int fd, struct bucket *host)
       if (!read64(fd, &out)) return 0;
 
       /* Store data */
-      b = host_get_port_udp(host, port);
+      b = get_port_fn(host, port);
       b->in = in;
       b->out = out;
       b->total = in + out;
@@ -1253,7 +1292,9 @@ hosts_db_import_host(const int fd)
    int ver = 0;
 
    if (!readn(fd, hdr, sizeof(hdr))) return 0;
-   if (memcmp(hdr, export_tag_host_ver3, sizeof(hdr)) == 0)
+   if (memcmp(hdr, export_tag_host_ver4, sizeof(hdr)) == 0)
+      ver = 4;
+   else if (memcmp(hdr, export_tag_host_ver3, sizeof(hdr)) == 0)
       ver = 3;
    else if (memcmp(hdr, export_tag_host_ver2, sizeof(hdr)) == 0)
       ver = 2;
@@ -1265,7 +1306,7 @@ hosts_db_import_host(const int fd)
       return 0;
    }
 
-   if (ver == 3) {
+   if (ver >= 3) {
       if (!readaddr(fd, &a))
          return 0;
    } else {
@@ -1312,8 +1353,19 @@ hosts_db_import_host(const int fd)
 
    /* Host's port and proto subtables: */
    if (!hosts_db_import_ip(fd, host)) return 0;
-   if (!hosts_db_import_tcp(fd, host)) return 0;
-   if (!hosts_db_import_udp(fd, host)) return 0;
+   if (!hosts_db_import_tcp(fd, export_proto_tcp, host, host_get_port_tcp))
+      return 0;
+   if (!hosts_db_import_udp(fd, export_proto_udp, host, host_get_port_udp))
+      return 0;
+
+   if (ver == 4) {
+      if (!hosts_db_import_tcp(fd, export_proto_tcp_remote, host,
+                               host_get_port_tcp_remote))
+         return 0;
+      if (!hosts_db_import_udp(fd, export_proto_udp_remote, host,
+                               host_get_port_udp_remote))
+         return 0;
+   }
    return 1;
 }
 
@@ -1350,7 +1402,7 @@ int hosts_db_export(const int fd)
    for (i = 0; i<hosts_db->size; i++)
    for (b = hosts_db->table[i]; b != NULL; b = b->next) {
       /* For each host: */
-      if (!writen(fd, export_tag_host_ver3, sizeof(export_tag_host_ver3)))
+      if (!writen(fd, export_tag_host_ver4, sizeof(export_tag_host_ver4)))
          return 0;
 
       if (!writeaddr(fd, &(b->u.host.addr)))
@@ -1384,8 +1436,16 @@ int hosts_db_export(const int fd)
       if (!write64(fd, b->out)) return 0;
 
       if (!hosts_db_export_ip(b->u.host.ip_protos, fd)) return 0;
-      if (!hosts_db_export_tcp(b->u.host.ports_tcp, fd)) return 0;
-      if (!hosts_db_export_udp(b->u.host.ports_udp, fd)) return 0;
+      if (!hosts_db_export_tcp(export_proto_tcp, b->u.host.ports_tcp, fd))
+         return 0;
+      if (!hosts_db_export_udp(export_proto_udp, b->u.host.ports_udp, fd))
+         return 0;
+      if (!hosts_db_export_tcp(export_proto_tcp_remote,
+                               b->u.host.ports_tcp_remote, fd))
+         return 0;
+      if (!hosts_db_export_udp(export_proto_udp_remote,
+                               b->u.host.ports_udp_remote, fd))
+         return 0;
    }
    return 1;
 }
@@ -1428,13 +1488,13 @@ hosts_db_export_ip(const struct hashtable *h, const int fd)
  * Dump the port_tcp table of a host.
  */
 static int
-hosts_db_export_tcp(const struct hashtable *h, const int fd)
+hosts_db_export_tcp(const char magic, const struct hashtable *h, const int fd)
 {
    struct bucket *b;
    uint32_t i, written = 0;
 
    /* TCP DATA */
-   if (!write8(fd, export_proto_tcp)) return 0;
+   if (!write8(fd, magic)) return 0;
 
    /* If no data, write a count of 0 and we're done. */
    if (h == NULL) {
@@ -1461,13 +1521,13 @@ hosts_db_export_tcp(const struct hashtable *h, const int fd)
  * Dump the port_udp table of a host.
  */
 static int
-hosts_db_export_udp(const struct hashtable *h, const int fd)
+hosts_db_export_udp(const char magic, const struct hashtable *h, const int fd)
 {
    struct bucket *b;
    uint32_t i, written = 0;
 
    /* UDP DATA */
-   if (!write8(fd, export_proto_udp)) return 0;
+   if (!write8(fd, magic)) return 0;
 
    /* If no data, write a count of 0 and we're done. */
    if (h == NULL) {
@@ -1489,4 +1549,4 @@ hosts_db_export_udp(const struct hashtable *h, const int fd)
    return 1;
 }
 
-/* vim:set ts=3 sw=3 tw=78 expandtab: */
+/* vim:set ts=3 sw=3 tw=80 expandtab: */

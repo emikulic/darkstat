@@ -150,8 +150,8 @@ static int addr_is_local(const struct addr * const a,
 /* Account for the given packet summary. */
 void acct_for(const struct pktsummary * const sm,
               const struct local_ips * const local_ips) {
-   struct bucket *hs = NULL, *hd = NULL;
-   struct bucket *ps, *pd;
+   struct bucket *hs = NULL;  // Source host.
+   struct bucket *hd = NULL;  // Dest host.
    int dir_in, dir_out;
 
 #if 0 /* WANT_CHATTY? */
@@ -217,12 +217,12 @@ void acct_for(const struct pktsummary * const sm,
    /* Protocols. */
    if (sm->proto != IPPROTO_INVALID) {
       if (hs) {
-         ps = host_get_ip_proto(hs, sm->proto);
+         struct bucket *ps = host_get_ip_proto(hs, sm->proto);
          ps->out   += sm->len;
          ps->total += sm->len;
       }
       if (hd) {
-         pd = host_get_ip_proto(hd, sm->proto);
+         struct bucket *pd = host_get_ip_proto(hd, sm->proto);
          pd->in    += sm->len;
          pd->total += sm->len;
       }
@@ -233,30 +233,58 @@ void acct_for(const struct pktsummary * const sm,
    /* Ports. */
    switch (sm->proto) {
    case IPPROTO_TCP:
+      // Local ports on host.
       if ((sm->src_port <= opt_highest_port) && hs) {
-         ps = host_get_port_tcp(hs, sm->src_port);
+         struct bucket *ps = host_get_port_tcp(hs, sm->src_port);
          ps->out   += sm->len;
          ps->total += sm->len;
       }
       if ((sm->dst_port <= opt_highest_port) && hd) {
-         pd = host_get_port_tcp(hd, sm->dst_port);
+         struct bucket *pd = host_get_port_tcp(hd, sm->dst_port);
          pd->in    += sm->len;
          pd->total += sm->len;
          if (sm->tcp_flags == TH_SYN)
             pd->u.port_tcp.syn++;
       }
+
+      // Remote ports.
+      if ((sm->src_port <= opt_highest_port) && hd) {
+         struct bucket *pdr = host_get_port_tcp_remote(hd, sm->src_port);
+         pdr->out   += sm->len;
+         pdr->total += sm->len;
+      }
+      if ((sm->dst_port <= opt_highest_port) && hs) {
+         struct bucket *psr = host_get_port_tcp_remote(hs, sm->dst_port);
+         psr->in    += sm->len;
+         psr->total += sm->len;
+         if (sm->tcp_flags == TH_SYN)
+            psr->u.port_tcp.syn++;
+      }
       break;
 
    case IPPROTO_UDP:
+      // Local ports on host.
       if ((sm->src_port <= opt_highest_port) && hs) {
-         ps = host_get_port_udp(hs, sm->src_port);
+         struct bucket *ps = host_get_port_udp(hs, sm->src_port);
          ps->out   += sm->len;
          ps->total += sm->len;
       }
       if ((sm->dst_port <= opt_highest_port) && hd) {
-         pd = host_get_port_udp(hd, sm->dst_port);
+         struct bucket *pd = host_get_port_udp(hd, sm->dst_port);
          pd->in    += sm->len;
          pd->total += sm->len;
+      }
+
+      // Remote ports.
+      if ((sm->src_port <= opt_highest_port) && hd) {
+         struct bucket *pdr = host_get_port_udp_remote(hd, sm->src_port);
+         pdr->out   += sm->len;
+         pdr->total += sm->len;
+      }
+      if ((sm->dst_port <= opt_highest_port) && hs) {
+         struct bucket *psr = host_get_port_udp_remote(hs, sm->dst_port);
+         psr->in    += sm->len;
+         psr->total += sm->len;
       }
       break;
 
