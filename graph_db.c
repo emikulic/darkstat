@@ -302,9 +302,9 @@ struct str *html_front_page(void) {
    str_appendstr(buf, rf);
    str_free(rf);
    str_append(buf, "</span>");
-   if (abs(d_real - d_mono) > 1)
+   if (labs((long)(d_real - d_mono)) > 1)
       str_appendf(buf, " (real time is off by %qd sec)",
-                  (qd)d_real - (qd)d_mono);
+                  (qd)(d_real - d_mono));
 
    if (strftime(start_when, sizeof(start_when),
       "%Y-%m-%d %H:%M:%S %Z%z", localtime(&start_real)) != 0)
