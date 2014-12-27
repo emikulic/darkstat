@@ -263,9 +263,6 @@ void acct_for(const struct pktsummary * const sm,
    case IPPROTO_INVALID:
       /* proto decoding failed, don't complain in accounting */
       break;
-
-   default:
-      verbosef("acct_for: unknown IP protocol 0x%02x", sm->proto);
    }
 }
 

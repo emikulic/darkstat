@@ -349,28 +349,16 @@ static int helper_ipv6(HELPER_ARGS) {
    sm->dst.family = IPv6;
    memcpy(&sm->dst.ip.v6, &hdr->ip6_dst, sizeof(sm->dst.ip.v6));
 
-   /* Don't do proto accounting if this packet uses extension headers. */
-   switch (sm->proto) {
-      case 0: /* Hop-by-Hop Options */
-      case IPPROTO_NONE:
-      case IPPROTO_DSTOPTS:
-      case IPPROTO_ROUTING:
-      case IPPROTO_FRAGMENT:
-      case IPPROTO_AH:
-      case IPPROTO_ESP:
-      case 135: /* Mobility */
-         sm->proto = IPPROTO_INVALID;
-         return 1; /* but we have addresses, so host accounting is ok */
-
-      default:
-         helper_ip_deeper(pdata + IPV6_HDR_LEN, len - IPV6_HDR_LEN, sm);
-         return 1;
-   }
+   helper_ip_deeper(pdata + IPV6_HDR_LEN, len - IPV6_HDR_LEN, sm);
+   return 1;
 }
 
 static void helper_ip_deeper(HELPER_ARGS) {
    /* At this stage we have IP addresses so we can do host accounting.
-    * If proto decode fails, we set IPPROTO_INVALID to skip proto accounting.
+    *
+    * If proto decode fails, we set IPPROTO_INVALID to skip accounting of port
+    * numbers.
+    *
     * We don't need to "return 0" like other helpers.
     */
    switch (sm->proto) {
@@ -399,17 +387,6 @@ static void helper_ip_deeper(HELPER_ARGS) {
          sm->dst_port = ntohs(uhdr->uh_dport);
          return;
       }
-
-      case IPPROTO_ICMP:
-      case IPPROTO_IGMP:
-      case IPPROTO_ICMPV6:
-      case IPPROTO_OSPF:
-         /* known protocol, don't complain about it */
-         sm->proto = IPPROTO_INVALID; /* also don't do accounting */
-         break;
-
-      default:
-         verbosef("ip_deeper: unknown protocol 0x%02x", sm->proto);
    }
 }
 
