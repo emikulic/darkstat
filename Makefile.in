@@ -1,3 +1,5 @@
+# vim:set ts=8 sw=8 sts=8 noet:
+#
 # darkstat 3
 # copyright (c) 2001-2014 Emil Mikulic.
 #
@@ -75,9 +77,6 @@ depend: config.status $(STATICHS)
 	./config.status
 	rm -f Makefile.in.old
 
-show-dep:
-	@echo $(CPP) $(CPPFLAGS) -MM $(SRCS)
-
 graphjs.h: static/graph.js
 	$(AM_V_CIFY)
 	$(AM_V_at)./c-ify graph_js <static/graph.js >$@
@@ -97,7 +96,7 @@ install: darkstat
 	$(INSTALL) -d $(DESTDIR)$(mandir)/man8
 	$(INSTALL) -m 444 darkstat.8 $(DESTDIR)$(mandir)/man8
 
-.PHONY: all install clean depend show-dep
+.PHONY: all install clean depend
 
 # silent-rules
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
