@@ -24,13 +24,14 @@
 #include "err.h"
 #include <errno.h>
 #include <fcntl.h>
+#include <grp.h>
+#include <limits.h>
 #include <pwd.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
 #include <unistd.h>
-#include <limits.h>
 
 #define PATH_DEVNULL "/dev/null"
 
@@ -309,6 +310,12 @@ void privdrop(const char *chroot_dir, const char *privdrop_user) {
       if (chroot(chroot_dir) == -1)
          err(1, "chroot(\"%s\") failed", chroot_dir);
       verbosef("chrooted into: %s", chroot_dir);
+   }
+   {
+      gid_t list[1];
+      list[0] = pw->pw_gid;
+      if (setgroups(1, list) == -1)
+         err(1, "setgroups");
    }
    if (setgid(pw->pw_gid) == -1)
       err(1, "setgid");
