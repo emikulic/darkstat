@@ -1,3 +1,15 @@
+v3.0.719 (28 December 2014)
+	- Implement tracking of remote ports: shows which ports the host
+	  is making outgoing connections to. Long time feature request.
+	- Bugfix: when the capture interface goes down, exit instead of
+	  busy-looping forever.
+	- Fix "clock error" due to machine reboot.
+	- SIGUSR1 now resets the time and bytes reported on the graphs
+	  page.
+	- Account for all IP protocols.
+	- Change the default ports_max to only twice the default
+	  ports_keep.
+
 v3.0.718 (25 January 2014)
 	- (SECURITY!) Don't chroot() by default.  The user must specify
 	  a --chroot dir for this to happen now.
@@ -193,4 +205,4 @@ v2.6 (Nov 2003)
 
 	End of the line for darkstat 2.
 
-vim:set noet ts=8 sw=8 tw=72:
+vim:set noet ts=8 sts=8 sw=8 tw=72:
