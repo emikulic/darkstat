@@ -468,6 +468,23 @@ void cap_stop(void) {
    title_interfaces = NULL;
 }
 
+/* This is only needed by the DNS child. In the main process, the deallocation
+ * happens in cap_start().
+ */
+void cap_free_args(void) {
+   while (!STAILQ_EMPTY(&cli_ifnames)) {
+      struct strnode *ifname = STAILQ_FIRST(&cli_ifnames);
+      STAILQ_REMOVE_HEAD(&cli_ifnames, entries);
+      free(ifname);
+   }
+
+   while (!STAILQ_EMPTY(&cli_filters)) {
+      struct strnode *filter = STAILQ_FIRST(&cli_filters);
+      STAILQ_REMOVE_HEAD(&cli_filters, entries);
+      free(filter);
+   }
+}
+
 /* Run through entire capfile. */
 void cap_from_file(const char *capfile) {
    char errbuf[PCAP_ERRBUF_SIZE];

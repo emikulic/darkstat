@@ -8,6 +8,7 @@
  */
 
 #include "cdefs.h"
+#include "cap.h"
 #include "conv.h"
 #include "decode.h"
 #include "dns.h"
@@ -65,6 +66,7 @@ dns_init(const char *privdrop_user)
       daemonize_finish(); /* drop our copy of the lifeline! */
       if (signal(SIGUSR1, SIG_IGN) == SIG_ERR)
          errx(1, "signal(SIGUSR1, ignore) failed");
+      cap_free_args();
       dns_main();
       errx(1, "DNS child fell out of dns_main()");
    } else {

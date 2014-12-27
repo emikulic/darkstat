@@ -1,5 +1,5 @@
 /* darkstat 3
- * copyright (c) 2001-2012 Emil Mikulic.
+ * copyright (c) 2001-2014 Emil Mikulic.
  *
  * cap.h: interface to libpcap.
  */
@@ -17,6 +17,7 @@ void cap_fd_set(fd_set *read_set, int *max_fd,
    struct timeval *timeout, int *need_timeout);
 int cap_poll(fd_set *read_set);
 void cap_stop(void);
+void cap_free_args(void);
 
 void cap_from_file(const char *capfile);
 
