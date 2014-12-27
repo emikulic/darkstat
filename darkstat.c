@@ -153,7 +153,7 @@ unsigned int opt_hosts_keep = 500;
 static void cb_hosts_keep(const char *arg)
 { opt_hosts_keep = parsenum(arg, 0); }
 
-unsigned int opt_ports_max = 200;
+unsigned int opt_ports_max = 60;
 static void cb_ports_max(const char *arg)
 { opt_ports_max = parsenum(arg, 65536); }
 
