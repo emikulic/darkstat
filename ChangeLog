@@ -1,4 +1,4 @@
-v3.0.719 (28 December 2014)
+v3.0.719 (24 May 2015)
 	- Implement tracking of remote ports: shows which ports the host
 	  is making outgoing connections to. Long time feature request.
 	- Bugfix: when the capture interface goes down, exit instead of
