@@ -11,8 +11,8 @@
 #  - git push --tags
 #  - Update website
 #  - Mail announcement to darkstat-announce@googlegroups.com
-#  - Update FreeBSD port, eg: http://www.freebsd.org/cgi/query-pr.cgi?pr=181277
-#  - Update freecode.com
+#  - Update FreeBSD port, e.g.:
+#    https://bugs.freebsd.org/bugzilla/show_bug.cgi?id=200425
 #
 if [ $# -ne 1 ]; then
   echo "usage: $0 3.0.0rc0" >&2
