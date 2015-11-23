@@ -35,7 +35,8 @@ void html_open(struct str *buf, const char *title,
          "<title>%s (darkstat %s)</title>\n"
          "<meta name=\"generator\" content=\"" PACKAGE_STRING "\">\n"
          "<meta name=\"robots\" content=\"noindex, noarchive\">\n"
-         "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no\">\n"
+         "<meta name=\"viewport\" "
+               "content=\"width=device-width, initial-scale=1\">\n"
          "<link rel=\"stylesheet\" href=\"%s/style.css\" type=\"text/css\">\n",
         title, title_interfaces, root);
 
