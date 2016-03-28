@@ -1,12 +1,11 @@
 /* darkstat 3
- * copyright (c) 2001-2014 Emil Mikulic.
+ * copyright (c) 2001-2016 Emil Mikulic.
  *
  * http.h: embedded webserver.
  */
 
 #include <sys/time.h>
 #include <sys/select.h>
-#include <netinet/in.h>
 
 void http_init_base(const char *url);
 void http_add_bindaddr(const char *bindaddr);
