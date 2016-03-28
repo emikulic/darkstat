@@ -304,11 +304,13 @@ void privdrop(const char *chroot_dir, const char *privdrop_user) {
    if (chroot_dir == NULL) {
       verbosef("no --chroot dir specified, darkstat will not chroot()");
    } else {
-      tzset(); /* read /etc/localtime before we chroot */
-      if (chdir(chroot_dir) == -1)
-         err(1, "chdir(\"%s\") failed", chroot_dir);
+      /* Read /etc/localtime before we chroot. This works on FreeBSD but not
+       * on Linux / with glibc (as of 2.22) */
+      tzset();
       if (chroot(chroot_dir) == -1)
          err(1, "chroot(\"%s\") failed", chroot_dir);
+      if (chdir("/") == -1)
+         err(1, "chdir(\"/\") failed");
       verbosef("chrooted into: %s", chroot_dir);
    }
    {
