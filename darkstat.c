@@ -76,7 +76,7 @@ static void cb_interface(const char *arg) {
 
 static void cb_filter(const char *arg) { cap_add_filter(arg); }
 
-const char *opt_capfile = NULL;
+static const char *opt_capfile = NULL;
 static void cb_capfile(const char *arg) { opt_capfile = arg; }
 
 int opt_want_snaplen = -1;
@@ -92,13 +92,13 @@ static void cb_syslog(const char *arg _unused_) { opt_want_syslog = 1; }
 int opt_want_verbose = 0;
 static void cb_verbose(const char *arg _unused_) { opt_want_verbose = 1; }
 
-int opt_want_daemonize = 1;
+static int opt_want_daemonize = 1;
 static void cb_no_daemon(const char *arg _unused_) { opt_want_daemonize = 0; }
 
-int opt_want_promisc = 1;
+static int opt_want_promisc = 1;
 static void cb_no_promisc(const char *arg _unused_) { opt_want_promisc = 0; }
 
-int opt_want_dns = 1;
+static int opt_want_dns = 1;
 static void cb_no_dns(const char *arg _unused_) { opt_want_dns = 0; }
 
 int opt_want_macs = 1;
@@ -107,7 +107,7 @@ static void cb_no_macs(const char *arg _unused_) { opt_want_macs = 0; }
 int opt_want_lastseen = 1;
 static void cb_no_lastseen(const char *arg _unused_) { opt_want_lastseen = 0; }
 
-unsigned short opt_bindport = 667;
+static unsigned short opt_bindport = 667;
 static void cb_port(const char *arg)
 { opt_bindport = (unsigned short)parsenum(arg, 65536); }
 
@@ -124,22 +124,22 @@ int opt_want_local_only = 0;
 static void cb_local_only(const char *arg _unused_)
 { opt_want_local_only = 1; }
 
-const char *opt_chroot_dir = NULL;
+static const char *opt_chroot_dir = NULL;
 static void cb_chroot(const char *arg) { opt_chroot_dir = arg; }
 
-const char *opt_base = NULL;
+static const char *opt_base = NULL;
 static void cb_base(const char *arg) { opt_base = arg; }
 
-const char *opt_privdrop_user = NULL;
+static const char *opt_privdrop_user = NULL;
 static void cb_user(const char *arg) { opt_privdrop_user = arg; }
 
-const char *opt_daylog_fn = NULL;
+static const char *opt_daylog_fn = NULL;
 static void cb_daylog(const char *arg) { opt_daylog_fn = arg; }
 
-const char *import_fn = NULL;
+static const char *import_fn = NULL;
 static void cb_import(const char *arg) { import_fn = arg; }
 
-const char *export_fn = NULL;
+static const char *export_fn = NULL;
 static void cb_export(const char *arg) { export_fn = arg; }
 
 static const char *pid_fn = NULL;
@@ -173,7 +173,7 @@ int opt_want_hexdump = 0;
 static void cb_hexdump(const char *arg _unused_)
 { opt_want_hexdump = 1; }
 
-int opt_want_help = 0;
+static int opt_want_help = 0;
 static void cb_help(const char *arg _unused_)
 { opt_want_help = 1; }
 static void cb_version(const char *arg _unused_)
