@@ -38,9 +38,9 @@ td.num { text-align:right; }
 th { background-color:#EFEFEF; font-weight: bold;
      padding-top:2px; padding-bottom:2px; }
 th a { color:black; border-bottom:1px dotted; }
-tr.alt1 { background:#FFFFFF; }
-tr.alt2 { background:#FAFAFA; }
-tr.alt1:hover, tr.alt2:hover { background:#EFEFEF; }
+tr:nth-child(odd)  { background:#FFFFFF; }
+tr:nth-child(even) { background:#FAFAFA; }
+tr:hover { background:#EFEFEF; }
 body, td, th, p, input, textarea
                { font-family: Tahoma, Verdana, sans-serif;
                  font-size: small; }

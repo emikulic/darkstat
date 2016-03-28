@@ -40,8 +40,7 @@ typedef const void * (key_func_t)(const struct bucket *);
 typedef int (find_func_t)(const struct bucket *, const void *);
 typedef struct bucket * (make_func_t)(const void *);
 typedef void (format_cols_func_t)(struct str *);
-typedef void (format_row_func_t)(struct str *, const struct bucket *,
-   const char *);
+typedef void (format_row_func_t)(struct str *, const struct bucket *);
 
 struct hashtable {
    uint8_t bits;     /* size of hashtable in bits */
@@ -313,16 +312,14 @@ format_cols_host(struct str *buf)
 }
 
 static void
-format_row_host(struct str *buf, const struct bucket *b,
-   const char *css_class)
+format_row_host(struct str *buf, const struct bucket *b)
 {
    const char *ip = addr_to_str(&(b->u.host.addr));
 
    str_appendf(buf,
-      "<tr class=\"%s\">\n"
+      "<tr>\n"
       " <td><a href=\"./%s/\">%s</a></td>\n"
       " <td>%s</td>\n",
-      css_class,
       ip, ip,
       (b->u.host.dns == NULL) ? "" : b->u.host.dns);
 
@@ -391,13 +388,12 @@ format_cols_port_tcp(struct str *buf)
 }
 
 static void
-format_row_port_tcp(struct str *buf, const struct bucket *b,
-   const char *css_class)
+format_row_port_tcp(struct str *buf, const struct bucket *b)
 {
    const struct port_tcp *p = &(b->u.port_tcp);
 
    str_appendf(buf,
-      "<tr class=\"%s\">\n"
+      "<tr>\n"
       " <td class=\"num\">%u</td>\n"
       " <td>%s</td>\n"
       " <td class=\"num\">%'qu</td>\n"
@@ -405,7 +401,6 @@ format_row_port_tcp(struct str *buf, const struct bucket *b,
       " <td class=\"num\">%'qu</td>\n"
       " <td class=\"num\">%'qu</td>\n"
       "</tr>\n",
-      css_class,
       p->port,
       getservtcp(p->port),
       (qu)b->in,
@@ -431,20 +426,18 @@ format_cols_port_udp(struct str *buf)
 }
 
 static void
-format_row_port_udp(struct str *buf, const struct bucket *b,
-   const char *css_class)
+format_row_port_udp(struct str *buf, const struct bucket *b)
 {
    const struct port_udp *p = &(b->u.port_udp);
 
    str_appendf(buf,
-      "<tr class=\"%s\">\n"
+      "<tr>\n"
       " <td class=\"num\">%u</td>\n"
       " <td>%s</td>\n"
       " <td class=\"num\">%'qu</td>\n"
       " <td class=\"num\">%'qu</td>\n"
       " <td class=\"num\">%'qu</td>\n"
       "</tr>\n",
-      css_class,
       p->port,
       getservudp(p->port),
       (qu)b->in,
@@ -469,20 +462,18 @@ format_cols_ip_proto(struct str *buf)
 }
 
 static void
-format_row_ip_proto(struct str *buf, const struct bucket *b,
-   const char *css_class)
+format_row_ip_proto(struct str *buf, const struct bucket *b)
 {
    const struct ip_proto *p = &(b->u.ip_proto);
 
    str_appendf(buf,
-      "<tr class=\"%s\">\n"
+      "<tr>\n"
       " <td class=\"num\">%u</td>\n"
       " <td>%s</td>\n"
       " <td class=\"num\">%'qu</td>\n"
       " <td class=\"num\">%'qu</td>\n"
       " <td class=\"num\">%'qu</td>\n"
       "</tr>\n",
-      css_class,
       p->proto,
       getproto(p->proto),
       (qu)b->in,
@@ -958,7 +949,7 @@ format_table(struct str *buf, struct hashtable *ht, unsigned int start,
    ht->format_cols_func(buf);
 
    for (i=start; i<end; i++) {
-      ht->format_row_func(buf, table[i], alt ? "alt1" : "alt2");
+      ht->format_row_func(buf, table[i]);
       alt = !alt; /* alternate class for table rows */
    }
    free(table);
