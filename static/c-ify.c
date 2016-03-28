@@ -11,7 +11,7 @@ main(int argc, char **argv)
 		exit(EXIT_FAILURE);
 	}
 	printf("/* this file was automatically generated */\n"
-	       "static char %s[] =", argv[1]);
+	       "static const char %s[] =", argv[1]);
 	eol = 1;
 	while ((c = getchar()) != EOF) {
 		if (eol) {

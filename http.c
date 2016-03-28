@@ -542,7 +542,7 @@ static_style_css(struct connection *conn)
 {
 #include "stylecss.h"
 
-    conn->reply = style_css;
+    conn->reply = (char*)style_css;
     conn->reply_length = style_css_len;
     conn->reply_dont_free = 1;
     conn->mime_type = mime_type_css;
@@ -556,7 +556,7 @@ static_graph_js(struct connection *conn)
 {
 #include "graphjs.h"
 
-    conn->reply = graph_js;
+    conn->reply = (char*)graph_js;
     conn->reply_length = graph_js_len;
     conn->reply_dont_free = 1;
     conn->mime_type = mime_type_js;
