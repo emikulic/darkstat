@@ -1,7 +1,7 @@
 #!/bin/sh
 #
 # release.sh: script to roll a release tarball of darkstat.
-# copyright (c) 2006-2013 Emil Mikulic.
+# copyright (c) 2006-2016 Emil Mikulic.
 #
 # This is for developer use only and lives in the repo but
 # shouldn't end up in a tarball.
@@ -56,6 +56,7 @@ dns.h \
 err.c \
 err.h \
 export-format.txt \
+favicon.h \
 graph_db.c \
 graph_db.h \
 graphjs.h \

@@ -11,7 +11,7 @@ check_deps() {
   # dependencies, and be able to be included multiple times.
   src=_test_hdr.c
   obj=_test_hdr.o
-  files=`ls *.h | fgrep -v -e graphjs.h -e stylecss.h`
+  files=`ls *.h | fgrep -v -e graphjs.h -e stylecss.h -e favicon.h`
 
   for f in $files; do
     echo " * $f"

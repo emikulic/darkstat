@@ -1,7 +1,7 @@
 # vim:set ts=8 sw=8 sts=8 noet:
 #
 # darkstat 3
-# copyright (c) 2001-2014 Emil Mikulic.
+# copyright (c) 2001-2016 Emil Mikulic.
 #
 # You may use, modify and redistribute this file under the terms of the
 # GNU General Public License version 2. (see COPYING.GPL)
@@ -49,6 +49,7 @@ str.c
 OBJS = $(SRCS:%.c=%.o)
 
 STATICHS = \
+favicon.h	\
 stylecss.h	\
 graphjs.h
 
@@ -77,15 +78,17 @@ depend: config.status $(STATICHS)
 	./config.status
 	rm -f Makefile.in.old
 
-graphjs.h: static/graph.js
+favicon.h: static/favicon.png
+	(echo -n "static const "; cd static && xxd -i favicon.png | grep -v len) >$@
+
+graphjs.h: static/graph.js c-ify
 	$(AM_V_CIFY)
 	$(AM_V_at)./c-ify graph_js <static/graph.js >$@
 
-stylecss.h: static/style.css
+stylecss.h: static/style.css c-ify
 	$(AM_V_CIFY)
 	$(AM_V_at)./c-ify style_css <static/style.css >$@
 
-$(STATICHS): c-ify
 c-ify: static/c-ify.c
 	$(AM_V_HOSTCC)
 	$(AM_V_at)$(HOSTCC) $(HOSTCFLAGS) static/c-ify.c -o $@
@@ -140,7 +143,7 @@ hosts_db.o: hosts_db.c cdefs.h conv.h decode.h addr.h dns.h err.h \
 hosts_sort.o: hosts_sort.c cdefs.h err.h hosts_db.h addr.h
 html.o: html.c config.h str.h cdefs.h html.h opt.h
 http.o: http.c cdefs.h config.h conv.h err.h graph_db.h hosts_db.h addr.h \
- http.h now.h queue.h str.h stylecss.h graphjs.h
+ http.h now.h queue.h str.h stylecss.h graphjs.h favicon.h
 localip.o: localip.c addr.h bsd.h config.h conv.h err.h cdefs.h localip.h \
  now.h
 ncache.o: ncache.c conv.h err.h cdefs.h ncache.h tree.h bsd.h config.h

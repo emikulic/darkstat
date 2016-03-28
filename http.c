@@ -1,5 +1,5 @@
 /* darkstat 3
- * copyright (c) 2001-2014 Emil Mikulic.
+ * copyright (c) 2001-2016 Emil Mikulic.
  *
  * http.c: embedded webserver.
  * This borrows a lot of code from darkhttpd.
@@ -44,6 +44,7 @@ static const char mime_type_xml[] = "text/xml";
 static const char mime_type_html[] = "text/html; charset=us-ascii";
 static const char mime_type_css[] = "text/css";
 static const char mime_type_js[] = "text/javascript";
+static const char mime_type_png[] = "image/png";
 static const char encoding_identity[] = "identity";
 static const char encoding_gzip[] = "gzip";
 
@@ -562,6 +563,20 @@ static_graph_js(struct connection *conn)
 }
 
 /* ---------------------------------------------------------------------------
+ * Web interface: favicon.
+ */
+static void
+static_favicon(struct connection *conn)
+{
+#include "favicon.h"
+
+    conn->reply = (char*)favicon_png;
+    conn->reply_length = sizeof(favicon_png);
+    conn->reply_dont_free = 1;
+    conn->mime_type = mime_type_png;
+}
+
+/* ---------------------------------------------------------------------------
  * gzip a reply, if requested and possible.  Don't bother with a minimum
  * length requirement, I've never seen a page fail to compress.
  */
@@ -677,7 +692,10 @@ static void process_get(struct connection *conn)
         static_style_css(conn);
     else if (strcmp(safe_url, "/graph.js") == 0)
         static_graph_js(conn);
-    else {
+    else if (strcmp(safe_url, "/favicon.ico") == 0) {
+        /* serves a PNG instead of an ICO, might cause problems for IE6 */
+        static_favicon(conn);
+    } else {
         default_reply(conn, 404, "Not Found",
             "The page you requested could not be found.");
         free(safe_url);
