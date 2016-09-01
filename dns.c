@@ -68,7 +68,6 @@ dns_init(const char *privdrop_user)
          errx(1, "signal(SIGUSR1, ignore) failed");
       cap_free_args();
       dns_main();
-      errx(1, "DNS child fell out of dns_main()");
    } else {
       /* We are the parent. */
       close(dns_sock[CHILD]);
