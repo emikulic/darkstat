@@ -42,6 +42,7 @@ static int http_base_len = 0;
 
 static const char mime_type_xml[] = "text/xml";
 static const char mime_type_html[] = "text/html; charset=us-ascii";
+static const char mime_type_text_prometheus[] = "text/plain; version=0.0.4";
 static const char mime_type_css[] = "text/css";
 static const char mime_type_js[] = "text/javascript";
 static const char mime_type_png[] = "image/png";
@@ -687,6 +688,11 @@ static void process_get(struct connection *conn)
         conn->mime_type = mime_type_xml;
         /* hack around Opera caching the XML */
         conn->header_extra = "Pragma: no-cache\r\n";
+    }
+    else if (str_starts_with(safe_url, "/metrics")) {
+        struct str *buf = text_metrics();
+        str_extract(buf, &(conn->reply_length), &(conn->reply));
+        conn->mime_type = mime_type_text_prometheus;
     }
     else if (strcmp(safe_url, "/style.css") == 0)
         static_style_css(conn);

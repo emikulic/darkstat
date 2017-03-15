@@ -911,19 +911,18 @@ html_hosts(const char *uri, const char *query)
 }
 
 /* ---------------------------------------------------------------------------
- * Format hashtable into HTML.
+ * Get an array of pointers to all the buckets in the hashtable,
+ * or NULL if the hashtable is NULL or empty.
+ * The returned pointer should be free'd by the caller.
  */
-static void
-format_table(struct str *buf, struct hashtable *ht, unsigned int start,
-   const enum sort_dir sort, const int full)
+const struct bucket **
+hashtable_list_buckets(struct hashtable *ht)
 {
    const struct bucket **table;
-   unsigned int i, pos, end;
-   int alt = 0;
+   unsigned int i, pos;
 
    if ((ht == NULL) || (ht->count == 0)) {
-      str_append(buf, "<p>The table is empty.</p>\n");
-      return;
+      return NULL;
    }
 
    /* Fill table with pointers to buckets in hashtable. */
@@ -936,6 +935,51 @@ format_table(struct str *buf, struct hashtable *ht, unsigned int start,
       }
    }
    assert(pos == ht->count);
+   return table;
+}
+
+typedef void (hashtable_foreach_func_t)(const struct bucket *, const void *);
+
+/* ---------------------------------------------------------------------------
+ * Loop over all buckets in the given hashtable, calling the supplied function
+ * with each bucket and the supplied user_data.
+ */
+static void
+hashtable_foreach(struct hashtable *ht,
+   hashtable_foreach_func_t *hashtable_foreach_func,
+   const void *user_data)
+{
+   const struct bucket **table;
+   unsigned int i;
+
+   table = hashtable_list_buckets(ht);
+   if (table == NULL)
+      return;
+
+   for (i = 0; i<ht->count; i++) {
+      const struct bucket *b = table[i];
+      (*hashtable_foreach_func)(b, user_data);
+   }
+   free(table);
+}
+
+/* ---------------------------------------------------------------------------
+ * Format hashtable into HTML.
+ */
+static void
+format_table(struct str *buf, struct hashtable *ht, unsigned int start,
+   const enum sort_dir sort, const int full)
+{
+   const struct bucket **table;
+   unsigned int i, end;
+   int alt = 0;
+
+   table = hashtable_list_buckets(ht);
+
+   if (table == NULL) {
+      str_append(buf, "<p>The table is empty.</p>\n");
+      return;
+   }
 
    if (full) {
       /* full report overrides start and end */
@@ -1170,6 +1214,67 @@ static const unsigned char
    export_tag_host_ver2[] = {'H', 'S', 'T', 0x02},
    export_tag_host_ver3[] = {'H', 'S', 'T', 0x03},
    export_tag_host_ver4[] = {'H', 'S', 'T', 0x04};
+
+static void text_metrics_counter(struct str *buf, const char *metric, const char *type, const char *help);
+static void text_metrics_format_host(const struct bucket *b, const void *user_data);
+
+/* ---------------------------------------------------------------------------
+ * Web interface: export stats in Prometheus text format on /metrics
+ */
+struct str *
+text_metrics()
+{
+   struct str *buf = str_make();
+
+   text_metrics_counter(buf,
+      "host_bytes_total",
+      "counter",
+      "Total number of network bytes by host and direction.");
+   hashtable_foreach(hosts_db, &text_metrics_format_host, (void *)buf);
+
+   return buf;
+}
+
+static void
+text_metrics_counter(struct str *buf,
+   const char *metric,
+   const char *type,
+   const char *help)
+{
+   str_appendf(buf, "# HELP %s %s\n", metric, help);
+   str_appendf(buf, "# TYPE %s %s\n", metric, type);
+}
+
+static void
+text_metrics_format_host_key(struct str *buf, const struct bucket *b) {
+   const char *ip = addr_to_str(&(b->u.host.addr));
+
+   str_appendf(buf,
+      "host_bytes_total{interface=\"%s\",ip=\"%s\"",
+      title_interfaces, ip);
+
+   if (hosts_db_show_macs)
+      str_appendf(buf, ",mac=\"%x:%x:%x:%x:%x:%x\"",
+         b->u.host.mac_addr[0],
+         b->u.host.mac_addr[1],
+         b->u.host.mac_addr[2],
+         b->u.host.mac_addr[3],
+         b->u.host.mac_addr[4],
+         b->u.host.mac_addr[5]);
+}
+
+static void
+text_metrics_format_host(const struct bucket *b,
+   const void *user_data)
+{
+   struct str *buf = (struct str *)user_data;
+
+   text_metrics_format_host_key(buf, b);
+   str_appendf(buf, ",dir=\"in\"} %qu\n", (qu)b->in);
+
+   text_metrics_format_host_key(buf, b);
+   str_appendf(buf, ",dir=\"out\"} %qu\n", (qu)b->out);
+}
 
 /* ---------------------------------------------------------------------------
  * Load a host's ip_proto table from a file.
