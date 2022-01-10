@@ -30,7 +30,7 @@ INSTALL \
 LICENSE \
 Makefile.in \
 NEWS \
-README \
+README.md \
 acct.c \
 acct.h \
 addr.c \
@@ -110,8 +110,8 @@ if git status --porcelain | egrep -v '^\?\?' -q; then
 fi
 run mkdir $PKG
 run cp -r $files $PKG/.
-run sed -e "/AC_INIT/s/darkstat, [^,)]*/darkstat, $VERSION/" configure.ac > $PKG/configure.ac
-say set version: `grep '^AC_INIT' $PKG/configure.ac`
+run sed -e "/AC_INIT/s/3.0.0-git/$VERSION/" configure.ac > $PKG/configure.ac
+say version set to: $(grep '^AC_INIT' $PKG/configure.ac)
 (cd $PKG
  run autoconf
  run autoheader
