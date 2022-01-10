@@ -41,7 +41,7 @@ CSVFILENAME=${DBFILENAME%%.*}.csv
 echo ${SCRIPTNAME}: Writing output into ${CSVFILENAME}
 
 # The spec of the .db export format exists for different versions:
-#   http://unix4lyfe.org/gitweb/darkstat/blob/0a152e51f5d9c1771308caa7135d363a722aee18:/export-format.txt
+#   https://github.com/emikulic/darkstat/blob/master/export-format.txt
 #   http://git.msquadrat.de/darkstat.git/blob_plain/master:/export-format.txt
 #   http://phil.lavin.me.uk/downloads/parse.phps
 # Only file format version 1 is supported by us.
