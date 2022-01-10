@@ -1,3 +1,10 @@
+v3.0.720 (10 Jan 2022)
+	- Improve graphs on mobile (thanks to Dallen Wilson).
+	- Add favicon, improve CSS (thanks to Daniel Aleksandersen).
+	- Export host statistics in Prometheus format on /metrics
+	  (thanks to flowblok).
+	- Move to github.
+
 v3.0.719 (24 May 2015)
 	- Implement tracking of remote ports: shows which ports the host
 	  is making outgoing connections to. Long time feature request.
