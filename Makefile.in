@@ -8,7 +8,6 @@
 
 CC = @CC@
 CFLAGS = @CFLAGS@
-CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 INSTALL = @INSTALL@
 LDFLAGS = @LDFLAGS@
@@ -74,7 +73,7 @@ depend: config.status $(STATICHS)
 	sed '/^# Automatically generated dependencies$$/,$$d' \
 		<Makefile.in.old >Makefile.in
 	echo "# Automatically generated dependencies" >>Makefile.in
-	$(CPP) $(CPPFLAGS) -MM $(SRCS) >>Makefile.in
+	$(CC) $(CPPFLAGS) -MM $(SRCS) >>Makefile.in
 	./config.status
 	rm -f Makefile.in.old
 
