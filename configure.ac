@@ -1,5 +1,4 @@
-# Need at least 2.64 for PACKAGE_URL
-AC_PREREQ([2.71])
+AC_PREREQ([2.69])
 AC_INIT([darkstat],[3.0.0-git],[],[],[https://unix4lyfe.org/darkstat/])
 AC_CONFIG_SRCDIR([darkstat.c])
 AC_CONFIG_HEADERS([config.h])
