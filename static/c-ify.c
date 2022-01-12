@@ -1,6 +1,7 @@
-/* DON'T LOOK AT MY FACE!  MY HIDEOUS FACE! */
+/* Converts a textfile to a const char array with characters escaped. */
 #include <stdio.h>
 #include <stdlib.h>
+
 int
 main(int argc, char **argv)
 {
@@ -10,7 +11,7 @@ main(int argc, char **argv)
 			argv[0]);
 		exit(EXIT_FAILURE);
 	}
-	printf("/* this file was automatically generated */\n"
+	printf("/* this file was automatically generated with c-ify */\n"
 	       "static const char %s[] =", argv[1]);
 	eol = 1;
 	while ((c = getchar()) != EOF) {

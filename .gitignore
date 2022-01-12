@@ -4,6 +4,7 @@ Makefile
 a.out
 autom4te.cache
 darkstat-*
+hex-ify
 c-ify
 config.h
 config.h.in

@@ -66,7 +66,7 @@ clean:
 	rm -f darkstat
 	rm -f $(OBJS)
 	rm -f $(STATICHS)
-	rm -f c-ify
+	rm -f hex-ify c-ify
 
 depend: config.status $(STATICHS)
 	cp Makefile.in Makefile.in.old
@@ -77,8 +77,9 @@ depend: config.status $(STATICHS)
 	./config.status
 	rm -f Makefile.in.old
 
-favicon.h: static/favicon.png
-	(echo -n "static const "; cd static && xxd -i favicon.png | grep -v len) >$@
+favicon.h: static/favicon.png hex-ify
+	$(AM_V_HEXIFY)
+	$(AM_V_at)./hex-ify favicon_png <static/favicon.png >$@
 
 graphjs.h: static/graph.js c-ify
 	$(AM_V_CIFY)
@@ -87,6 +88,10 @@ graphjs.h: static/graph.js c-ify
 stylecss.h: static/style.css c-ify
 	$(AM_V_CIFY)
 	$(AM_V_at)./c-ify style_css <static/style.css >$@
+
+hex-ify: static/hex-ify.c
+	$(AM_V_HOSTCC)
+	$(AM_V_at)$(HOSTCC) $(HOSTCFLAGS) static/hex-ify.c -o $@
 
 c-ify: static/c-ify.c
 	$(AM_V_HOSTCC)
@@ -114,6 +119,9 @@ am__v_HOSTCC_0 = @echo "  HOSTCC" $@;
 AM_V_CIFY = $(am__v_CIFY_$(V))
 am__v_CIFY_ = $(am__v_CIFY_$(AM_DEFAULT_VERBOSITY))
 am__v_CIFY_0 = @echo "  C-IFY " $@;
+AM_V_HEXIFY = $(am__v_HEXIFY_$(V))
+am__v_HEXIFY_ = $(am__v_HEXIFY_$(AM_DEFAULT_VERBOSITY))
+am__v_HEXIFY_0 = @echo "  HEX-IFY " $@;
 AM_V_at = $(am__v_at_$(V))
 am__v_at_ = $(am__v_at_$(AM_DEFAULT_VERBOSITY))
 am__v_at_0 = @
