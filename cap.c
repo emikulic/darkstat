@@ -15,6 +15,7 @@
 #include "decode.h"
 #include "err.h"
 #include "hosts_db.h"
+#include "linktypes.h"
 #include "localip.h"
 #include "now.h"
 #include "opt.h"
@@ -152,7 +153,7 @@ static void cap_start_one(struct cap_iface *iface, const int promisc) {
 
    /* Work out the linktype and what snaplen we need. */
    linktype = pcap_datalink(iface->pcap);
-   verbosef("linktype is %d", linktype);
+   verbosef("linktype is %d (%s)", linktype, get_linktype_name(linktype));
    if ((linktype == DLT_EN10MB) && opt_want_macs)
       hosts_db_show_macs = 1;
    iface->linkhdr = getlinkhdr(linktype);

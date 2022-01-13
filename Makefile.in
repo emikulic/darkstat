@@ -5,6 +5,9 @@
 #
 # You may use, modify and redistribute this file under the terms of the
 # GNU General Public License version 2. (see COPYING.GPL)
+#
+# To rebuild Makefile from Makefile.in, run: ./config.status
+# For verbose output, run: make V=1
 
 CC = @CC@
 CFLAGS = @CFLAGS@
@@ -22,7 +25,7 @@ sbindir = @sbindir@
 datarootdir = @datarootdir@
 mandir = @mandir@
 
-SRCS = \
+SRCS =		\
 acct.c		\
 addr.c		\
 bsd.c		\
@@ -39,15 +42,20 @@ hosts_db.c	\
 hosts_sort.c	\
 html.c		\
 http.c		\
+linktypes.c	\
 localip.c	\
 ncache.c	\
 now.c		\
 pidfile.c	\
 str.c
 
-OBJS = $(SRCS:%.c=%.o)
+TEST_SRCS =		\
+linktypes_test.c
 
-STATICHS = \
+OBJS = $(SRCS:%.c=%.o)
+TEST_OBJS = $(TEST_SRCS:%.c=%.o)
+
+STATICHS =	\
 favicon.h	\
 stylecss.h	\
 graphjs.h
@@ -65,15 +73,17 @@ darkstat: $(OBJS)
 clean:
 	rm -f darkstat
 	rm -f $(OBJS)
+	rm -f $(TEST_OBJS)
 	rm -f $(STATICHS)
 	rm -f hex-ify c-ify
+	rm -f linktypes_test
 
 depend: config.status $(STATICHS)
 	cp Makefile.in Makefile.in.old
 	sed '/^# Automatically generated dependencies$$/,$$d' \
 		<Makefile.in.old >Makefile.in
 	echo "# Automatically generated dependencies" >>Makefile.in
-	$(CC) $(CPPFLAGS) -MM $(SRCS) >>Makefile.in
+	$(CC) $(CPPFLAGS) -MM $(SRCS) $(TEST_SRCS) >>Makefile.in
 	./config.status
 	rm -f Makefile.in.old
 
@@ -103,7 +113,17 @@ install: darkstat
 	$(INSTALL) -d $(DESTDIR)$(mandir)/man8
 	$(INSTALL) -m 444 darkstat.8 $(DESTDIR)$(mandir)/man8
 
-.PHONY: all install clean depend
+# Testing.
+
+linktypes_test: linktypes_test.o linktypes.o
+	$(AM_V_LINK)
+	$(AM_V_at)$(CC) $(CFLAGS) $^ $(LDFLAGS) $(LIBS) -o $@
+
+check: linktypes_test
+	./linktypes_test
+	@echo All tests pass.
+
+.PHONY: all install clean depend check
 
 # silent-rules
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -132,7 +152,7 @@ acct.o: acct.c acct.h decode.h addr.h conv.h daylog.h graph_db.h err.h \
 addr.o: addr.c addr.h
 bsd.o: bsd.c bsd.h config.h cdefs.h
 cap.o: cap.c acct.h cdefs.h cap.h config.h conv.h decode.h addr.h err.h \
- hosts_db.h localip.h now.h opt.h queue.h str.h
+ hosts_db.h linktypes.h localip.h now.h opt.h queue.h str.h
 conv.o: conv.c conv.h err.h cdefs.h
 darkstat.o: darkstat.c acct.h cap.h cdefs.h config.h conv.h daylog.h \
  graph_db.h db.h dns.h err.h hosts_db.h addr.h http.h localip.h ncache.h \
@@ -151,9 +171,11 @@ hosts_sort.o: hosts_sort.c cdefs.h err.h hosts_db.h addr.h
 html.o: html.c config.h str.h cdefs.h html.h opt.h
 http.o: http.c cdefs.h config.h conv.h err.h graph_db.h hosts_db.h addr.h \
  http.h now.h queue.h str.h stylecss.h graphjs.h favicon.h
+linktypes.o: linktypes.c linktypes_list.h
 localip.o: localip.c addr.h bsd.h config.h conv.h err.h cdefs.h localip.h \
  now.h
 ncache.o: ncache.c conv.h err.h cdefs.h ncache.h tree.h bsd.h config.h
 now.o: now.c err.h cdefs.h now.h str.h
 pidfile.o: pidfile.c err.h cdefs.h str.h pidfile.h
 str.o: str.c conv.h err.h cdefs.h str.h
+linktypes_test.o: linktypes_test.c linktypes.h
