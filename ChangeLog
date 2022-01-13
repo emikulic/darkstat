@@ -1,3 +1,6 @@
+v3.0.721 (12 Jan 2022)
+	- Replace xxd with hex-ify to reduce build dependencies.
+
 v3.0.720 (10 Jan 2022)
 	- Improve graphs on mobile (thanks to Dallen Wilson).
 	- Add favicon, improve CSS (thanks to Daniel Aleksandersen).
