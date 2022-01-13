@@ -159,8 +159,6 @@ static void cap_start_one(struct cap_iface *iface, const int promisc) {
    iface->linkhdr = getlinkhdr(linktype);
    if (iface->linkhdr == NULL)
       errx(1, "unknown linktype %d", linktype);
-   if (iface->linkhdr->decoder == NULL)
-      errx(1, "no decoder for linktype %d", linktype);
    snaplen = getsnaplen(iface->linkhdr);
    if (opt_want_pppoe) {
       snaplen += PPPOE_HDR_LEN;
@@ -523,8 +521,6 @@ void cap_from_file(const char *capfile) {
    iface.linkhdr = getlinkhdr(linktype);
    if (iface.linkhdr == NULL)
       errx(1, "unknown linktype %d", linktype);
-   if (iface.linkhdr->decoder == NULL)
-      errx(1, "no decoder for linktype %d", linktype);
 
    cap_set_filter(iface.pcap, iface.filter);
 

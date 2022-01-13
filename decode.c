@@ -108,7 +108,6 @@ static const struct linkhdr linkhdrs[] = {
 #if defined(__NetBSD__)
    { DLT_PPP_SERIAL, PPP_HDR_LEN,  decode_ppp },
 #endif
-   { DLT_FDDI,      FDDI_HDR_LEN,  NULL },
    { DLT_PPP_ETHER, PPPOE_HDR_LEN, decode_pppoe },
 #ifdef DLT_LINUX_SLL
    { DLT_LINUX_SLL, SLL_HDR_LEN,   decode_linux_sll },
