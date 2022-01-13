@@ -29,7 +29,7 @@ main(int argc, char **argv)
     printf("0x%02x", (unsigned char)c);
     bytes++;
     if (bytes == 12) {
-      printf(", \n");
+      printf(",\n");
       first = 1;
       start_of_line = 1;
       bytes = 0;
