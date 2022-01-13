@@ -22,7 +22,7 @@
 
 static int retcode = 0;
 
-void test(int linktype, const char* expected) {
+static void test(int linktype, const char* expected) {
   const char* actual = get_linktype_name(linktype);
   if (strcmp(expected, actual) == 0) {
     printf("PASS: get_linktype_name(%d) = \"%s\"\n",

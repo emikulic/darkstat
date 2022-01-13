@@ -50,6 +50,7 @@ pidfile.c	\
 str.c
 
 TEST_SRCS =		\
+addr_test.c		\
 linktypes_test.c
 
 OBJS = $(SRCS:%.c=%.o)
@@ -76,7 +77,7 @@ clean:
 	rm -f $(TEST_OBJS)
 	rm -f $(STATICHS)
 	rm -f hex-ify c-ify
-	rm -f linktypes_test
+	rm -f addr_test linktypes_test
 
 depend: config.status $(STATICHS)
 	cp Makefile.in Makefile.in.old
@@ -115,11 +116,16 @@ install: darkstat
 
 # Testing.
 
+addr_test: addr_test.o addr.o
+	$(AM_V_LINK)
+	$(AM_V_at)$(CC) $(CFLAGS) $^ $(LDFLAGS) $(LIBS) -o $@
+
 linktypes_test: linktypes_test.o linktypes.o
 	$(AM_V_LINK)
 	$(AM_V_at)$(CC) $(CFLAGS) $^ $(LDFLAGS) $(LIBS) -o $@
 
-check: linktypes_test
+check: addr_test linktypes_test
+	./addr_test
 	./linktypes_test
 	@echo All tests pass.
 
@@ -178,4 +184,5 @@ ncache.o: ncache.c conv.h err.h cdefs.h ncache.h tree.h bsd.h config.h
 now.o: now.c err.h cdefs.h now.h str.h
 pidfile.o: pidfile.c err.h cdefs.h str.h pidfile.h
 str.o: str.c conv.h err.h cdefs.h str.h
+addr_test.o: addr_test.c addr.h
 linktypes_test.o: linktypes_test.c linktypes.h
