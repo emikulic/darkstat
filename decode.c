@@ -113,18 +113,18 @@ static const struct linkhdr linkhdrs[] = {
    { DLT_LINUX_SLL, SLL_HDR_LEN,   decode_linux_sll },
 #endif
    { DLT_RAW,       RAW_HDR_LEN,   decode_raw },
-   { -1, 0, NULL }
 };
 
 /* Returns a pointer to the linkhdr record matching the given linktype, or
  * NULL if no matching entry found.
  */
 const struct linkhdr *getlinkhdr(const int linktype) {
+   const int n = sizeof(linkhdrs) / sizeof(*linkhdrs);
    size_t i;
 
-   for (i=0; linkhdrs[i].linktype != -1; i++)
-      if (linkhdrs[i].linktype == linktype)
-         return (&(linkhdrs[i]));
+   for (i=0; i < n; i++) {
+      if (linkhdrs[i].linktype == linktype) return &(linkhdrs[i]);
+   }
    return NULL;
 }
 
