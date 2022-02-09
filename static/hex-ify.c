@@ -5,7 +5,7 @@
 int
 main(int argc, char **argv)
 {
-  int c, eol;
+  int c;
   if (argc != 2) {
     fprintf(stderr, "usage: %s name <infile >outfile.h\n",
       argv[0]);
