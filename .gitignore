@@ -5,7 +5,9 @@ a.out
 autom4te.cache
 darkstat-*
 hex-ify
+hex-ify.DSYM/
 c-ify
+c-ify.DSYM/
 config.h
 config.h.in
 config.log
