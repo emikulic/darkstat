@@ -32,7 +32,8 @@ const char *addr_to_str(const struct addr * const a)
    if (a->family == IPv4) {
       struct in_addr in;
       in.s_addr = a->ip.v4;
-      return (inet_ntoa(in));
+      inet_ntop(AF_INET, &(a->ip.v4), _addrstrbuf, sizeof(_addrstrbuf));
+      return (_addrstrbuf);
    } else {
       assert(a->family == IPv6);
       inet_ntop(AF_INET6, &(a->ip.v6), _addrstrbuf, sizeof(_addrstrbuf));
