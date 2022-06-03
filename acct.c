@@ -174,7 +174,7 @@ void acct_for(const struct pktsummary * const sm,
 #endif
 
    /* Totals. */
-   acct_total_packets++;
+   acct_total_packets += sm->packets;
    acct_total_bytes += sm->len;
 
    /* Graphs. */
