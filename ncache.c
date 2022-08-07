@@ -18,6 +18,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <stdio.h> /* for musl services workaround */
+
 struct name_rec {
    RB_ENTRY(name_rec) ptree;
    int num;
@@ -94,6 +96,34 @@ ncache_init(void)
       count++;
    }
    endservent();
+
+   if (count == 0) {
+      /* musl does not implement getservent(). */
+      FILE* f;
+      int   len = 255;
+      char  buffer[len], *p;
+      int16_t port;
+
+      f = fopen("/etc/services", "r");
+
+      while(fgets(buffer, len, f)) {
+         for (p = buffer; p < buffer + len && *p > ' '; p++);
+         if (p < buffer + len) {
+            *p = 0;
+            port = strtol(p + 1, &p, 0);
+            if (0 == memcmp("/tcp", p, 4)) {
+               add_rec(&t_servtcp, port, buffer);
+               ctcp++;
+            } else if (0 == memcmp("/udp", p, 4)) {
+               add_rec(&t_servudp, port, buffer);
+               cudp++;
+            }
+         }
+         count++;
+      }
+      fclose(f);
+   }
+
    verbosef("loaded %d tcp and %d udp servs, from total %d",
       ctcp, cudp, count);
 }
