@@ -183,6 +183,12 @@ key_func_ip_proto(const struct bucket *b)
    return &(b->u.ip_proto.proto);
 }
 
+static const void *
+key_func_peer_port(const struct bucket *b)
+{
+   return &(b->u.peer_port.port);
+}
+
 /* ---------------------------------------------------------------------------
  * find_func collection
  */
@@ -211,6 +217,12 @@ find_func_ip_proto(const struct bucket *b, const void *key)
    return (b->u.ip_proto.proto == CASTKEY(uint8_t));
 }
 
+static int
+find_func_peer_port(const struct bucket *b, const void *key)
+{
+   return (b->u.peer_port.port == CASTKEY(uint16_t));
+}
+
 /* ---------------------------------------------------------------------------
  * make_func collection
  */
@@ -237,6 +249,7 @@ make_func_host(const void *key)
    h->ports_udp = NULL;
    h->ports_udp_remote = NULL;
    h->ip_protos = NULL;
+   h->peers = NULL;
    return (b);
 }
 
@@ -250,6 +263,7 @@ free_func_host(struct bucket *b)
    hashtable_free(h->ports_udp);
    hashtable_free(h->ports_udp_remote);
    hashtable_free(h->ip_protos);
+   hashtable_free(h->peers);
 }
 
 static struct bucket *
@@ -275,6 +289,36 @@ make_func_ip_proto(const void *key)
    MAKE_BUCKET(b, p, ip_proto);
    p->proto = CASTKEY(uint8_t);
    return (b);
+}
+
+static struct bucket *
+make_func_peer(const void *key)
+{
+   MAKE_BUCKET(b, p, peer);
+   p->addr = CASTKEY(struct addr);
+   p->ports[PEER_PORT_TCP] = NULL;
+   p->ports[PEER_PORT_TCP_PEER] = NULL;
+   p->ports[PEER_PORT_UDP] = NULL;
+   p->ports[PEER_PORT_UDP_PEER] = NULL;
+   return (b);
+}
+
+static struct bucket *
+make_func_peer_port(const void *key)
+{
+   MAKE_BUCKET(b, p, peer_port);
+   p->port = CASTKEY(uint16_t);
+   return (b);
+}
+
+static void
+free_func_peer(struct bucket *b)
+{
+   struct peer *p = &(b->u.peer);
+   hashtable_free(p->ports[PEER_PORT_TCP]);
+   hashtable_free(p->ports[PEER_PORT_TCP_PEER]);
+   hashtable_free(p->ports[PEER_PORT_UDP]);
+   hashtable_free(p->ports[PEER_PORT_UDP_PEER]);
 }
 
 static void
@@ -480,6 +524,176 @@ format_row_ip_proto(struct str *buf, const struct bucket *b)
       (qu)b->out,
       (qu)b->total
    );
+}
+
+/* As there might be multiple rows per peer, the standard CSS pattern
+ * does not work for the peers table and we set it manually via
+ * a class based on row_peer_port_odd */
+static int row_peer_port_odd;
+
+static void
+format_cols_peer(struct str *buf)
+{
+   row_peer_port_odd = 1;
+
+   str_append(buf,
+      "<table>\n"
+      "<tr>\n"
+      " <th>IP</th>\n"
+      " <th>Hostname</th>\n"
+      " <th>Port</th>\n"
+      " <th>Service</th>\n"
+      " <th></th>\n"
+      " <th>Local port</th>\n"
+      " <th>Service</th>\n"
+      " <th>In</th>\n"
+      " <th>Out</th>\n"
+      " <th>Total</th>\n"
+      "</tr>\n"
+   );
+}
+
+static size_t
+format_rows_peer_port(struct str *buf,
+   const char *addr, const char *hostname,
+   struct hashtable *const *pht, int index)
+{
+   unsigned int i;
+   static const char c_multiple[] = "multiple";
+   struct bucket *b;
+   uint16_t port;
+   const struct hashtable *ht = pht[index];
+   int tcp     = index == PEER_PORT_TCP || index == PEER_PORT_TCP_PEER;
+   int remote  = index == PEER_PORT_TCP_PEER || index == PEER_PORT_UDP_PEER;
+   char *proto = tcp ? "tcp" : "udp";
+   size_t lines = 0;
+   
+   if ((ht == NULL) || (ht->count == 0))
+      return 0;
+
+   for (i=0; i<ht->size; i++) {
+      for (b = ht->table[i]; b; b = b->next) {
+         if (b->u.peer_port.hidden) 
+            continue;
+
+         str_appendf(buf, "<tr class=\"%s\">\n",
+                          row_peer_port_odd ? "odd" : "even");
+
+         if (addr)
+            str_appendf(buf, 
+               " <td><a href=\"/hosts/%s\">%s</a></td>\n"
+               " <td>%s</td>\n",
+               addr,
+               addr,
+               hostname);
+
+         port = remote ?  b->u.peer_port.port_peer : b->u.peer_port.port;
+         if (port)
+            str_appendf(buf, " <td class=\"num\">%u</td>\n"
+                             " <td>%s</td>\n",
+                             port,
+                             tcp ? getservtcp(port) : getservudp(port));
+         else
+            str_appendf(buf, " <td>%s</td>\n"
+                             " <td></td>\n",
+                             c_multiple);
+
+         str_appendf(buf, " <td>%s</td>\n", proto);
+
+         port = !remote ?  b->u.peer_port.port_peer : b->u.peer_port.port;
+         if (port)
+            str_appendf(buf, " <td class=\"num\">%u</td>\n"
+                             " <td>%s</td>\n",
+                             port,
+                             tcp ? getservtcp(port) : getservudp(port));
+         else
+            str_appendf(buf, " <td>%s</td>\n"
+                             " <td></td>\n",
+                             c_multiple);
+
+         str_appendf(buf,
+            " <td class=\"num\">%'qu</td>\n"
+            " <td class=\"num\">%'qu</td>\n"
+            " <td class=\"num\">%'qu</td>\n"
+            "</tr>\n",
+            (qu)b->in,
+            (qu)b->out,
+            (qu)b->total
+          );
+         lines++;
+      }
+   }
+   return lines;
+}
+
+static void
+format_row_peer(struct str *buf, const struct bucket *b)
+{
+   const struct peer *p = &(b->u.peer);
+   const char *addr = addr_to_str(&(b->u.peer.addr));
+
+   char* hostname = "";
+   struct bucket *h = host_find(&(b->u.peer.addr));
+
+   size_t lines = 0;
+   size_t pos_rowspan[2] = { 0, 0 }, i;
+
+   /* Get hostname from host DB */
+   if (h) {
+      if (h->u.host.dns)
+         hostname = h->u.host.dns;
+      else {
+         dns_queue(&(b->u.peer.addr));
+         hostname = "(resolving ...)";
+      }
+   }
+
+   if (p->ports[PEER_PORT_TCP])
+      lines += p->ports[PEER_PORT_TCP]->count;
+   if (p->ports[PEER_PORT_UDP])
+      lines += p->ports[PEER_PORT_UDP]->count;
+
+   if (lines > 1) {
+      /* Summary line for multiple ports
+       * Save position of the rowspan attributes
+       * as we still don't know how may entries we will have */
+      str_appendf(buf,
+         "<tr class=\"%s\">\n"
+         " <td rowspan=\"",
+         row_peer_port_odd ? "odd" : "even");
+      pos_rowspan[0] = str_len(buf);
+      str_appendf(buf,   "1\"      ><a href=\"/hosts/%s\">%s</a></td>\n"
+         " <td rowspan=\"",
+         addr, addr);
+      pos_rowspan[1] = str_len(buf);
+      str_appendf(buf,   "1\"      >%s</td>\n"
+         " <td colspan=\"5\">&nbsp;</td>\n"
+         " <td class=\"num\">%'qu</td>\n"
+         " <td class=\"num\">%'qu</td>\n"
+         " <td class=\"num\">%'qu</td>\n"
+         "</tr>\n",
+         hostname,
+         (qu)b->in,
+         (qu)b->out,
+         (qu)b->total
+      );
+      addr = NULL;
+
+      lines = 1;
+   } else
+      lines = 0;
+
+   lines += format_rows_peer_port(buf, addr, hostname, p->ports, PEER_PORT_TCP);
+   lines += format_rows_peer_port(buf, addr, hostname, p->ports, PEER_PORT_TCP_PEER);
+   lines += format_rows_peer_port(buf, addr, hostname, p->ports, PEER_PORT_UDP);
+   lines += format_rows_peer_port(buf, addr, hostname, p->ports, PEER_PORT_UDP_PEER);
+
+   /* Adjust the rowspans */
+   for (i = 0; i < sizeof(pos_rowspan) / sizeof(pos_rowspan[i]); i++)
+      if (pos_rowspan[i])
+           str_printf_at(buf, pos_rowspan[i], "%u\"", lines);
+
+   row_peer_port_odd = !row_peer_port_odd;
 }
 
 /* ---------------------------------------------------------------------------
@@ -884,6 +1098,42 @@ static struct str *html_hosts_main(const char *qs);
 static struct str *html_hosts_detail(const char *ip);
 
 /* ---------------------------------------------------------------------------
+ * Find or create peer inside a host
+ */
+struct bucket *
+host_get_peer(struct bucket *host, const struct addr *const a)
+{
+   struct host *h = &host->u.host;
+   if (h->peers == NULL)
+      h->peers = hashtable_make(
+          HOST_BITS, opt_peers_max, opt_peers_keep, hash_func_host,
+          free_func_peer, key_func_host, find_func_host,
+          make_func_peer, format_cols_peer, format_row_peer);
+   return (hashtable_find_or_insert(h->peers, a, ALLOW_REDUCE));
+}
+
+struct bucket *
+peer_find_port(struct hashtable *table, uint16_t port)
+{
+    if (!table)
+        return NULL;
+    
+    return (hashtable_search(table, &port));
+}
+
+struct bucket *
+peer_get_port(struct hashtable **table, uint16_t port)
+{
+   if (*table == NULL)
+      *table = hashtable_make(
+          PORT_BITS, opt_ports_max, opt_ports_keep, hash_func_short,
+          free_func_simple, key_func_peer_port, find_func_peer_port,
+          make_func_peer_port, NULL, NULL);
+
+    return (hashtable_find_or_insert(*table, &port, ALLOW_REDUCE));
+}
+
+/* ---------------------------------------------------------------------------
  * Web interface: delegate the /hosts/ space.
  */
 struct str *
@@ -1171,20 +1421,35 @@ static struct str *html_hosts_detail(const char *ip) {
       (qu)h->out,
       (qu)h->total);
 
-   str_append(buf, "<h3>TCP ports on this host</h3>\n");
-   format_table(buf, h->u.host.ports_tcp, 0,TOTAL,0);
+   if (h->u.host.peers) {
+      str_append(buf, "<h3>Peers</h3>\n");
+      format_table(buf, h->u.host.peers, 0,TOTAL,1);
+   }
 
-   str_append(buf, "<h3>TCP ports on remote hosts</h3>\n");
-   format_table(buf, h->u.host.ports_tcp_remote, 0,TOTAL,0);
+   if (h->u.host.ports_tcp) {
+      str_append(buf, "<h3>TCP ports on this host</h3>\n");
+      format_table(buf, h->u.host.ports_tcp, 0,TOTAL,0);
+   }
 
-   str_append(buf, "<h3>UDP ports on this host</h3>\n");
-   format_table(buf, h->u.host.ports_udp, 0,TOTAL,0);
+   if (h->u.host.ports_tcp_remote) {
+      str_append(buf, "<h3>TCP ports on remote hosts</h3>\n");
+      format_table(buf, h->u.host.ports_tcp_remote, 0,TOTAL,0);
+   }
 
-   str_append(buf, "<h3>UDP ports on remote hosts</h3>\n");
-   format_table(buf, h->u.host.ports_udp_remote, 0,TOTAL,0);
+   if (h->u.host.ports_udp) {
+      str_append(buf, "<h3>UDP ports on this host</h3>\n");
+      format_table(buf, h->u.host.ports_udp, 0,TOTAL,0);
+   }
 
-   str_append(buf, "<h3>IP protocols</h3>\n");
-   format_table(buf, h->u.host.ip_protos, 0,TOTAL,0);
+   if (h->u.host.ports_udp_remote) {
+      str_append(buf, "<h3>UDP ports on remote hosts</h3>\n");
+      format_table(buf, h->u.host.ports_udp_remote, 0,TOTAL,0);
+   }
+
+   if (h->u.host.ip_protos) {
+      str_append(buf, "<h3>IP protocols</h3>\n");
+      format_table(buf, h->u.host.ip_protos, 0,TOTAL,0);
+   }
 
    str_append(buf, "<br>\n");
    html_close(buf);

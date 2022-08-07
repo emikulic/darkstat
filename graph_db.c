@@ -199,8 +199,8 @@ void graph_rotate(void) {
 
    if (t < last_real) {
       verbosef("graph_db: realtime went backwards! "
-               "(from %ld to %ld, offset is %ld)",
-               last_real, t, td);
+               "(from %lld to %lld, offset is %lld)",
+               (lld)last_real, (lld)t, (lld)td);
       graph_resync(t);
       return;
    }

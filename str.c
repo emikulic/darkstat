@@ -363,4 +363,19 @@ size_t str_len(const struct str * const buf) {
    return buf->len;
 }
 
+void
+str_printf_at(struct str *s, size_t pos, const char *format, ...)
+{
+   size_t len = s->len;
+
+   va_list va;
+   va_start(va, format);
+   if (pos < len) {
+      s->len = pos;
+      str_vappendf(s, format, va);
+      s->len = len;
+   }
+   va_end(va);
+}
+
 /* vim:set ts=3 sw=3 tw=78 expandtab: */

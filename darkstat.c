@@ -104,6 +104,12 @@ static void cb_no_dns(const char *arg _unused_) { opt_want_dns = 0; }
 int opt_want_macs = 1;
 static void cb_no_macs(const char *arg _unused_) { opt_want_macs = 0; }
 
+int opt_want_peers = 0;
+static void cb_peers(const char *arg _unused_) { opt_want_peers = 1; }
+
+int opt_want_ports = 1;
+static void cb_no_ports(const char *arg _unused_) { opt_want_ports = 0; }
+
 int opt_want_lastseen = 1;
 static void cb_no_lastseen(const char *arg _unused_) { opt_want_lastseen = 0; }
 
@@ -165,6 +171,14 @@ unsigned int opt_highest_port = 65535;
 static void cb_highest_port(const char *arg)
 { opt_highest_port = parsenum(arg, 65535); }
 
+unsigned int opt_peers_max = 1000;
+static void cb_peers_max(const char *arg)
+{ opt_peers_max = parsenum(arg, 65536); }
+
+unsigned int opt_peers_keep = 500;
+static void cb_peers_keep(const char *arg)
+{ opt_peers_keep = parsenum(arg, 65536); }
+
 int opt_wait_secs = -1;
 static void cb_wait_secs(const char *arg)
 { opt_wait_secs = (int)parsenum(arg, 0); }
@@ -204,6 +218,8 @@ static struct cmdline_arg cmdline_args[] = {
    {"--no-promisc",   NULL,              cb_no_promisc,   0},
    {"--no-dns",       NULL,              cb_no_dns,       0},
    {"--no-macs",      NULL,              cb_no_macs,      0},
+   {"--no-ports",     NULL,              cb_no_ports,     0},
+   {"--peers",        NULL,              cb_peers,        0},
    {"--no-lastseen",  NULL,              cb_no_lastseen,  0},
    {"--chroot",       "dir",             cb_chroot,       0},
    {"--user",         "username",        cb_user,         0},
@@ -216,6 +232,8 @@ static struct cmdline_arg cmdline_args[] = {
    {"--ports-max",    "count",           cb_ports_max,    0},
    {"--ports-keep",   "count",           cb_ports_keep,   0},
    {"--highest-port", "port",            cb_highest_port, 0},
+   {"--peers-max",    "count",           cb_peers_max,    0},
+   {"--peers-keep",   "count",           cb_peers_keep,   0},
    {"--wait",         "secs",            cb_wait_secs,    0},
    {"--hexdump",      NULL,              cb_hexdump,      0},
    {"--version",      NULL,              cb_version,      0},

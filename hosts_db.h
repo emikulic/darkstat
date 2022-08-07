@@ -28,6 +28,7 @@ struct host {
    struct hashtable *ports_udp;
    struct hashtable *ports_udp_remote;
    struct hashtable *ip_protos;
+   struct hashtable *peers;
 };
 
 struct port_tcp {
@@ -43,6 +44,25 @@ struct ip_proto {
    uint8_t proto;
 };
 
+enum peer_port_tables {
+   PEER_PORT_TCP = 0,
+   PEER_PORT_TCP_PEER = 1,
+   PEER_PORT_UDP = 2,
+   PEER_PORT_UDP_PEER = 3,
+   PEER_PORT_TABLES = 4
+};
+
+struct peer {
+   struct addr addr;
+   struct hashtable *ports[PEER_PORT_TABLES];
+};
+
+struct peer_port {
+   uint16_t port;
+   uint16_t port_peer;
+   uint8_t  hidden;
+};
+
 struct bucket {
    struct bucket *next;
    uint64_t in, out, total;
@@ -51,6 +71,8 @@ struct bucket {
       struct port_tcp port_tcp;
       struct port_udp port_udp;
       struct ip_proto ip_proto;
+      struct peer peer;
+      struct peer_port peer_port;
    } u;
 };
 
@@ -74,6 +96,9 @@ struct bucket *host_get_port_udp(struct bucket *host, const uint16_t port);
 struct bucket *host_get_port_udp_remote(struct bucket *host,
                                         const uint16_t port);
 struct bucket *host_get_ip_proto(struct bucket *host, const uint8_t proto);
+struct bucket *host_get_peer(struct bucket *host, const struct addr *const a);
+struct bucket *peer_find_port(struct hashtable *table, uint16_t port);
+struct bucket *peer_get_port(struct hashtable **table, uint16_t port);
 
 /* Web pages. */
 struct str *html_hosts(const char *uri, const char *query);

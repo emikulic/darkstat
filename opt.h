@@ -10,6 +10,8 @@ extern int opt_want_macs;
 extern int opt_want_hexdump;
 extern int opt_want_snaplen;
 extern int opt_wait_secs;
+extern int opt_want_peers;
+extern int opt_want_ports;
 
 /* Error/logging options. */
 extern int opt_want_verbose;
@@ -26,6 +28,8 @@ extern unsigned int opt_hosts_max;
 extern unsigned int opt_hosts_keep;
 extern unsigned int opt_ports_max;
 extern unsigned int opt_ports_keep;
+extern unsigned int opt_peers_max;
+extern unsigned int opt_peers_keep;
 
 /* Hosts output options. */
 extern int opt_want_lastseen;

@@ -147,6 +147,88 @@ static int addr_is_local(const struct addr * const a,
    return 0;
 }
 
+/* Account the peers.
+ * Multiple connections to the same port are summarized */
+void acct_peer(struct bucket *h, const struct addr *peer_addr,
+               const uint16_t len, int dir_in,
+               enum peer_port_tables o_ports,
+               enum peer_port_tables o_ports_peer,
+               uint16_t peer_port, uint16_t port)
+{
+   struct bucket *b_port, *b_port_peer;
+   struct bucket *b = host_get_peer(h, peer_addr);
+   struct peer *p = &(b->u.peer);
+
+   /* Account peer */ 
+   if (dir_in)
+      b->in += len;
+   else   
+      b->out += len;
+   b->total += len;
+
+   /* Upon first occurence an entry for both tables local and peer
+    * is created where peer is marked as hidden as we still do not
+    * know on which port to summarize */
+
+   /* Search for the port on the peer */
+   b_port_peer = peer_find_port(p->ports[o_ports_peer], port);
+   if (b_port_peer) {
+      if (dir_in)
+         b_port_peer->in += len;
+      else
+         b_port_peer->out += len;
+      b_port_peer->total += len;
+      if (!b_port_peer->u.peer_port.hidden)
+         return;
+
+      b_port = peer_find_port(p->ports[o_ports],
+                              b_port_peer->u.peer_port.port_peer);
+
+      if (b_port_peer->u.peer_port.port_peer == peer_port) {
+         /* Still same port pair, just update as well */
+         if (dir_in)
+            b_port->in += len;
+         else
+            b_port->out += len;
+         b_port->total += len;
+         return;
+      }
+
+      /* Summarize on this entry and hide the other one */
+      b_port_peer->u.peer_port.hidden = 0;
+      b_port_peer->u.peer_port.port_peer = 0;
+      b_port->u.peer_port.hidden = 1;
+      return;
+    }
+
+   /* Search or create the port on this host */
+   b_port = peer_get_port(p->ports + o_ports, peer_port);
+   if (b_port->total) {
+      /* If there is not the first entry and the port is different
+       * then remove the port number and show 'multiple' */ 
+      if (b_port->u.peer_port.port_peer != port)
+         b_port->u.peer_port.port_peer = 0;
+   } else {
+      /* New entry*/
+      b_port->u.peer_port.port_peer = port;
+      /* Add in both directions for lookup, but mark as hidden */
+      b_port_peer = peer_get_port(p->ports + o_ports_peer, port);
+      b_port_peer->u.peer_port.hidden = 1;
+      b_port_peer->u.peer_port.port_peer = peer_port;
+      if (dir_in)
+         b_port_peer->out += len;
+      else
+         b_port_peer->in += len;
+      b_port_peer->total += len;
+   }
+
+   if (dir_in)
+      b_port->in += len;
+   else
+      b_port->out += len;
+   b_port->total += len;
+}
+
 /* Account for the given packet summary. */
 void acct_for(const struct pktsummary * const sm,
               const struct local_ips * const local_ips) {
@@ -234,57 +316,85 @@ void acct_for(const struct pktsummary * const sm,
    switch (sm->proto) {
    case IPPROTO_TCP:
       // Local ports on host.
-      if ((sm->src_port <= opt_highest_port) && hs) {
-         struct bucket *ps = host_get_port_tcp(hs, sm->src_port);
-         ps->out   += sm->len;
-         ps->total += sm->len;
-      }
-      if ((sm->dst_port <= opt_highest_port) && hd) {
-         struct bucket *pd = host_get_port_tcp(hd, sm->dst_port);
-         pd->in    += sm->len;
-         pd->total += sm->len;
-         if (sm->tcp_flags == TH_SYN)
-            pd->u.port_tcp.syn++;
-      }
+      if (opt_want_ports) {
+         if ((sm->src_port <= opt_highest_port) && hs) {
+            struct bucket *ps = host_get_port_tcp(hs, sm->src_port);
+            ps->out   += sm->len;
+            ps->total += sm->len;
+         }
+         if ((sm->dst_port <= opt_highest_port) && hd) {
+            struct bucket *pd = host_get_port_tcp(hd, sm->dst_port);
+            pd->in    += sm->len;
+            pd->total += sm->len;
+            if (sm->tcp_flags == TH_SYN)
+               pd->u.port_tcp.syn++;
+         }
 
-      // Remote ports.
-      if ((sm->src_port <= opt_highest_port) && hd) {
-         struct bucket *pdr = host_get_port_tcp_remote(hd, sm->src_port);
-         pdr->out   += sm->len;
-         pdr->total += sm->len;
+         // Remote ports.
+         if ((sm->src_port <= opt_highest_port) && hd) {
+            struct bucket *pdr = host_get_port_tcp_remote(hd, sm->src_port);
+            pdr->out   += sm->len;
+            pdr->total += sm->len;
+         }
+         if ((sm->dst_port <= opt_highest_port) && hs) {
+            struct bucket *psr = host_get_port_tcp_remote(hs, sm->dst_port);
+            psr->in    += sm->len;
+            psr->total += sm->len;
+            if (sm->tcp_flags == TH_SYN)
+               psr->u.port_tcp.syn++;
+         }
       }
-      if ((sm->dst_port <= opt_highest_port) && hs) {
-         struct bucket *psr = host_get_port_tcp_remote(hs, sm->dst_port);
-         psr->in    += sm->len;
-         psr->total += sm->len;
-         if (sm->tcp_flags == TH_SYN)
-            psr->u.port_tcp.syn++;
+      
+      if (opt_want_peers) {
+         if ((sm->src_port <= opt_highest_port) && hd)
+            acct_peer(hd, &(sm->src), sm->len, 1,
+                      PEER_PORT_TCP, PEER_PORT_TCP_PEER,
+                      sm->src_port, sm->dst_port);
+
+         if ((sm->dst_port <= opt_highest_port) && hs)
+            acct_peer(hs, &(sm->dst), sm->len, 0,
+                      PEER_PORT_TCP, PEER_PORT_TCP_PEER,
+                      sm->dst_port, sm->src_port);
       }
       break;
 
    case IPPROTO_UDP:
       // Local ports on host.
-      if ((sm->src_port <= opt_highest_port) && hs) {
-         struct bucket *ps = host_get_port_udp(hs, sm->src_port);
-         ps->out   += sm->len;
-         ps->total += sm->len;
-      }
-      if ((sm->dst_port <= opt_highest_port) && hd) {
-         struct bucket *pd = host_get_port_udp(hd, sm->dst_port);
-         pd->in    += sm->len;
-         pd->total += sm->len;
+      if (opt_want_ports) {
+         if ((sm->src_port <= opt_highest_port) && hs) {
+            struct bucket *ps = host_get_port_udp(hs, sm->src_port);
+            ps->out   += sm->len;
+            ps->total += sm->len;
+         }
+         if ((sm->dst_port <= opt_highest_port) && hd) {
+            struct bucket *pd = host_get_port_udp(hd, sm->dst_port);
+            pd->in    += sm->len;
+            pd->total += sm->len;
+         }
+
+         // Remote ports.
+         if ((sm->src_port <= opt_highest_port) && hd) {
+            struct bucket *pdr = host_get_port_udp_remote(hd, sm->src_port);
+            pdr->out   += sm->len;
+            pdr->total += sm->len;
+         }
+         if ((sm->dst_port <= opt_highest_port) && hs) {
+            struct bucket *psr = host_get_port_udp_remote(hs, sm->dst_port);
+            psr->in    += sm->len;
+            psr->total += sm->len;
+         }
       }
 
-      // Remote ports.
-      if ((sm->src_port <= opt_highest_port) && hd) {
-         struct bucket *pdr = host_get_port_udp_remote(hd, sm->src_port);
-         pdr->out   += sm->len;
-         pdr->total += sm->len;
-      }
-      if ((sm->dst_port <= opt_highest_port) && hs) {
-         struct bucket *psr = host_get_port_udp_remote(hs, sm->dst_port);
-         psr->in    += sm->len;
-         psr->total += sm->len;
+      if (opt_want_peers) {
+         if (opt_want_peers && (sm->src_port <= opt_highest_port) && hd)
+            acct_peer(hd, &(sm->src), sm->len, 1,
+                      PEER_PORT_UDP, PEER_PORT_UDP_PEER,
+                      sm->src_port, sm->dst_port);
+
+         if (opt_want_peers && (sm->dst_port <= opt_highest_port) && hs)
+            acct_peer(hs, &(sm->dst), sm->len, 0,
+                      PEER_PORT_UDP, PEER_PORT_UDP_PEER,
+                      sm->dst_port, sm->src_port);
       }
       break;
 

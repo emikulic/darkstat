@@ -35,11 +35,14 @@ h1, h2, h3, h4, h5, h6
 table          { border-collapse: collapse; }
 td, th { border:1px solid #C0C0C0; padding:1px 5px 1px 5px; }
 td.num { text-align:right; }
+td.transparent { background: white; border: 0px; }
 th { background-color:#EFEFEF; font-weight: bold;
      padding-top:2px; padding-bottom:2px; }
 th a { color:black; border-bottom:1px dotted; }
 tr:nth-child(odd)  { background:#FFFFFF; }
 tr:nth-child(even) { background:#FAFAFA; }
+tr.odd  { background:#FFFFFF; }
+tr.even { background:#FAFAFA; }
 tr:hover { background:#EFEFEF; }
 body, td, th, p, input, textarea
                { font-family: Tahoma, Verdana, sans-serif;

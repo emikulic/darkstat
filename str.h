@@ -65,5 +65,7 @@ struct str *length_of_time(const time_t t);
 ssize_t str_write(const struct str * const buf, const int fd);
 size_t str_len(const struct str * const buf);
 
+void str_printf_at(struct str *s, size_t pos, const char *format, ...);
+
 #endif  /* __DARKSTAT_STR_H */
 /* vim:set ts=3 sw=3 tw=78 expandtab: */
