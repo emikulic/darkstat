@@ -310,6 +310,22 @@ void acct_for(const struct pktsummary * const sm,
       }
    }
 
+   if (opt_want_peers && sm->proto != IPPROTO_INVALID &&
+       sm->proto != IPPROTO_TCP && sm->proto != IPPROTO_UDP) {
+      if (hs) {
+         struct bucket *p = host_get_peer(hs, &(sm->dst));
+         struct bucket *ps = peer_get_ip_proto(p, sm->proto);
+         ps->out   += sm->len;
+         ps->total += sm->len;
+      }
+      if (hd) {
+         struct bucket *p = host_get_peer(hd, &(sm->src));
+         struct bucket *pd = peer_get_ip_proto(p, sm->proto);
+         pd->in    += sm->len;
+         pd->total += sm->len;
+      }
+   }
+
    if (opt_ports_max == 0) return; /* skip ports accounting */
 
    /* Ports. */

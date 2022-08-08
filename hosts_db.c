@@ -300,6 +300,7 @@ make_func_peer(const void *key)
    p->ports[PEER_PORT_TCP_PEER] = NULL;
    p->ports[PEER_PORT_UDP] = NULL;
    p->ports[PEER_PORT_UDP_PEER] = NULL;
+   p->ip_protos = NULL;
    return (b);
 }
 
@@ -319,6 +320,7 @@ free_func_peer(struct bucket *b)
    hashtable_free(p->ports[PEER_PORT_TCP_PEER]);
    hashtable_free(p->ports[PEER_PORT_UDP]);
    hashtable_free(p->ports[PEER_PORT_UDP_PEER]);
+   hashtable_free(p->ip_protos);
 }
 
 static void
@@ -626,6 +628,50 @@ format_rows_peer_port(struct str *buf,
    return lines;
 }
 
+static size_t
+format_rows_peer_proto(struct str *buf,
+   const char *addr, const char *hostname, struct hashtable *ht)
+{
+   unsigned int i;
+   struct bucket *b;
+   size_t lines = 0;
+   
+   if ((ht == NULL) || (ht->count == 0))
+      return 0;
+
+   for (i=0; i<ht->size; i++) {
+      for (b = ht->table[i]; b; b = b->next) {
+         str_appendf(buf, "<tr class=\"%s\">\n",
+                          row_peer_port_odd ? "odd" : "even");
+
+         if (addr)
+            str_appendf(buf, 
+               " <td><a href=\"/hosts/%s\">%s</a></td>\n"
+               " <td>%s</td>\n",
+               addr,
+               addr,
+               hostname);
+
+         str_appendf(buf, " <td>&nbsp;</td>\n"
+                          " <td>&nbsp;</td>\n"
+                          " <td>%s</td>\n"
+                          " <td>&nbsp;</td>\n"
+                          " <td>&nbsp;</td>\n"
+                          " <td class=\"num\">%'qu</td>\n"
+                          " <td class=\"num\">%'qu</td>\n"
+                          " <td class=\"num\">%'qu</td>\n"
+                          "</tr>\n",
+                     getproto(b->u.ip_proto.proto),
+                     (qu)b->in,
+                     (qu)b->out,
+                     (qu)b->total
+         );
+         lines++;
+      }
+   }
+   return lines;
+}
+
 static void
 format_row_peer(struct str *buf, const struct bucket *b)
 {
@@ -687,6 +733,7 @@ format_row_peer(struct str *buf, const struct bucket *b)
    lines += format_rows_peer_port(buf, addr, hostname, p->ports, PEER_PORT_TCP_PEER);
    lines += format_rows_peer_port(buf, addr, hostname, p->ports, PEER_PORT_UDP);
    lines += format_rows_peer_port(buf, addr, hostname, p->ports, PEER_PORT_UDP_PEER);
+   lines += format_rows_peer_proto(buf, addr, hostname, p->ip_protos);
 
    /* Adjust the rowspans */
    for (i = 0; i < sizeof(pos_rowspan) / sizeof(pos_rowspan[i]); i++)
@@ -1094,9 +1141,6 @@ host_get_ip_proto(struct bucket *host, const uint8_t proto)
    return (hashtable_find_or_insert(h->ip_protos, &proto, ALLOW_REDUCE));
 }
 
-static struct str *html_hosts_main(const char *qs);
-static struct str *html_hosts_detail(const char *ip);
-
 /* ---------------------------------------------------------------------------
  * Find or create peer inside a host
  */
@@ -1132,6 +1176,21 @@ peer_get_port(struct hashtable **table, uint16_t port)
 
     return (hashtable_find_or_insert(*table, &port, ALLOW_REDUCE));
 }
+
+struct bucket *
+peer_get_ip_proto(struct bucket *peer, const uint8_t proto)
+{
+   struct peer *p = &(peer->u.peer);
+   static const unsigned int PROTOS_MAX = 512, PROTOS_KEEP = 256;
+   if (p->ip_protos == NULL)
+      p->ip_protos = hashtable_make(PROTO_BITS, PROTOS_MAX, PROTOS_KEEP,
+         hash_func_byte, free_func_simple, key_func_ip_proto,
+         find_func_ip_proto, make_func_ip_proto, NULL, NULL);
+   return (hashtable_find_or_insert(p->ip_protos, &proto, ALLOW_REDUCE));
+}
+
+static struct str *html_hosts_main(const char *qs);
+static struct str *html_hosts_detail(const char *ip);
 
 /* ---------------------------------------------------------------------------
  * Web interface: delegate the /hosts/ space.

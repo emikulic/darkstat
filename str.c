@@ -373,7 +373,8 @@ str_printf_at(struct str *s, size_t pos, const char *format, ...)
    if (pos < len) {
       s->len = pos;
       str_vappendf(s, format, va);
-      s->len = len;
+      if (len > s->len)
+         s->len = len;
    }
    va_end(va);
 }

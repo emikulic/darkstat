@@ -55,6 +55,7 @@ enum peer_port_tables {
 struct peer {
    struct addr addr;
    struct hashtable *ports[PEER_PORT_TABLES];
+   struct hashtable *ip_protos;
 };
 
 struct peer_port {
@@ -99,6 +100,7 @@ struct bucket *host_get_ip_proto(struct bucket *host, const uint8_t proto);
 struct bucket *host_get_peer(struct bucket *host, const struct addr *const a);
 struct bucket *peer_find_port(struct hashtable *table, uint16_t port);
 struct bucket *peer_get_port(struct hashtable **table, uint16_t port);
+struct bucket *peer_get_ip_proto(struct bucket *peer, const uint8_t proto);
 
 /* Web pages. */
 struct str *html_hosts(const char *uri, const char *query);
