@@ -698,6 +698,8 @@ format_row_peer(struct str *buf, const struct bucket *b)
       lines += p->ports[PEER_PORT_TCP]->count;
    if (p->ports[PEER_PORT_UDP])
       lines += p->ports[PEER_PORT_UDP]->count;
+   if (p->ip_protos)
+      lines += p->ip_protos->count;
 
    if (lines > 1) {
       /* Summary line for multiple ports
