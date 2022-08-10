@@ -372,6 +372,22 @@ void acct_for(const struct pktsummary * const sm,
                       PEER_PORT_TCP, PEER_PORT_TCP_PEER,
                       sm->dst_port, sm->src_port);
       }
+
+      /* Use host name from decode if present
+       * If there is already a name from dns lookup replace it */
+      if (hd && !hd->u.host.dns_from_decode &&
+          sm->hostname && sm->hostname_length) {
+         char *dns = xmalloc(sm->hostname_length + 1);
+         memcpy(dns, sm->hostname, sm->hostname_length);
+         dns[sm->hostname_length] = 0;
+
+         if (hd->u.host.dns)
+            free(hd->u.host.dns);
+            
+         hd->u.host.dns_from_decode = 1;
+         hd->u.host.dns = dns;
+      }
+
       break;
 
    case IPPROTO_UDP:

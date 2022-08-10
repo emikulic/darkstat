@@ -242,6 +242,7 @@ make_func_host(const void *key)
    MAKE_BUCKET(b, h, host);
    h->addr = CASTKEY(struct addr);
    h->dns = NULL;
+   h->dns_from_decode = 0;
    h->last_seen_mono = 0;
    memset(&h->mac_addr, 0, sizeof(h->mac_addr));
    h->ports_tcp = NULL;

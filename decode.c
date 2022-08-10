@@ -97,6 +97,8 @@ static int helper_pppoe(HELPER_ARGS);
 static int helper_ip(HELPER_ARGS);
 static int helper_ipv6(HELPER_ARGS);
 static void helper_ip_deeper(HELPER_ARGS); /* protocols like TCP/UDP */
+static int helper_tls(HELPER_ARGS); /* TLS */
+static void helper_http(HELPER_ARGS); /* HTTP */
 
 /* Link-type header information */
 static const struct linkhdr linkhdrs[] = {
@@ -372,7 +374,13 @@ static void helper_ip_deeper(HELPER_ARGS) {
          sm->dst_port = ntohs(thdr->th_dport);
          sm->tcp_flags = thdr->th_flags &
             (TH_FIN|TH_SYN|TH_RST|TH_PUSH|TH_ACK|TH_URG);
-         return;
+
+         const uint16_t header_len = (thdr->th_off)<<2;
+         if (header_len < len) {
+            if (helper_tls(pdata + header_len, len - header_len, sm))
+               return;
+            return helper_http(pdata + header_len, len - header_len, sm);
+         }
       }
 
       case IPPROTO_UDP: {
@@ -384,6 +392,116 @@ static void helper_ip_deeper(HELPER_ARGS) {
          }
          sm->src_port = ntohs(uhdr->uh_sport);
          sm->dst_port = ntohs(uhdr->uh_dport);
+         return;
+      }
+   }
+}
+
+static int helper_tls(HELPER_ARGS) {
+   if (len < TLS_HDSHK_SESSION)
+      return 0;
+  
+   if (pdata[TLS_HDR_TYPE] != TLS_CONTENT_TYPE_HANDSHAKE ||
+       pdata[TLS_HDR_PROTO_MAJOR] != 3 ||
+       pdata[TLS_HDSHK_TYPE] != TLS_HANDSHAKE_TYPE_HELLO )
+       return 0;
+
+   uint16_t   data_len, pos;
+
+   pos = TLS_HDSHK_SESSION + pdata[TLS_HDSHK_SESSION_LENGTH];
+
+   if (pos + 2 > len)
+      return 0;
+   pos += 2 + ntohs(*(uint16_t*)(pdata + pos)); /* Skip cipher suites */
+
+   if (pos + 1 > len)
+      return 0;
+   pos += 1 + pdata[pos];  /* Skip compression methods */
+
+   data_len = pos + 2 + ntohs(*(uint16_t*)(pdata + pos));
+   pos += 2;
+
+   if (data_len > len)
+       data_len = len;
+
+   while (pos < data_len - 4) {
+      uint16_t extension_type, extension_length;
+      extension_type = ntohs(*(uint16_t*)(pdata + pos));
+      pos += 2;
+      extension_length = ntohs(*(uint16_t*)(pdata + pos));
+      pos += 2;
+      
+      if (extension_type != TLS_EXTENSION_HOST)
+         pos += extension_length;
+      else {
+         if (pos + extension_length > data_len)
+            return 0;
+
+         uint16_t data_len = pos + 2 + ntohs(*(uint16_t*)(pdata + pos));
+         pos += 2;
+         
+         if (data_len > len)
+             data_len = len;
+         
+         while (pos < data_len - 3) {
+            uint8_t  sni_type   = pdata[pos++];
+            uint16_t sni_length = ntohs(*(uint16_t*)(pdata + pos));
+            pos += 2;
+            if (sni_type == TLS_SNI_TYPE_HOST) {
+               sm->hostname = (const char*)(pdata + pos);
+               sm->hostname_length = sni_length;
+               return 1;
+            }
+            pos += sni_length;
+         }
+         return 0;
+      }
+   }
+
+   return 0;
+}
+
+static void helper_http(HELPER_ARGS) {
+   uint16_t pos, end;
+
+   if (len < 4)
+      return;
+
+   if (memcmp(pdata, "GET", 3) && memcmp(pdata, "POST", 4))
+      return;
+
+   for (pos = 4; pos < len -1 ; pos++){
+      if (pdata[pos] == '\r')
+         return;
+         
+      /* Advance to next line */
+      for (; pos < len && pdata[pos] != '\n'; pos++);
+      if (pos >= len - 6)
+         return;
+
+      pos++;
+      if ((pdata[pos]   == 'H' || pdata[pos]   == 'h') &&
+          (pdata[pos+1] == 'O' || pdata[pos+1] == 'o') &&
+          (pdata[pos+2] == 'S' || pdata[pos+2] == 's') &&
+          (pdata[pos+3] == 'T' || pdata[pos+3] == 't') &&
+           pdata[pos+4] == ':') {
+         
+         size_t   dots = 0, nondigits = 0;
+
+         pos += 5;
+         for (; pos < len && pdata[pos] <= ' '; pos++);
+         for (end = pos; end < len && pdata[end] != '\r'; end++)
+            if (pdata[end] == '.')
+               dots++;
+            else if ((pdata[end] < '0' || pdata[end] > '9') &&
+                      pdata[end] != ':')
+               nondigits++;
+
+         if (nondigits == 0 && dots == 3)
+            return;
+
+         sm->hostname = (const char*)(pdata + pos);
+         sm->hostname_length = end - pos;
          return;
       }
    }

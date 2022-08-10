@@ -29,6 +29,7 @@ struct host {
    struct hashtable *ports_udp_remote;
    struct hashtable *ip_protos;
    struct hashtable *peers;
+   uint8_t  dns_from_decode;
 };
 
 struct port_tcp {

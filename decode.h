@@ -33,6 +33,8 @@ struct pktsummary {
    uint16_t src_port, dst_port; /* only for TCP, UDP */
    uint8_t src_mac[ETHER_ADDR_LEN], /* only for Ethernet */
            dst_mac[ETHER_ADDR_LEN]; /* only for Ethernet */
+   const char*    hostname;
+   uint8_t        hostname_length;
 };
 
 struct pcap_pkthdr; /* from pcap.h */
@@ -52,6 +54,26 @@ struct linkhdr {
 
 const struct linkhdr *getlinkhdr(const int linktype);
 int getsnaplen(const struct linkhdr *lh);
+
+#define TLS_HDR_LEN 5
+#define TLS_HDR_TYPE        0
+#define TLS_HDR_PROTO_MAJOR 1
+#define TLS_HDR_PROTO_MINOR 2
+#define TLS_HDR_DATA_LENGTH 3
+
+#define TLS_HDSHK_TYPE           5
+#define TLS_HDSHK_LENGTH         6
+#define TLS_HDSHK_PROTO_MAJOR    9
+#define TLS_HDSHK_PROTO_MINOR    10
+#define TLS_HDSHK_RANDOM         11
+#define TLS_HDSHK_SESSION_LENGTH 43
+#define TLS_HDSHK_SESSION        44
+
+#define TLS_CONTENT_TYPE_HANDSHAKE  22
+#define TLS_HANDSHAKE_TYPE_HELLO    1
+
+#define TLS_EXTENSION_HOST          0
+#define TLS_SNI_TYPE_HOST           0
 
 #endif /* __DARKSTAT_DECODE_H */
 /* vim:set ts=3 sw=3 tw=78 expandtab: */
