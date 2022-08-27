@@ -1217,6 +1217,99 @@ static const unsigned char
 
 static void text_metrics_counter(struct str *buf, const char *metric, const char *type, const char *help);
 static void text_metrics_format_host(const struct bucket *b, const void *user_data);
+static void text_json_format_host(const struct bucket *b, const void *user_data);
+
+
+
+
+/* ---------------------------------------------------------------------------
+ * Web interface: export stats in JSON text format on /json
+ */
+struct str *
+text_json()
+{
+   struct str *buf = str_make();
+   str_append(buf, "[");
+
+   hashtable_foreach(hosts_db, &text_json_format_host, (void *)buf);
+
+   size_t len;
+   char *con;
+   str_extract(buf, &len, &con);
+   con[len-1] = '\0';
+
+   struct str *buf2 = str_make();
+   str_append(buf2, con);
+
+   str_append(buf2, "]");
+   return buf2;
+}
+
+static void
+text_json_format_host(const struct bucket *b,
+   const void *user_data)
+{
+   struct str *buf = (struct str *)user_data;
+   
+
+  const char *ip = addr_to_str(&(b->u.host.addr));
+
+   str_appendf(buf,
+      "{"
+      "\"ip\":\"%s\","
+      "\"hostname\":\"%s\",",
+      ip,
+      (b->u.host.dns == NULL) ? "" : b->u.host.dns);
+
+   if (hosts_db_show_macs)
+      str_appendf(buf,
+         "\"mac\":\"%x:%x:%x:%x:%x:%x\",",
+         b->u.host.mac_addr[0],
+         b->u.host.mac_addr[1],
+         b->u.host.mac_addr[2],
+         b->u.host.mac_addr[3],
+         b->u.host.mac_addr[4],
+         b->u.host.mac_addr[5]);
+
+   str_appendf(buf,
+      "\"in\": %qu,"
+      "\"out\": %qu,"
+      "\"total\": %qu,",
+      (qu)b->in,
+      (qu)b->out,
+      (qu)b->total);
+
+   if (opt_want_lastseen) {
+      int64_t last = b->u.host.last_seen_mono;
+      int64_t now = (int64_t)now_mono();
+      struct str *last_str = NULL;
+
+      if ((now >= last) && (last != 0))
+         last_str = length_of_time(now - last);
+
+      str_append(buf, "\"lastSeen\": ");
+      if (last_str == NULL) {
+         if (last == 0)
+            str_append(buf, "\"(never)\"");
+         else
+            str_appendf(buf, "\"(clock error: last = %qd, now = %qu)\"",
+                        (qd)last,
+                        (qu)now);
+      } else {
+         str_append(buf, "\"");
+         str_appendstr(buf, last_str);
+         str_append(buf, "\"");
+         str_free(last_str);
+      }
+   }
+
+   str_appendf(buf, "},");
+
+   /* Only resolve hosts "on demand" */
+   if (b->u.host.dns == NULL)
+      dns_queue(&(b->u.host.addr));
+
+}
 
 /* ---------------------------------------------------------------------------
  * Web interface: export stats in Prometheus text format on /metrics
@@ -1247,11 +1340,16 @@ text_metrics_counter(struct str *buf,
 
 static void
 text_metrics_format_host_key(struct str *buf, const struct bucket *b) {
-   const char *ip = addr_to_str(&(b->u.host.addr));
+  const char *ip = addr_to_str(&(b->u.host.addr));
 
-   str_appendf(buf,
-      "host_bytes_total{interface=\"%s\",ip=\"%s\"",
-      title_interfaces, ip);
+  if (b->u.host.dns == NULL)
+    dns_queue(&(b->u.host.addr));
+
+  //char *hostname = (b->u.host.dns == NULL) ? "" : b->u.host.dns;
+
+  str_appendf(buf,
+      "host_bytes_total{interface=\"%s\",hostname=\"%s\",ip=\"%s\"",
+      title_interfaces,  (b->u.host.dns == NULL) ? "" : b->u.host.dns, ip);
 
    if (hosts_db_show_macs)
       str_appendf(buf, ",mac=\"%x:%x:%x:%x:%x:%x\"",
