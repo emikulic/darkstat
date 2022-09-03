@@ -1372,6 +1372,10 @@ text_metrics_format_host(const struct bucket *b,
 
    text_metrics_format_host_key(buf, b);
    str_appendf(buf, ",dir=\"out\"} %qu\n", (qu)b->out);
+
+   text_metrics_format_host_key(buf, b);
+   str_appendf(buf, ",dir=\"total\"} %qu\n", (qu)b->in + b->out);
+
 }
 
 /* ---------------------------------------------------------------------------
