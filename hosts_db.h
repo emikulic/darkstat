@@ -78,7 +78,7 @@ struct bucket *host_get_ip_proto(struct bucket *host, const uint8_t proto);
 /* Web pages. */
 struct str *html_hosts(const char *uri, const char *query);
 struct str *text_metrics();
-
+struct str *text_json();
 /* From hosts_sort */
 void qsort_buckets(const struct bucket **a, size_t n,
    size_t left, size_t right, const enum sort_dir d);
