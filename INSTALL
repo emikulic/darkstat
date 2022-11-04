@@ -1,7 +1,9 @@
 Installation instructions
 -------------------------
 
-$ ./configure
+$ autoheader
+$ autoconf
+$ ./configure --prefix=/usr
 $ make
 $ make install
 

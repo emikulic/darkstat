@@ -1250,8 +1250,8 @@ text_metrics_format_host_key(struct str *buf, const struct bucket *b) {
    const char *ip = addr_to_str(&(b->u.host.addr));
 
    str_appendf(buf,
-      "host_bytes_total{interface=\"%s\",ip=\"%s\"",
-      title_interfaces, ip);
+      "host_bytes_total{interface=\"%s\",ip=\"%s\",host=\"%s\"",
+      title_interfaces, ip, b->u.host.dns);
 
    if (hosts_db_show_macs)
       str_appendf(buf, ",mac=\"%x:%x:%x:%x:%x:%x\"",
