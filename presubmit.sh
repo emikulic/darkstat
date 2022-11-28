@@ -5,7 +5,7 @@
 # Run ./presubmit.sh before committing code.
 
 say() {
-  echo ==\> "$@" >&2
+  echo "==>" "$@" >&2
 }
 
 run() {

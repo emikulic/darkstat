@@ -87,7 +87,7 @@ tree.h \
 # end packing list
 
 say() {
-  echo ==\> "$@" >&2
+  echo "==>" "$@" >&2
 }
 
 run() {
@@ -96,31 +96,31 @@ run() {
 }
 
 PKG=$NAME-$VERSION
-say releasing $PKG
+say releasing "$PKG"
 run make depend
 run make graphjs.h stylecss.h
 run autoconf
 run autoheader
 run ./config.status
 run ./test_headers.sh
-if git status --porcelain | egrep -v '^\?\?' -q; then
+if git status --porcelain | grep -vE '^\?\?' -q; then
   say ERROR: uncommitted changes:
   git status
   exit 1
 fi
-run mkdir $PKG
-run cp -r $files $PKG/.
-run sed -e "/AC_INIT/s/3.0.0-git/$VERSION/" configure.ac > $PKG/configure.ac
-say version set to: $(grep '^AC_INIT' $PKG/configure.ac)
-(cd $PKG
+run mkdir "$PKG"
+run cp -r "$files" "$PKG"/.
+run sed -e "/AC_INIT/s/3.0.0-git/$VERSION/" configure.ac > "$PKG"/configure.ac
+say version set to: "$(grep '^AC_INIT' "$PKG"/configure.ac)"
+(cd "$PKG"
  run autoconf
  run autoheader
  run rm -r autom4te.cache
 ) || exit 1
 
 # package it up
-run tar chof $PKG.tar $PKG
-run bzip2 -9vv $PKG.tar
+run tar chof "$PKG".tar "$PKG"
+run bzip2 -9vv "$PKG".tar
 say output:
-ls -l $PKG.tar.bz2
+ls -l "$PKG".tar.bz2
 say FINISHED!
