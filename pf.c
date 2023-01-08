@@ -94,6 +94,19 @@ alloc_buf(size_t ns)
 	}
 }
 
+int state_simple_idx(struct pfsync_state *s, int idx) {
+  struct pfsync_state_key *sk, *nk;
+
+  sk = &s->key[PF_SK_STACK];
+  nk = &s->key[PF_SK_WIRE];
+
+  if (sk->af != nk->af || PF_ANEQ(&sk->addr[idx], &nk->addr[idx], sk->af) ||
+      sk->port[idx] != nk->port[idx] || sk->rdomain != nk->rdomain) {
+    return 0;
+  }
+  return 1;
+}
+
 void pfsync_handle_state(struct pfsync_state * s, struct sc_ent * ent) {
    int afto, dir;
 
@@ -101,6 +114,9 @@ void pfsync_handle_state(struct pfsync_state * s, struct sc_ent * ent) {
 
    // FIXME: support ipv6
    if (s->key[0].af != AF_INET || s->key[1].af != AF_INET) {
+      return;
+   }
+   if (!state_simple_idx(s, 0) || !state_simple_idx(s, 1)) {
       return;
    }
 
