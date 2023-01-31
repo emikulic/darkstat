@@ -391,6 +391,7 @@ static void callback(u_char *user,
    if (opt_want_hexdump)
       hexdump(pdata, pheader->caplen, iface->linkhdr);
    memset(&sm, 0, sizeof(sm));
+   sm.packets = 1;
    if (iface->linkhdr->decoder(pheader, pdata, &sm))
       acct_for(&sm, &iface->local_ips);
 }
