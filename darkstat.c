@@ -193,7 +193,7 @@ static struct cmdline_arg cmdline_args[] = {
    {"-r",             "capfile",         cb_capfile,      0},
    {"-p",             "port",            cb_port,         0},
    {"-b",             "bindaddr",        cb_bindaddr,    -1},
-   {"-l",             "network/netmask", cb_local,        0},
+   {"-l",             "network/netmask", cb_local,       -1},
    {"--base",         "path",            cb_base,         0},
    {"--local-only",   NULL,              cb_local_only,   0},
    {"--snaplen",      "bytes",           cb_snaplen,      0},
