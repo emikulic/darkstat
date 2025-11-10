@@ -23,6 +23,9 @@
 #include "now.h"
 #include "pidfile.h"
 #include "str.h"
+#ifdef __OpenBSD__
+#include "pf.h"
+#endif
 
 #include <assert.h>
 #include <errno.h>
@@ -67,6 +70,13 @@ static unsigned long parsenum(const char *str,
       errx(1, "\"%s\" is out of range (max %lu)", str, max);
    return n;
 }
+
+static int opt_pf_seen = 0;
+#ifdef __OpenBSD__
+static void cb_pf(const char *arg) {
+   opt_pf_seen = 1;
+}
+#endif
 
 static int opt_iface_seen = 0;
 static void cb_interface(const char *arg) {
@@ -220,6 +230,9 @@ static struct cmdline_arg cmdline_args[] = {
    {"--hexdump",      NULL,              cb_hexdump,      0},
    {"--version",      NULL,              cb_version,      0},
    {"--help",         NULL,              cb_help,         0},
+#ifdef __OpenBSD__
+   {"--pf",           NULL,              cb_pf,           0},
+#endif
    {NULL,             NULL,              NULL,            0}
 };
 
@@ -306,15 +319,17 @@ static void parse_cmdline(const int argc, char * const *argv) {
    if (opt_want_syslog)
       openlog("darkstat", LOG_NDELAY | LOG_PID, LOG_DAEMON);
 
-   /* default value */
+   /* some default values */
+   if (opt_chroot_dir == NULL)
+      opt_chroot_dir = CHROOT_DIR;
    if (opt_privdrop_user == NULL)
       opt_privdrop_user = PRIVDROP_USER;
 
    /* sanity check args */
-   if (!opt_iface_seen && opt_capfile == NULL)
+   if (!opt_pf_seen && !opt_iface_seen && opt_capfile == NULL)
       errx(1, "must specify either interface (-i) or capture file (-r)");
 
-   if (opt_iface_seen && opt_capfile != NULL)
+   if (opt_pf_seen && opt_iface_seen && opt_capfile != NULL)
       errx(1, "can't specify both interface (-i) and capture file (-r)");
 
    if ((opt_hosts_max != 0) && (opt_hosts_keep >= opt_hosts_max)) {
@@ -385,7 +400,13 @@ main(int argc, char **argv)
 
    /* do this first as it forks - minimize memory use */
    if (opt_want_dns) dns_init(opt_privdrop_user);
-   cap_start(opt_want_promisc); /* needs root */
+   if (opt_pf_seen) {
+#ifdef __OpenBSD__
+      pfsync_start();
+#endif
+   } else {
+      cap_start(opt_want_promisc);
+   }
    http_init_base(opt_base);
    http_listen(opt_bindport);
    ncache_init(); /* must do before chroot() */
@@ -422,7 +443,13 @@ main(int argc, char **argv)
 
       FD_ZERO(&rs);
       FD_ZERO(&ws);
-      cap_fd_set(&rs, &max_fd, &timeout, &use_timeout);
+      if (opt_pf_seen) {
+#ifdef __OpenBSD__
+         pfsync_fd_set(&rs, &max_fd, &timeout, &use_timeout);
+#endif
+      } else {
+         cap_fd_set(&rs, &max_fd, &timeout, &use_timeout);
+      }
       http_fd_set(&rs, &ws, &max_fd, &timeout, &use_timeout);
 
       select_ret = select(max_fd+1, &rs, &ws, NULL,
@@ -454,7 +481,13 @@ main(int argc, char **argv)
       }
 
       graph_rotate();
-      cap_ret = cap_poll(&rs);
+      if (opt_pf_seen) {
+#ifdef __OpenBSD__
+         cap_ret = pfsync_poll();
+#endif
+      } else {
+         cap_ret = cap_poll(&rs);
+      }
       dns_poll();
       http_poll(&rs, &ws);
       timer_stop(&t, 1000000000, "event processing took longer than a second");
