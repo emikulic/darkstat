@@ -30,9 +30,11 @@
 #  include <mach/mach.h>
 #  include <mach/mach_time.h>
 
+#  ifndef CLOCK_REALTIME
    typedef int clockid_t;
 #  define CLOCK_REALTIME 0
 #  define CLOCK_MONOTONIC 1
+#  endif
 
    static uint64_t mono_first = 0;
 
