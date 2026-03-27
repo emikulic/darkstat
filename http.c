@@ -43,6 +43,7 @@ static int http_base_len = 0;
 static const char mime_type_xml[] = "text/xml";
 static const char mime_type_html[] = "text/html; charset=us-ascii";
 static const char mime_type_text_prometheus[] = "text/plain; version=0.0.4";
+static const char mime_type_text_json[] = "application/json";
 static const char mime_type_css[] = "text/css";
 static const char mime_type_js[] = "text/javascript";
 static const char mime_type_png[] = "image/png";
@@ -693,6 +694,11 @@ static void process_get(struct connection *conn)
         struct str *buf = text_metrics();
         str_extract(buf, &(conn->reply_length), &(conn->reply));
         conn->mime_type = mime_type_text_prometheus;
+    }
+    else if (str_starts_with(safe_url, "/json")) {
+        struct str *buf = text_json();
+        str_extract(buf, &(conn->reply_length), &(conn->reply));
+        conn->mime_type = mime_type_text_json;
     }
     else if (strcmp(safe_url, "/style.css") == 0)
         static_style_css(conn);
